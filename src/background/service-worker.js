@@ -10,10 +10,12 @@ import { RuleOptimizer } from "../engine/rule-optimizer.js";
 import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projector.js";
 import { PolicyStore } from "../storage/policy-store.js";
 import { ProfileStore } from "../storage/profile-store.js";
+import { FilterListSettingsStore } from "../storage/filter-list-settings-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 import { EASYLIST } from "../filters/filter-list-catalog.js";
 import { FilterListService } from "../filters/filter-list-service.js";
+import { FilterListManager } from "../filters/filter-list-manager.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
@@ -34,6 +36,10 @@ const filterListService = new FilterListService({
   cosmeticEngine,
   scriptletEngine,
   loadText: loadBundledText,
+});
+const filterListManager = new FilterListManager({
+  services: [filterListService],
+  settingsStore: new FilterListSettingsStore({ lists: [EASYLIST] }),
 });
 const policyEngine = new PolicyEngine({
   store: policyStore,
@@ -93,6 +99,7 @@ async function handleMessage(message, sender) {
     case "EXPORT_POLICIES": return policyOperations.then(exportPolicyDocument);
     case "IMPORT_POLICIES": return enqueuePolicyOperation(() => importPolicyDocument(message));
     case "APPLY_PROFILE": return enqueuePolicyOperation(() => applyProfile(message));
+    case "SET_FILTER_LIST_ENABLED": return enqueuePolicyOperation(() => setFilterListEnabled(message));
     case "RECOMPILE_RULES": return enqueuePolicyOperation(recompileWithResult);
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
@@ -163,7 +170,7 @@ async function reconcileRules() {
   filterListService.configure(profileDefinition(await profileStore.get()).features);
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
-  await filterListService.activate();
+  await filterListManager.initialize();
 }
 
 async function getDashboardState() {
@@ -179,7 +186,7 @@ async function getDashboardState() {
     ok: true,
     manifestVersion: chrome.runtime.getManifest().version,
     policies: persistent,
-    filterLists: [filterListService.getStatus()],
+    filterLists: filterListManager.getStatuses(),
     profile: profileDefinition(activeProfile),
     diagnostics: {
       persistentPolicies: persistent.length,
@@ -218,7 +225,11 @@ async function applyProfile({ profile }) {
 
 async function applyProtectionFeatures(features) {
   filterListService.configure(features);
-  await filterListService.activate();
+  await filterListManager.activateAll();
+}
+
+async function setFilterListEnabled({ id, enabled }) {
+  return { ok: true, list: await filterListManager.setEnabled(id, enabled) };
 }
 
 async function recompileWithResult() {

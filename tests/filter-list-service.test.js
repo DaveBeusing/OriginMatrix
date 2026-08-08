@@ -65,6 +65,25 @@ test("profile features can disable scriptlets without disabling network or cosme
   assert.deepEqual(status.features, { network: true, cosmetic: true, scriptlets: false });
 });
 
+test("disabling a list clears every active filter engine generation", async () => {
+  const networkEngine = fakeNetworkEngine();
+  const cosmeticEngine = new CosmeticEngine();
+  const scriptletEngine = new ScriptletEngine({ api: { executeScript: async () => [] } });
+  const service = new FilterListService({
+    list: EASYLIST, networkEngine, cosmeticEngine, scriptletEngine,
+    loadText: async () => "||ads.example^\nexample.com##.advert\nexample.com##+js(set-constant, player.ads, undefined)",
+  });
+  await service.activate();
+  service.setEnabled(false);
+  const status = await service.activate();
+  assert.equal(status.state, "disabled");
+  assert.equal(status.enabled, false);
+  assert.equal(status.rulesCompiled, 0);
+  assert.equal(cosmeticEngine.getSelectors("example.com").length, 0);
+  assert.equal(scriptletEngine.getDiagnostics().scriptletRules, 0);
+  assert.equal(networkEngine.rules().some(({ id }) => id >= 500_000), false);
+});
+
 test("bundled EasyList snapshot matches its pinned metadata", async () => {
   const bytes = await readFile(new URL(`../${EASYLIST.path}`, import.meta.url));
   const text = bytes.toString("utf8");

@@ -16,19 +16,20 @@ export class FilterListService {
     this.automaticResolver = automaticResolver;
     this.loadText = loadText;
     this.features = Object.freeze({ network: true, cosmetic: true, scriptlets: true });
-    this.state = statusFrom(list, { state: list.enabled ? "loading" : "disabled" });
+    this.enabled = list.enabled;
+    this.state = statusFrom(list, { state: this.enabled ? "loading" : "disabled" }, this.enabled);
   }
 
   async activate() {
-    if (!this.list.enabled) {
+    if (!this.enabled) {
       await this.networkEngine.replaceFilterRules([]);
       this.cosmeticEngine?.clear();
       this.scriptletEngine?.clear();
       this.automaticResolver.clear();
-      this.state = statusFrom(this.list, { state: "disabled" });
+      this.state = statusFrom(this.list, { state: "disabled", rulesLoaded: 0, rulesSupported: 0, rulesUnsupported: 0, rulesCompiled: 0, cosmeticRules: 0, scriptletRules: 0 }, this.enabled);
       return this.state;
     }
-    this.state = statusFrom(this.list, { state: "loading" });
+    this.state = statusFrom(this.list, { state: "loading" }, this.enabled);
     try {
       const parsed = parseFilterText(await this.loadText(this.list.path));
       const networkFilters = this.features.network ? parsed.filters : [];
@@ -55,15 +56,19 @@ export class FilterListService {
         scriptletRules: scriptlets.scriptletRules,
         automaticFiltersIndexed: automatic.automaticFiltersIndexed,
         features: this.features,
-      });
+      }, this.enabled);
       return this.state;
     } catch (error) {
-      this.state = statusFrom(this.list, { state: "error", error: error.message });
+      this.state = statusFrom(this.list, { state: "error", error: error.message }, this.enabled);
       throw error;
     }
   }
 
   getStatus() { return this.state; }
+  setEnabled(enabled) {
+    if (typeof enabled !== "boolean") throw new TypeError("Filter list enabled state must be boolean.");
+    this.enabled = enabled;
+  }
   resolveAutomatic(context) { return this.automaticResolver.resolve(context); }
 
   configure(features) {
@@ -76,12 +81,13 @@ export class FilterListService {
   }
 }
 
-function statusFrom(list, state) {
+function statusFrom(list, state, enabled) {
   return Object.freeze({
     id: list.id,
     title: list.title,
-    enabled: list.enabled,
+    enabled,
     version: list.snapshotVersion,
+    lastUpdated: list.snapshotUpdatedAt ?? null,
     ...state,
   });
 }

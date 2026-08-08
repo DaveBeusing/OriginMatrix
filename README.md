@@ -18,6 +18,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Network filter parser with explicit support and diagnostics reporting
 - Budget-aware filter-to-DNR compiler with deterministic optimization
 - Bundled EasyList network protection with dashboard diagnostics
+- Persistent bundled filter-list enable/disable management with complete rule counts
 - Site-aware EasyList cosmetic filtering for simple CSS selectors
 - Batched dynamic cosmetic filtering with bounded DOM observation
 - YouTube filter-coverage baseline with explicit compatibility diagnostics
@@ -149,7 +150,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Filter-list management and per-list diagnostics
+- Validated filter-list update and rollback pipeline
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

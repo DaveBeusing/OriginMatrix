@@ -24,6 +24,7 @@ document.querySelector("#export").addEventListener("click", exportDocument);
 document.querySelector("#debug-report").addEventListener("click", exportDebugReport);
 document.querySelector("#refresh-log").addEventListener("click", refreshLog);
 document.querySelector("#youtube-diagnostics").addEventListener("click", runYouTubeDiagnostics);
+filterListsBody.addEventListener("click", toggleFilterList);
 outcomeFilter.addEventListener("change", renderLog);
 typeFilter.addEventListener("change", renderLog);
 domainFilter.addEventListener("input", renderLog);
@@ -120,9 +121,35 @@ function renderLog() {
   if (entries.length === 0) logBody.append(emptyRow(4, "No matching requests."));
 }
 
+async function toggleFilterList(event) {
+  const button = event.target.closest("button[data-list-id]");
+  if (!button) return;
+  button.disabled = true;
+  const enabled = button.dataset.enabled !== "true";
+  try {
+    await send({ type: "SET_FILTER_LIST_ENABLED", id: button.dataset.listId, enabled });
+    statusElement.textContent = `${button.dataset.listId} ${enabled ? "enabled" : "disabled"}.`;
+    await refreshDashboard();
+  } catch (error) { showError(error); if (button.isConnected) button.disabled = false; }
+}
+
 function metric(name, value) { const wrapper = document.createElement("div"); const term = document.createElement("dt"); const detail = document.createElement("dd"); term.textContent = name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`); detail.textContent = String(value); wrapper.append(term, detail); return wrapper; }
 function policyRow(policy) { const row = document.createElement("tr"); for (const value of [policy.scope, policy.target, policy.party, policy.resourceType, policy.action]) { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); } return row; }
-function filterListRow(list) { const row = document.createElement("tr"); for (const value of [list.title, list.enabled ? list.state : "disabled", list.version, list.rulesLoaded ?? 0, list.rulesSupported ?? 0, list.rulesCompiled ?? 0, list.cosmeticRules ?? 0, list.scriptletRules ?? 0]) { const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell); } return row; }
+function filterListRow(list) {
+  const row = document.createElement("tr");
+  const values = [list.title, list.enabled ? "Yes" : "No", list.state, list.version, list.lastUpdated ? new Date(list.lastUpdated).toLocaleString() : "—", list.rulesCompiled ?? 0, list.cosmeticRules ?? 0, list.scriptletRules ?? 0, list.rulesUnsupported ?? 0];
+  for (const value of values) { const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell); }
+  const action = document.createElement("td");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.listId = list.id;
+  button.dataset.enabled = String(list.enabled);
+  button.textContent = list.enabled ? "Disable" : "Enable";
+  if (list.enabled) button.className = "danger";
+  action.append(button);
+  row.append(action);
+  return row;
+}
 function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.outcome, entry.resourceType, `${entry.domain} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
 function youtubeDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.category, sample.reason, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
 function emptyRow(span, text) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = span; cell.className = "empty"; cell.textContent = text; row.append(cell); return row; }
