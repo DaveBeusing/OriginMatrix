@@ -4,7 +4,7 @@
   <img src="icons/icon128.png" width="96" height="96" alt="OriginMatrix icon">
 </p>
 
-OriginMatrix is a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type.
+OriginMatrix 1.0.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the manual cross-browser acceptance matrix; pending manual results are documented rather than presented as verified compatibility.
 
 OriginMatrix is an independent Manifest V3 project—not a port or visual copy of uMatrix. Logical policies are the source of truth and are compiled into Chrome `declarativeNetRequest` rules.
 
@@ -72,7 +72,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the policy model, resolution hierarch
 ## Local installation
 
 1. Clone or download this repository.
-2. Open `chrome://extensions` or `edge://extensions`.
+2. Open the browser's extensions page (`chrome://extensions`, `edge://extensions`, `brave://extensions`, or `vivaldi://extensions`).
 3. Enable **Developer mode**.
 4. Select **Load unpacked** and choose the repository root.
 5. Open an HTTP(S) page and reload it once so OriginMatrix can observe its requests.
@@ -106,7 +106,9 @@ Run the browser-independent tests with a current Node.js release:
 npm test
 ```
 
-Network blocking and extension lifecycle behavior still require integration testing in Chrome, Chromium, or Microsoft Edge.
+Network blocking and extension lifecycle behavior still require integration testing in Chrome, Edge, Brave, Vivaldi, or another compatible Chromium browser.
+
+For the full automated release gate, packaging command, Chrome/Edge/Brave/Vivaldi matrix, site scenarios, and evidence requirements, see [Release candidate](docs/RELEASE-CANDIDATE.md).
 
 The PNG icons can be regenerated from the shared vector geometry on Windows:
 
@@ -161,6 +163,10 @@ The reviewed trust boundaries, resource limits, and permission rationale are doc
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven
+
+## Release status
+
+Version 1.0.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with manual evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
 
 ## License
 

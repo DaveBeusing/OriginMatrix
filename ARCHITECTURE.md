@@ -233,6 +233,10 @@ Runtime counters live only as long as their service worker or session-backed tab
 
 The service worker authenticates every runtime message against its own extension ID and rejects oversized or non-serializable payloads before dispatch. Parser inputs, policy imports, scriptlet arguments, selector delivery, stored list sources, and DNR generations are independently bounded. These checks complement schema validation and transactional activation; they do not rely on the UI as a security boundary. See `SECURITY.md` for the Phase 20 review and permission rationale.
 
+## Release validation
+
+The Phase 21 release gate combines the complete browser-independent test suite with a static package validator. It verifies version alignment, referenced manifest assets, the MV3 and minimum-Chromium baselines, absence of external messaging/update configuration and dependency trees, and shipped JavaScript sinks. Packaging uses an explicit runtime allowlist. Cross-browser and live-site behavior remains a separately evidenced manual matrix in `docs/RELEASE-CANDIDATE.md`.
+
 ## Policy transfer and profiles
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.
