@@ -14,7 +14,10 @@
         this.style.id = "originmatrix-cosmetic-rules";
         (this.document.head ?? this.document.documentElement).append(this.style);
       }
-      this.style.textContent = selectors.map((selector) => `${selector} { display: none !important; }`).join("\n");
+      this.style.textContent = [
+        "[data-originmatrix-cosmetic-hidden] { display: none !important; }",
+        ...selectors.map((selector) => `${selector} { display: none !important; }`),
+      ].join("\n");
       this.style.dataset.rules = String(selectors.length);
     }
   }

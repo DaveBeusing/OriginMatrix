@@ -59,7 +59,13 @@ The minimum supported Chromium version is 121. Earlier versions shared a 5,000-r
 
 `CosmeticParser` accepts normalized EasyList cosmetic models only when their selectors are bounded, free of rule-breaking syntax, and do not use procedural constructs. `SelectorStore` indexes accepted selectors by domain and applies exclusions before returning a deduplicated site-specific set. Unrelated selectors are never sent to a page.
 
-The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests selectors for its frame hostname at `document_start`; `CosmeticInjector` writes them into a dedicated style element using `textContent`. No filter-provided JavaScript is executed. Scriptlets, procedural selectors, and MutationObserver-based processing remain outside this phase.
+The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests selectors for its frame hostname at `document_start`; `CosmeticInjector` writes them into a dedicated style element using `textContent`. No filter-provided JavaScript is executed. Scriptlets and procedural selectors remain outside this phase.
+
+## Dynamic cosmetic filtering
+
+`DynamicCosmeticFilter` observes only child-list changes and class/ID attribute changes. Added or changed element roots are deduplicated, nested roots collapse to their ancestor, mutation storms collapse to the document root, and work is debounced into 50 ms batches. Each batch scans only the site-scoped selectors already returned by `SelectorStore`.
+
+Validated selectors are cached in bounded groups, and matching elements receive a dedicated hide attribute covered by the injected stylesheet. Metrics track mutation records, batches, scanned roots, hidden elements, cumulative scan time, and worst-batch time. The observer does not evaluate remote code, parse new filters, or perform an unconditional full-DOM scan for every mutation.
 
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 

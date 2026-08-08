@@ -19,6 +19,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Budget-aware filter-to-DNR compiler with deterministic optimization
 - Bundled EasyList network protection with dashboard diagnostics
 - Site-aware EasyList cosmetic filtering for simple CSS selectors
+- Batched dynamic cosmetic filtering with bounded DOM observation
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -33,7 +34,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Original scalable icon set for extension and toolbar surfaces
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
-Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters and simple cosmetic selectors are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected as CSS only on matching documents. The dashboard shows network and cosmetic counts. Runtime filter downloads and updates, procedural cosmetic filters, scriptlet syntax, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters and simple cosmetic selectors are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected only on matching documents. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Runtime filter downloads and updates, procedural cosmetic filters, scriptlet syntax, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
 
 ## Architecture
 
@@ -142,7 +143,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Batched handling for dynamic cosmetic filtering
+- YouTube compatibility baseline and filter diagnostics
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven
