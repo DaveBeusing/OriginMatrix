@@ -1,6 +1,6 @@
 # OriginMatrix
 
-OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). The repository contains the Phase 0/1 proof of concept and the browser-independent Phase 2 policy core.
+OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It contains the Phase 0/1 proof of concept, the Phase 2 policy core, and the Phase 3 request observer.
 
 ## Implemented
 
@@ -15,13 +15,17 @@ OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (
 - Persistent dynamic-rule and temporary session-rule compilation
 - Deterministic, collision-handled DNR rule IDs
 - Service-worker startup reconciliation from logical policies
-- Unit tests for compilation, resolution, domains, storage, migration, and IDs
+- Read-only `webRequest` observation, separate from DNR blocking
+- Per-tab domain, resource-type, completed, and failed counters
+- Session-persisted tab state that survives service-worker suspension
+- Compact observed-domain summary in the popup
+- Unit tests for compilation, resolution, domains, storage, migration, IDs, and observation
 
-No matrix, request observer, cookie control, filter lists, or rule optimizer is included yet.
+No matrix, cookie control, filter lists, request log, or rule optimizer is included yet.
 
 ## Architecture
 
-The popup sends intent; it never constructs DNR rules. `PolicyEngine` coordinates storage and compilation, while `ChromeDnrAdapter` is the only DNR browser boundary. Logical policies remain the source of truth.
+The popup sends intent; it never constructs DNR rules. `PolicyEngine` coordinates storage and compilation, while `ChromeDnrAdapter` is the only DNR browser boundary. `RequestObserver` only observes lifecycle events and writes through `TabStateManager`; it cannot affect requests. Logical policies remain the blocking source of truth.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
@@ -52,8 +56,10 @@ The tests exercise browser-independent modules. The final network-blocking behav
 - `domainType: thirdParty` uses Chromium's DNR party classification.
 - The popup controls only third-party scripts on HTTP(S) tabs, although the Phase-2 engine models the planned core resource types.
 - A session rule survives service-worker suspension but is not a persistent policy and disappears when the browser session ends.
-- Observed request/domain counts and blocked-request feedback are not implemented.
+- Requests served from Chromium's in-memory cache can be invisible to `webRequest`.
+- Phase 3 reports successful and failed requests. It does not label failures as blocked because Chrome does not guarantee stable error strings and reliable DNR match feedback is not generally available in production.
+- Counts begin when the observer can see a navigation; opening the popup does not retroactively reconstruct earlier network traffic.
 
 ## Roadmap
 
-The next step is Phase 3: observe requests without coupling observation to blocking, maintain reconstructable per-tab domain/type counts, and expose those counts to the popup. Phase 4 can then build the basic matrix on top of the Phase-2 resolver.
+The next step is Phase 4: build the basic SCRIPT/XHR/FRAME/IMAGE/MEDIA matrix from observed domains and connect cell edits to temporary policies.

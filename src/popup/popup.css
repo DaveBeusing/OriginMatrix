@@ -9,6 +9,7 @@ body { margin: 0; min-width: 330px; }
 main { padding: 16px; }
 header { display: flex; align-items: center; justify-content: space-between; }
 h1 { margin: 0; font-size: 18px; letter-spacing: .02em; }
+h2 { margin: 0 0 8px; font-size: 12px; color: #b8c2ca; text-transform: uppercase; letter-spacing: .04em; }
 .phase { color: #8e9aa4; font-size: 11px; text-transform: uppercase; }
 dl { margin: 18px 0; border-block: 1px solid #30363b; }
 dl div { display: flex; justify-content: space-between; padding: 9px 0; }
@@ -17,6 +18,13 @@ dd { margin: 0; font-family: ui-monospace, monospace; }
 #status[data-active="true"] { color: #58d68d; }
 #notice { min-height: 2.8em; color: #b8c2ca; }
 #notice.error { color: #ff7878; }
+.metrics { display: flex; gap: 14px; color: #8e9aa4; font-size: 11px; }
+.metrics strong { color: #e8ecef; font-family: ui-monospace, monospace; }
+.domains { max-height: 176px; margin: 10px 0 0; padding: 0; overflow: auto; list-style: none; border-block: 1px solid #30363b; }
+.domains li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.domains li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, monospace; }
+.domains li strong { color: #8e9aa4; font-family: ui-monospace, monospace; }
+.domains li.empty { color: #6f7a83; }
 .actions { display: grid; gap: 8px; }
 button { border: 1px solid #478d6b; border-radius: 4px; padding: 9px; background: #276749; color: white; cursor: pointer; }
 button.secondary { border-color: #48535c; background: #252b30; }

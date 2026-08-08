@@ -10,12 +10,21 @@
     <main>
       <header>
         <h1>OriginMatrix</h1>
-        <span class="phase">Phase 1</span>
+        <span class="phase">Phase 3</span>
       </header>
       <dl>
         <div><dt>Site</dt><dd id="site">Loading…</dd></div>
         <div><dt>Status</dt><dd id="status" data-active="false">Inactive</dd></div>
       </dl>
+      <section aria-labelledby="observed-title">
+        <h2 id="observed-title">Observed requests</h2>
+        <div class="metrics">
+          <span><strong id="request-count">0</strong> total</span>
+          <span><strong id="domain-count">0</strong> domains</span>
+          <span><strong id="failed-count">0</strong> failed</span>
+        </div>
+        <ol id="domains" class="domains"><li class="empty">Reload to collect requests.</li></ol>
+      </section>
       <p id="notice" role="status" aria-live="polite"></p>
       <div class="actions">
         <button id="toggle" type="button" disabled>Block third-party scripts</button>

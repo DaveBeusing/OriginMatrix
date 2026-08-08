@@ -1,4 +1,6 @@
 import { ChromeDnrAdapter } from "./browser-adapter.js";
+import { RequestObserver } from "./request-observer.js";
+import { TabStateManager } from "./tab-state-manager.js";
 import { DnrCompiler } from "../engine/dnr-compiler.js";
 import { PolicyEngine } from "../engine/policy-engine.js";
 import { PolicyResolver } from "../engine/policy-resolver.js";
@@ -7,12 +9,19 @@ import { createThirdPartyScriptPolicy } from "../shared/models.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
+const tabStateManager = new TabStateManager();
 const policyEngine = new PolicyEngine({
   store: policyStore,
   resolver: new PolicyResolver(),
   compiler,
   browserAdapter: new ChromeDnrAdapter(),
 });
+const requestObserver = new RequestObserver({
+  tabStateManager,
+  getTab: (tabId) => chrome.tabs.get(tabId),
+});
+
+requestObserver.start();
 
 reconcileRules().catch((error) => console.error("OriginMatrix reconciliation failed", error));
 
@@ -26,7 +35,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   try {
-    await policyStore.removeTemporaryPolicy(tabId);
+    await Promise.all([policyStore.removeTemporaryPolicy(tabId), tabStateManager.remove(tabId)]);
     await policyEngine.recompile({ temporary: true });
   } catch (error) {
     console.error("Could not remove closed tab policy", error);
@@ -44,8 +53,11 @@ async function handleMessage(message) {
 }
 
 async function getTabState(tabId) {
-  const policy = await policyStore.getTemporaryPolicy(tabId);
-  return { ok: true, active: Boolean(policy), site: policy?.scope ?? null };
+  const [policy, observation] = await Promise.all([
+    policyStore.getTemporaryPolicy(tabId),
+    tabStateManager.get(tabId),
+  ]);
+  return { ok: true, active: Boolean(policy), site: policy?.scope ?? null, observation };
 }
 
 async function enableRule(tabId, url) {

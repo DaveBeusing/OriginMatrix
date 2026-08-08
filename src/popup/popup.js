@@ -3,6 +3,10 @@ const statusElement = document.querySelector("#status");
 const noticeElement = document.querySelector("#notice");
 const toggleButton = document.querySelector("#toggle");
 const reloadButton = document.querySelector("#reload");
+const requestCountElement = document.querySelector("#request-count");
+const domainCountElement = document.querySelector("#domain-count");
+const failedCountElement = document.querySelector("#failed-count");
+const domainsElement = document.querySelector("#domains");
 
 let currentTab;
 let active = false;
@@ -40,8 +44,33 @@ async function initialize() {
   siteElement.textContent = hostnameFromUrl(tab.url);
   const response = await send({ type: "GET_TAB_STATE", tabId: tab.id });
   render(response.active);
+  renderObservation(response.observation);
   toggleButton.disabled = false;
   reloadButton.disabled = false;
+}
+
+function renderObservation(observation) {
+  const domains = Object.entries(observation?.domains ?? {}).sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0]));
+  requestCountElement.textContent = String(observation?.totalRequests ?? 0);
+  domainCountElement.textContent = String(domains.length);
+  failedCountElement.textContent = String(observation?.failedRequests ?? 0);
+  domainsElement.replaceChildren();
+  if (domains.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty";
+    empty.textContent = "Reload to collect requests.";
+    domainsElement.append(empty);
+    return;
+  }
+  for (const [domain, data] of domains.slice(0, 12)) {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    const count = document.createElement("strong");
+    name.textContent = domain;
+    count.textContent = String(data.total);
+    item.append(name, count);
+    domainsElement.append(item);
+  }
 }
 
 function render(isActive) {

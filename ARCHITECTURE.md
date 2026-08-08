@@ -1,4 +1,4 @@
-# OriginMatrix architecture — Phase 2
+# OriginMatrix architecture — Phase 3
 
 ## Data flow
 
@@ -54,4 +54,19 @@ Persistent documents use `chrome.storage.local`; temporary documents use `chrome
 
 ## Request observation
 
-Blocking and observation remain separate systems. Request observation and tab-domain counts belong to Phase 3 and are intentionally absent from the Phase 2 engine.
+Blocking and observation are separate systems:
+
+```text
+Chrome network lifecycle
+  → read-only webRequest listeners
+  → RequestObserver
+  → TabStateManager
+  → chrome.storage.session
+  → popup summary
+```
+
+`RequestObserver` registers `onBeforeRequest`, `onCompleted`, and `onErrorOccurred` without blocking options. It never returns a request decision. Start and final events are ordered by request ID so fast completions cannot overtake the initial state write.
+
+`TabStateManager` serializes mutations to prevent concurrent request callbacks from overwriting counters. A main-frame request resets the tab state. Each target hostname records totals and resource-type counts; the tab and domain records also distinguish completed and failed outcomes. Closing a tab removes both its observation state and temporary policies.
+
+Chrome explicitly does not guarantee stable webRequest error strings, so failures are not classified as DNR blocks. Requests served from the in-memory cache can also be invisible to the observer. The UI exposes only the data Phase 3 can report honestly.
