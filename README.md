@@ -15,6 +15,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Manifest V3 service worker with restart-safe state
 - Bundled, automatically enabled static network protection
 - Normalized network, exception, cosmetic, and scriptlet filter data models
+- Network filter parser with explicit support and diagnostics reporting
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -29,7 +30,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Original scalable icon set for extension and toolbar surfaces
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
-The bundled ruleset is intentionally small and validates the static-filter architecture; it is not yet a comprehensive ad-blocking list. The filter parser currently accepts only host-anchored network blocks/exceptions and simple site-scoped cosmetic selectors. Options, scriptlet syntax, downloaded filter lists, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+The bundled ruleset is intentionally small and validates the static-filter architecture; it is not yet a comprehensive ad-blocking list. The filter parser accepts domain and URL patterns, network exceptions, supported resource types, party constraints, domain restrictions, and simple site-scoped cosmetic selectors. Unsupported options and syntax are counted and reported. Scriptlet syntax, downloaded filter lists, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
 
 ## Architecture
 
@@ -136,7 +137,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Expanded network filter-list parser and DNR compiler
+- Filter-to-DNR compiler with budget-aware optimization
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

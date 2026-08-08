@@ -2,27 +2,62 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseFilterRule, parseFilterText } from "../src/filters/filter-parser.js";
 
-test("parses the deliberately small domain-blocking syntax", () => {
-  const result = parseFilterRule("||Ads.Example^");
-  assert.equal(result.status, "supported");
-  assert.deepEqual(result.filter, {
+test("parses domain blocks and URL patterns", () => {
+  assert.deepEqual(parseFilterRule("||Ads.Example^").filter, {
     type: "network", pattern: "||ads.example^", domains: [], excludedDomains: [],
     resourceTypes: [], thirdParty: null, action: "block",
   });
+  assert.equal(parseFilterRule("|https://cdn.example/ads/*|").filter.pattern, "|https://cdn.example/ads/*|");
+  assert.equal(parseFilterRule("*/advertising/*.js").filter.pattern, "*/advertising/*.js");
+  assert.equal(parseFilterRule("/ads/").filter.pattern, "/ads/");
+  assert.equal(parseFilterRule("||CDN.Example/assets/*").filter.pattern, "||cdn.example/assets/*");
 });
 
-test("parses network exceptions and simple cosmetic selectors", () => {
-  assert.equal(parseFilterRule("@@||cdn.example^").filter.type, "exception");
+test("parses network exceptions, resource types, and party constraints", () => {
+  const result = parseFilterRule("@@||cdn.example^$script,xhr,third-party");
+  assert.equal(result.status, "supported");
+  assert.deepEqual(result.filter, {
+    type: "exception", pattern: "||cdn.example^", domains: [], excludedDomains: [],
+    resourceTypes: ["script", "xmlhttprequest"], thirdParty: true, action: "allow",
+  });
+  assert.equal(parseFilterRule("||static.example^$~third-party").filter.thirdParty, false);
+});
+
+test("parses inclusive and excluded domain restrictions", () => {
+  const filter = parseFilterRule("||ads.example^$image,domain=news.example|shop.example|~private.example").filter;
+  assert.deepEqual(filter.domains, ["news.example", "shop.example"]);
+  assert.deepEqual(filter.excludedDomains, ["private.example"]);
+  assert.deepEqual(filter.resourceTypes, ["image"]);
+});
+
+test("retains simple cosmetic parsing without accepting scriptlets", () => {
   assert.deepEqual(parseFilterRule("example.com##.advertisement").filter, {
     type: "cosmetic", selector: ".advertisement", domains: ["example.com"], excludedDomains: [],
   });
+  assert.equal(parseFilterRule("example.com##+js(set-constant, foo, true)").status, "unsupported");
 });
 
-test("ignores metadata and reports unsupported syntax without guessing", () => {
-  const parsed = parseFilterText(`! title\n[Adblock Plus 2.0]\n||ads.example^$script\nexample.com##+js(set-constant, foo, true)`);
-  assert.equal(parsed.filters.length, 0);
-  assert.equal(parsed.ignored.length, 2);
-  assert.equal(parsed.unsupported.length, 2);
-  assert.ok(parsed.unsupported.every(({ reason }) => reason === "syntax-not-supported"));
+test("reports unsupported and conflicting syntax without guessing", () => {
+  assert.deepEqual(
+    { ...parseFilterRule("||ads.example^$redirect=noopjs") },
+    { status: "unsupported", source: "||ads.example^$redirect=noopjs", reason: "unsupported-option", details: "redirect=noopjs" },
+  );
+  assert.equal(parseFilterRule("||ads.example^$third-party,~third-party").reason, "conflicting-options");
+  assert.equal(parseFilterRule("/ads-[0-9]+/").reason, "pattern-not-supported");
   assert.equal(parseFilterRule("||bad..example^").status, "unsupported");
+});
+
+test("returns line-aware parser diagnostics", () => {
+  const parsed = parseFilterText(`! title\n[Adblock Plus 2.0]\n||ads.example^\n@@||cdn.example^$script\n||bad.example^$redirect=x`);
+  assert.equal(parsed.filters.length, 2);
+  assert.equal(parsed.unsupported[0].line, 5);
+  assert.deepEqual(parsed.diagnostics, {
+    totalLines: 5,
+    rulesParsed: 3,
+    rulesSupported: 2,
+    rulesUnsupported: 1,
+    rulesIgnored: 2,
+    rulesCompiled: 0,
+    rulesOptimized: 0,
+  });
 });

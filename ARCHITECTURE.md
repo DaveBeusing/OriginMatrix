@@ -39,7 +39,9 @@ Static rules use priority `10`. Matrix priorities are specificity-derived and st
 
 `src/filters/filter-model.js` defines immutable normalized models for network blocks, network exceptions, cosmetic selectors, and scriptlet references. These abstract models—not generated DNR rules—are the source of truth for the future filter pipeline. Network models retain pattern, domain restrictions, excluded domains, resource types, party constraint, and semantic action without Chrome-specific conditions or rule IDs.
 
-The Phase-3 parser intentionally recognizes only `||host^`, `@@||host^`, and `host##selector`. Comments and list headers are ignored; options, scriptlets, and every unknown form are returned as unsupported instead of being guessed. The expanded network grammar, diagnostics, and compilation to DNR belong to subsequent phases.
+The network parser recognizes host-anchored and URL patterns, `@@` exceptions, supported resource-type options, `third-party`/`~third-party`, `domain=` inclusions and exclusions, and simple site-scoped cosmetic selectors. Comments and list headers are ignored. Unsupported patterns, options, cosmetic forms, and scriptlets are returned with a reason and line number instead of being guessed.
+
+Parser diagnostics expose total, parsed, supported, unsupported, and ignored rule counts. Compiled and optimized counts remain zero until the Phase-5 compiler exists. Parsing produces only normalized filter models and has no dependency on Chrome or DNR.
 
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
