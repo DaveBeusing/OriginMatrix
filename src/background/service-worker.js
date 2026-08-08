@@ -14,15 +14,18 @@ import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 import { EASYLIST } from "../filters/filter-list-catalog.js";
 import { FilterListService } from "../filters/filter-list-service.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
+import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
 const tabStateManager = new TabStateManager();
 const networkEngine = new NetworkEngine();
+const cosmeticEngine = new CosmeticEngine();
 const filterListService = new FilterListService({
   list: EASYLIST,
   networkEngine,
   compiler: new NetworkFilterCompiler({ budget: networkEngine.budget }),
+  cosmeticEngine,
   loadText: loadBundledText,
 });
 const policyEngine = new PolicyEngine({
@@ -80,6 +83,7 @@ async function handleMessage(message) {
     case "RECOMPILE_RULES": return enqueuePolicyOperation(recompileWithResult);
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
+    case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
@@ -206,6 +210,10 @@ async function clearSessionRules() {
 async function getRequestLog(tabId) {
   const state = await tabStateManager.get(tabId);
   return { ok: true, tabId, topDomain: state?.topDomain ?? null, entries: state?.requestLog ?? [] };
+}
+
+function getCosmeticSelectors(hostname) {
+  return { ok: true, selectors: cosmeticEngine.getSelectors(hostname) };
 }
 
 async function exportDebugReport() {

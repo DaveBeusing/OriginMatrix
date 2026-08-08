@@ -55,6 +55,12 @@ At service-worker reconciliation, `FilterListService` loads the packaged text, p
 
 The minimum supported Chromium version is 121. Earlier versions shared a 5,000-rule limit between dynamic and session rules; Chromium 121 provides the larger safe dynamic-rule quota required for EasyList while retaining a separate session quota.
 
+## Cosmetic filtering foundation
+
+`CosmeticParser` accepts normalized EasyList cosmetic models only when their selectors are bounded, free of rule-breaking syntax, and do not use procedural constructs. `SelectorStore` indexes accepted selectors by domain and applies exclusions before returning a deduplicated site-specific set. Unrelated selectors are never sent to a page.
+
+The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests selectors for its frame hostname at `document_start`; `CosmeticInjector` writes them into a dedicated style element using `textContent`. No filter-provided JavaScript is executed. Scriptlets, procedural selectors, and MutationObserver-based processing remain outside this phase.
+
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
 The `PolicyEngine` depends only on `NetworkEngine.replaceRules({ temporary, rules })`: persistent matrix policies still become dynamic rules, while tab policies still become session rules. Generated DNR state remains reconstructable from logical stores.

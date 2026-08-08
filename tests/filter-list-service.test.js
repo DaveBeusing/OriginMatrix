@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { EASYLIST } from "../src/filters/filter-list-catalog.js";
 import { FilterListService } from "../src/filters/filter-list-service.js";
+import { CosmeticEngine } from "../src/cosmetic/cosmetic-engine.js";
 
 function fakeNetworkEngine() {
   let rules = [{ id: 100_001 }];
@@ -19,14 +20,16 @@ test("activates a bundled list through parser, compiler, and Network Engine", as
   const service = new FilterListService({
     list: { ...EASYLIST, snapshotVersion: "test" },
     networkEngine,
-    loadText: async () => "! fixture\n||ads.example^\n@@||ads.example^$domain=trusted.example\n||bad.example^$redirect=x",
+    cosmeticEngine: new CosmeticEngine(),
+    loadText: async () => "! fixture\n||ads.example^\n@@||ads.example^$domain=trusted.example\nexample.com##.advert\n||bad.example^$redirect=x",
   });
   const status = await service.activate();
   assert.equal(status.state, "active");
-  assert.equal(status.rulesLoaded, 3);
+  assert.equal(status.rulesLoaded, 4);
   assert.equal(status.rulesSupported, 2);
   assert.equal(status.rulesUnsupported, 1);
   assert.equal(status.rulesCompiled, 2);
+  assert.equal(status.cosmeticRules, 1);
   assert.ok(networkEngine.rules().some(({ id }) => id === 100_001));
   assert.ok(networkEngine.rules().some(({ id }) => id >= 500_000));
 });
