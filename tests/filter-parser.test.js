@@ -30,11 +30,13 @@ test("parses inclusive and excluded domain restrictions", () => {
   assert.deepEqual(filter.resourceTypes, ["image"]);
 });
 
-test("retains simple cosmetic parsing without accepting scriptlets", () => {
+test("parses simple cosmetic and selected scriptlet rules", () => {
   assert.deepEqual(parseFilterRule("example.com##.advertisement").filter, {
     type: "cosmetic", selector: ".advertisement", domains: ["example.com"], excludedDomains: [],
   });
-  assert.equal(parseFilterRule("example.com##+js(set-constant, foo, true)").status, "unsupported");
+  assert.deepEqual(parseFilterRule("example.com##+js(set-constant, foo, true)").filter, {
+    type: "scriptlet", name: "set-constant", args: ["foo", "true"], domains: ["example.com"], excludedDomains: [],
+  });
 });
 
 test("reports unsupported and conflicting syntax without guessing", () => {

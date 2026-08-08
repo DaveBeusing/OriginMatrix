@@ -1,4 +1,5 @@
 import { createCosmeticFilter, createExceptionFilter, createNetworkFilter } from "./filter-model.js";
+import { parseScriptletRule } from "../scriptlets/scriptlet-parser.js";
 
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN_PATTERN = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*`;
@@ -15,6 +16,8 @@ export function parseFilterRule(source) {
   if (typeof source !== "string") throw new TypeError("Filter rule source must be a string.");
   const text = source.trim();
   if (text.length === 0 || text.startsWith("!") || /^\[.*\]$/.test(text)) return { status: "ignored", source: text };
+
+  if (/(?:##|#@#)\+js\(/.test(text)) return parseScriptletRule(text);
 
   const cosmeticMatch = text.match(COSMETIC_RULE);
   if (cosmeticMatch && !cosmeticMatch[2].startsWith("+js(")) {

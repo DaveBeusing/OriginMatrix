@@ -28,6 +28,21 @@ test("prepares only matching, valid, deduplicated site scriptlets", () => {
   assert.equal(result.unsupported.length, 1);
 });
 
+test("activates only registry-supported filter-list scriptlets", () => {
+  const engine = new ScriptletEngine({ api: { executeScript: async () => [] } });
+  const generation = engine.prepareGeneration([
+    createScriptletFilter({ domains: ["example.com"], name: "set-constant", args: ["player.ads", "undefined"] }),
+    createScriptletFilter({ domains: ["example.com"], name: "unknown-scriptlet", args: [] }),
+  ]);
+  assert.equal(generation.filters.length, 1);
+  assert.equal(generation.unsupported.length, 1);
+  assert.deepEqual(engine.activate(generation), { scriptletRules: 1, scriptletUnsupported: 1 });
+  assert.equal(engine.prepareForHostname("video.example.com").invocations.length, 1);
+  assert.deepEqual(engine.getDiagnostics(), { bundledScriptlets: 3, scriptletRules: 1, scriptletUnsupported: 1 });
+  engine.clear();
+  assert.equal(engine.prepareForHostname("example.com").invocations.length, 0);
+});
+
 test("executes only registry-branded bundled functions in the MAIN world", async () => {
   const calls = [];
   const engine = new ScriptletEngine({ api: { async executeScript(details) { calls.push(details); return [{ result: true }]; } } });

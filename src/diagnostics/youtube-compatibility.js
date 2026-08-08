@@ -11,6 +11,7 @@ export function analyzeYouTubeCompatibility(source, { listVersion = "unknown" } 
     supportedNetwork: 0,
     supportedExceptions: 0,
     supportedCosmetic: 0,
+    supportedScriptlet: 0,
     unsupportedNetwork: 0,
     unsupportedCosmetic: 0,
     unsupportedScriptlet: 0,
@@ -26,6 +27,7 @@ export function analyzeYouTubeCompatibility(source, { listVersion = "unknown" } 
       if (parsed.filter.type === FILTER_TYPE.NETWORK) counts.supportedNetwork += 1;
       else if (parsed.filter.type === FILTER_TYPE.EXCEPTION) counts.supportedExceptions += 1;
       else if (parsed.filter.type === FILTER_TYPE.COSMETIC) counts.supportedCosmetic += 1;
+      else if (parsed.filter.type === FILTER_TYPE.SCRIPTLET) counts.supportedScriptlet += 1;
       return;
     }
     const category = unsupportedCategory(line);
@@ -36,7 +38,7 @@ export function analyzeYouTubeCompatibility(source, { listVersion = "unknown" } 
     }
   });
 
-  const supportedRules = counts.supportedNetwork + counts.supportedExceptions + counts.supportedCosmetic;
+  const supportedRules = counts.supportedNetwork + counts.supportedExceptions + counts.supportedCosmetic + counts.supportedScriptlet;
   const unsupportedRules = counts.unsupportedNetwork + counts.unsupportedCosmetic + counts.unsupportedScriptlet;
   return Object.freeze({
     listVersion,
@@ -46,7 +48,7 @@ export function analyzeYouTubeCompatibility(source, { listVersion = "unknown" } 
     supportPercent: counts.relevantRules === 0 ? 0 : Math.round((supportedRules / counts.relevantRules) * 1_000) / 10,
     unsupportedReasons: Object.freeze(Object.fromEntries([...reasons].sort(([left], [right]) => left.localeCompare(right)))),
     samples: Object.freeze(samples),
-    capabilities: Object.freeze({ network: true, cosmetic: true, scriptlets: false, runtimePlaybackVerification: false }),
+    capabilities: Object.freeze({ network: true, cosmetic: true, scriptlets: true, runtimePlaybackVerification: false }),
   });
 }
 

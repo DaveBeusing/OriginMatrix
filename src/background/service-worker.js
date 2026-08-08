@@ -29,6 +29,7 @@ const filterListService = new FilterListService({
   networkEngine,
   compiler: new NetworkFilterCompiler({ budget: networkEngine.budget }),
   cosmeticEngine,
+  scriptletEngine,
   loadText: loadBundledText,
 });
 const policyEngine = new PolicyEngine({
@@ -51,8 +52,8 @@ requestObserver.start();
 
 const startupReconciliation = reconcileRules().catch((error) => console.error("OriginMatrix reconciliation failed", error));
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  handleMessage(message).then(sendResponse).catch((error) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleMessage(message, sender).then(sendResponse).catch((error) => {
     console.error("OriginMatrix message failed", error);
     sendResponse({ ok: false, error: error.message });
   });
@@ -73,7 +74,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   }
 });
 
-async function handleMessage(message) {
+async function handleMessage(message, sender) {
   if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
   switch (message.type) {
     case "GET_TAB_STATE": return policyOperations.then(() => getTabState(message.tabId, message.url));
@@ -88,6 +89,7 @@ async function handleMessage(message) {
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
     case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
+    case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender));
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
@@ -220,6 +222,18 @@ async function getRequestLog(tabId) {
 
 function getCosmeticSelectors(hostname) {
   return { ok: true, selectors: cosmeticEngine.getSelectors(hostname) };
+}
+
+async function runScriptletsForSender(sender) {
+  if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0) {
+    throw new TypeError("Scriptlet execution requires a tab frame sender.");
+  }
+  const hostname = hostnameFromUrl(sender.url);
+  const result = await scriptletEngine.execute(scriptletEngine.prepareForHostname(hostname), {
+    tabId: sender.tab.id,
+    frameIds: [sender.frameId],
+  });
+  return { ok: true, executed: result.executed };
 }
 
 async function getYouTubeDiagnostics() {

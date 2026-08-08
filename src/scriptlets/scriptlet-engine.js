@@ -5,7 +5,42 @@ export class ScriptletEngine {
   constructor({ registry = new ScriptletRegistry(), api = globalThis.chrome?.scripting } = {}) {
     this.registry = registry;
     this.api = api;
+    this.filters = Object.freeze([]);
+    this.diagnostics = Object.freeze({ scriptletRules: 0, scriptletUnsupported: 0 });
   }
+
+  prepareGeneration(filters) {
+    if (!Array.isArray(filters)) throw new TypeError("Scriptlet filters must be an array.");
+    const supported = [];
+    const unsupported = [];
+    for (const input of filters) {
+      if (input?.type !== FILTER_TYPE.SCRIPTLET) continue;
+      const filter = validateFilter(input);
+      try {
+        this.registry.createInvocation(filter.name, filter.args);
+        supported.push(filter);
+      } catch (error) {
+        unsupported.push(Object.freeze({ filter, reason: error.message }));
+      }
+    }
+    return Object.freeze({ filters: Object.freeze(supported), unsupported: Object.freeze(unsupported) });
+  }
+
+  activate(generation) {
+    if (!generation || !Array.isArray(generation.filters) || !Array.isArray(generation.unsupported)) {
+      throw new TypeError("Invalid scriptlet generation.");
+    }
+    this.filters = Object.freeze([...generation.filters]);
+    this.diagnostics = Object.freeze({ scriptletRules: this.filters.length, scriptletUnsupported: generation.unsupported.length });
+    return this.diagnostics;
+  }
+
+  clear() {
+    this.filters = Object.freeze([]);
+    this.diagnostics = Object.freeze({ scriptletRules: 0, scriptletUnsupported: 0 });
+  }
+
+  prepareForHostname(hostname) { return this.prepare(this.filters, { hostname }); }
 
   prepare(filters, { hostname } = {}) {
     if (!Array.isArray(filters)) throw new TypeError("Scriptlet filters must be an array.");
@@ -51,7 +86,7 @@ export class ScriptletEngine {
     return Object.freeze({ executed: generation.invocations.length, results: Object.freeze(results) });
   }
 
-  getDiagnostics() { return Object.freeze({ bundledScriptlets: this.registry.list().length }); }
+  getDiagnostics() { return Object.freeze({ bundledScriptlets: this.registry.list().length, ...this.diagnostics }); }
 }
 
 function appliesTo(filter, hostname) {

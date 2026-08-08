@@ -17,14 +17,16 @@ youtube.com#@#.allowed
   assert.equal(result.supportedNetwork, 1);
   assert.equal(result.supportedExceptions, 1);
   assert.equal(result.supportedCosmetic, 1);
+  assert.equal(result.supportedScriptlet, 1);
   assert.equal(result.unsupportedNetwork, 1);
   assert.equal(result.unsupportedCosmetic, 1);
-  assert.equal(result.unsupportedScriptlet, 1);
-  assert.equal(result.supportedRules, 3);
-  assert.equal(result.unsupportedRules, 3);
-  assert.equal(result.supportPercent, 50);
+  assert.equal(result.unsupportedScriptlet, 0);
+  assert.equal(result.supportedRules, 4);
+  assert.equal(result.unsupportedRules, 2);
+  assert.equal(result.supportPercent, 66.7);
+  assert.equal(result.capabilities.scriptlets, true);
   assert.equal(result.capabilities.runtimePlaybackVerification, false);
-  assert.equal(result.samples.length, 3);
+  assert.equal(result.samples.length, 2);
 });
 
 test("does not infer compatibility when no targeted rules exist", () => {

@@ -9,4 +9,7 @@
       globalThis.OriginMatrixCosmeticMetrics = () => dynamicFilter.getMetrics();
     })
     .catch((error) => console.warn("OriginMatrix cosmetic filtering unavailable", error));
+  chrome.runtime.sendMessage({ type: "RUN_SCRIPTLETS" })
+    .then((response) => { if (!response?.ok) throw new Error(response?.error ?? "Scriptlet Engine did not respond."); })
+    .catch((error) => console.warn("OriginMatrix scriptlets unavailable", error));
 })();

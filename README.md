@@ -21,7 +21,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Site-aware EasyList cosmetic filtering for simple CSS selectors
 - Batched dynamic cosmetic filtering with bounded DOM observation
 - YouTube filter-coverage baseline with explicit compatibility diagnostics
-- Allowlisted bundled Scriptlet Engine with controlled MAIN-world execution
+- Selected domain-scoped scriptlet-filter parsing with allowlisted MAIN-world execution
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -36,7 +36,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Original scalable icon set for extension and toolbar surfaces
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
-Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters and simple cosmetic selectors are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected only on matching documents. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. A secure Scriptlet Engine now provides three bundled implementations, but filter-list scriptlet syntax is not parsed or activated yet. Runtime filter downloads and updates, procedural cosmetic filters, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters, simple cosmetic selectors, and selected domain-scoped `##+js(...)` rules are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected only on matching documents. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Scriptlet names map exclusively to three bundled, argument-validated implementations. Runtime filter downloads and updates, procedural cosmetic filters, broader scriptlet syntax, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
 
 YouTube is tracked as a compatibility baseline, not as a guaranteed blocking claim. The dashboard can analyze targeted bundled rules and report unsupported network, cosmetic, and scriptlet syntax. See [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md) for verified scope and the manual acceptance checklist.
 
@@ -147,13 +147,13 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Selected scriptlet-filter syntax and argument parsing
+- YouTube-focused compatibility iteration and browser verification
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven
 
 ## License
 
-OriginMatrix is available under the [MIT License](LICENSE.md).
+OriginMatrix is available under the [MIT License](LICENSE).
 
 The bundled EasyList snapshot is separately licensed by its upstream authors. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
