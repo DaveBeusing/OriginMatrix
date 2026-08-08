@@ -65,3 +65,21 @@ test("retains a bounded request log and updates outcomes by request ID", async (
   assert.equal(state.requestLog[0].id, "r5");
   assert.equal(state.requestLog.at(-1).outcome, "completed");
 });
+
+test("stores attributable DNR decisions separately from request outcomes", async () => {
+  const manager = new TabStateManager(memoryStorage());
+  await manager.startNavigation({ tabId: 13, url: "https://example.com/" });
+  await manager.recordRequest({ tabId: 13, requestId: "blocked", url: "https://ads.test/ad.js", type: "script", timestamp: 2 });
+  assert.equal(await manager.recordRuleMatch({
+    tabId: 13, requestId: "blocked", ruleId: 500_001, rulesetId: "_dynamic",
+    decision: "blocked", engine: "network", source: "EasyList",
+  }), true);
+  await manager.recordOutcome({ tabId: 13, requestId: "blocked", url: "https://ads.test/ad.js", outcome: "failed" });
+  const entry = (await manager.get(13)).requestLog[0];
+  assert.equal(entry.sourceSite, "example.com");
+  assert.equal(entry.decision, "blocked");
+  assert.equal(entry.outcome, "failed");
+  assert.equal(entry.engine, "network");
+  assert.match(entry.reason, /EasyList.*_dynamic:500001/);
+  assert.equal(await manager.recordRuleMatch({ tabId: 13, requestId: "missing", ruleId: 1, rulesetId: "base-network", decision: "blocked", engine: "network", source: "Base" }), false);
+});

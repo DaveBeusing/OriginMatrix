@@ -61,4 +61,5 @@ test("executes only registry-branded bundled functions in the MAIN world", async
 test("manifest grants the bundled engine its controlled scripting capability", async () => {
   const manifest = JSON.parse(await readFile(new URL("../manifest.json", import.meta.url), "utf8"));
   assert.ok(manifest.permissions.includes("scripting"));
+  assert.ok(manifest.permissions.includes("declarativeNetRequestFeedback"));
 });

@@ -51,9 +51,10 @@
       </section>
       <section id="log">
         <h2>Request Log</h2>
-        <div class="filters"><select id="log-outcome"><option value="all">All outcomes</option><option value="completed">Completed</option><option value="failed">Failed</option><option value="pending">Pending</option></select><select id="log-type"><option value="all">All types</option></select><input id="log-domain" type="search" placeholder="Filter domain"><button id="refresh-log">Refresh active tab</button></div>
+        <p id="log-attribution">Checking DNR attribution availability…</p>
+        <div class="filters"><select id="log-decision"><option value="all">All decisions</option><option value="blocked">Blocked</option><option value="allowed">Allowed</option><option value="modified">Modified</option><option value="unknown">Unknown</option></select><select id="log-outcome"><option value="all">All outcomes</option><option value="completed">Completed</option><option value="failed">Failed</option><option value="pending">Pending</option></select><select id="log-type"><option value="all">All types</option></select><input id="log-domain" type="search" placeholder="Filter domain"><button id="refresh-log">Refresh active tab</button></div>
         <p id="log-site">No tab selected.</p>
-        <div class="table-scroll log-scroll"><table><thead><tr><th>Time</th><th>Outcome</th><th>Type</th><th>Domain / URL</th></tr></thead><tbody id="log-body"></tbody></table></div>
+        <div class="table-scroll log-scroll"><table><thead><tr><th>Time</th><th>Source site</th><th>Target</th><th>Type</th><th>Decision</th><th>Outcome</th><th>Engine</th><th>Reason / URL</th></tr></thead><tbody id="log-body"></tbody></table></div>
       </section>
       <p id="status" role="status" aria-live="polite"></p>
     </main>

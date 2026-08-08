@@ -44,6 +44,12 @@ export class TabStateManager {
         resourceType,
         url,
         outcome: "pending",
+        sourceSite: state.topDomain,
+        decision: "unknown",
+        engine: null,
+        reason: "No attributable OriginMatrix DNR match.",
+        ruleId: null,
+        rulesetId: null,
       });
       if (state.requestLog.length > MAX_LOG_ENTRIES) state.requestLog.splice(0, state.requestLog.length - MAX_LOG_ENTRIES);
       state.updatedAt = timestamp;
@@ -63,6 +69,23 @@ export class TabStateManager {
       const entry = [...state.requestLog].reverse().find((item) => item.id === requestId);
       if (entry) entry.outcome = outcome;
       state.updatedAt = timestamp;
+    });
+  }
+
+  recordRuleMatch({ tabId, requestId, ruleId, rulesetId, decision, engine, source }) {
+    if (!["allowed", "blocked", "modified", "unknown"].includes(decision)) throw new TypeError(`Unsupported request decision: ${decision}`);
+    return this.#mutate((document) => {
+      const state = document.tabs[String(tabId)];
+      const entry = state && [...state.requestLog].reverse().find((item) => item.id === requestId);
+      if (!entry) return false;
+      const rank = { unknown: 0, modified: 1, allowed: 2, blocked: 3 };
+      if (rank[decision] < rank[entry.decision ?? "unknown"]) return true;
+      entry.decision = decision;
+      entry.engine = engine;
+      entry.reason = `${source} matched ${rulesetId}:${ruleId}.`;
+      entry.ruleId = ruleId;
+      entry.rulesetId = rulesetId;
+      return true;
     });
   }
 
@@ -97,8 +120,9 @@ export class TabStateManager {
   #mutate(change) {
     const operation = this.queue.then(async () => {
       const document = await this.#read();
-      change(document);
+      const result = change(document);
       await this.storageArea.set({ [TAB_STATE_KEY]: document });
+      return result;
     });
     this.queue = operation.catch(() => {});
     return operation;
@@ -114,6 +138,14 @@ export class TabStateManager {
     const document = structuredClone(value);
     for (const state of Object.values(document.tabs)) {
       if (!Array.isArray(state.requestLog)) state.requestLog = [];
+      for (const entry of state.requestLog) {
+        if (typeof entry.sourceSite !== "string") entry.sourceSite = state.topDomain;
+        if (typeof entry.decision !== "string") entry.decision = "unknown";
+        if (!("engine" in entry)) entry.engine = null;
+        if (typeof entry.reason !== "string") entry.reason = "No attributable OriginMatrix DNR match.";
+        if (!("ruleId" in entry)) entry.ruleId = null;
+        if (!("rulesetId" in entry)) entry.rulesetId = null;
+      }
       if (typeof state.reloadRequired !== "boolean") state.reloadRequired = false;
     }
     return document;

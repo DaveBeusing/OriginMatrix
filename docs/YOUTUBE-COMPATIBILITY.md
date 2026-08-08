@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `0.24.0`, EasyList snapshot `202608081115`.
+Version baseline: OriginMatrix `0.25.0`, EasyList snapshot `202608081115`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified manually in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -21,7 +21,7 @@ This document is deliberately conservative. Filter coverage is testable offline;
 
 - General EasyList network and cosmetic protection applies to YouTube, but coverage is limited to the syntax OriginMatrix currently supports.
 - Feed, sidebar, promoted-content, pre-roll, and mid-roll filtering may improve where ordinary network or simple CSS rules apply; each scenario remains manually unverified in this baseline.
-- The request log can show YouTube request lifecycles, but Chromium does not reliably identify which failed request was blocked by which rule.
+- The request log shows YouTube lifecycles and, in unpacked builds, exact OriginMatrix DNR rule matches. Packaged builds cannot attribute failed requests reliably.
 
 ## Unsupported
 

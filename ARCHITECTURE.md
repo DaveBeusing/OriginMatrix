@@ -207,9 +207,11 @@ OTHER currently expands to the local DNR types `other`, `object`, and `csp_repor
 
 ## Request log
 
-`TabStateManager` retains up to 250 lifecycle entries per tab in `chrome.storage.session`. Each entry records request ID, timestamp, target domain, normalized resource type, URL, and the reliable final outcome (`completed`, `failed`, or still `pending`). Outcome events update their matching start entry after the observer's per-request ordering barrier.
+`TabStateManager` retains up to 250 lifecycle entries per tab in `chrome.storage.session`. Each entry records request ID, timestamp, source site, target domain, normalized resource type, URL, and the reliable final outcome (`completed`, `failed`, or still `pending`). Outcome events update their matching start entry after the observer's per-request ordering barrier.
 
-The dashboard filters this bounded local log by outcome, type, and domain. Chrome cache invisibility and non-stable error descriptions remain unchanged; the log does not claim that every failure was blocked.
+`RuleAttributionRegistry` maps the current static, dynamic, and session rule IDs to the Network or Matrix Engine and their action. In unpacked Chromium builds, `DnrMatchObserver` consumes `onRuleMatchedDebug` and enriches matching entries with `allowed`, `blocked`, or `modified`, the engine, ruleset, rule ID, and source. A short bounded retry handles ordering against `webRequest` start events. Chrome exposes this event only to unpacked extensions with `declarativeNetRequestFeedback`; packaged builds therefore retain `decision: unknown`. This restriction is surfaced in diagnostics and the dashboard rather than hidden.
+
+The dashboard filters the bounded local log by decision, outcome, type, and domain. Chrome cache invisibility and non-stable error descriptions remain unchanged; `failed` is a lifecycle outcome and is never treated as proof of blocking without an attributable DNR match.
 
 ## Dashboard and diagnostics
 

@@ -5,7 +5,9 @@ const statusElement = document.querySelector("#status");
 const importData = document.querySelector("#import-data");
 const logBody = document.querySelector("#log-body");
 const logSite = document.querySelector("#log-site");
+const logAttribution = document.querySelector("#log-attribution");
 const outcomeFilter = document.querySelector("#log-outcome");
+const decisionFilter = document.querySelector("#log-decision");
 const typeFilter = document.querySelector("#log-type");
 const domainFilter = document.querySelector("#log-domain");
 const youtubeValues = document.querySelector("#youtube-values");
@@ -26,6 +28,7 @@ document.querySelector("#refresh-log").addEventListener("click", refreshLog);
 document.querySelector("#youtube-diagnostics").addEventListener("click", runYouTubeDiagnostics);
 filterListsBody.addEventListener("click", toggleFilterList);
 outcomeFilter.addEventListener("change", renderLog);
+decisionFilter.addEventListener("change", renderLog);
 typeFilter.addEventListener("change", renderLog);
 domainFilter.addEventListener("input", renderLog);
 
@@ -93,6 +96,9 @@ async function refreshLog() {
     if (!Number.isInteger(tab?.id)) throw new Error("No active browser tab is available.");
     const result = await send({ type: "GET_REQUEST_LOG", tabId: tab.id });
     logEntries = result.entries;
+    logAttribution.textContent = result.attributionAvailable
+      ? "Exact OriginMatrix DNR attribution is available in this unpacked build."
+      : "Chromium did not expose DNR debug feedback; unmatched decisions remain unknown.";
     logSite.textContent = result.topDomain ?? "No observations for the active tab.";
     const types = [...new Set(logEntries.map((entry) => entry.resourceType))].sort();
     typeFilter.replaceChildren(option("all", "All types"), ...types.map((type) => option(type, type)));
@@ -115,10 +121,11 @@ async function runYouTubeDiagnostics() {
 function renderLog() {
   const domainQuery = domainFilter.value.trim().toLowerCase();
   const entries = logEntries.filter((entry) => (outcomeFilter.value === "all" || entry.outcome === outcomeFilter.value)
+    && (decisionFilter.value === "all" || entry.decision === decisionFilter.value)
     && (typeFilter.value === "all" || entry.resourceType === typeFilter.value)
     && (!domainQuery || entry.domain.includes(domainQuery)));
   logBody.replaceChildren(...entries.slice().reverse().map(logRow));
-  if (entries.length === 0) logBody.append(emptyRow(4, "No matching requests."));
+  if (entries.length === 0) logBody.append(emptyRow(8, "No matching requests."));
 }
 
 async function toggleFilterList(event) {
@@ -165,7 +172,7 @@ function filterListRow(list) {
   row.append(action);
   return row;
 }
-function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.outcome, entry.resourceType, `${entry.domain} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
+function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.sourceSite, entry.domain, entry.resourceType, entry.decision, entry.outcome, entry.engine ?? "—", `${entry.reason} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
 function youtubeDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.category, sample.reason, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
 function emptyRow(span, text) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = span; cell.className = "empty"; cell.textContent = text; row.append(cell); return row; }
 function option(value, label) { const item = document.createElement("option"); item.value = value; item.textContent = label; return item; }

@@ -33,7 +33,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Commit and Revert workflow for persistent dynamic rules
 - Deterministic policy resolution, priorities, and rule IDs
 - Cookie request and response header removal
-- Read-only request observation, domain counters, and bounded per-tab request logs
+- Bounded per-tab request logs with lifecycle data and optional exact DNR attribution
 - Restart-safe Balanced, Strict, and Relaxed protection profiles
 - Dashboard with diagnostics, rule inspection, import/export, debug reports, and request-log filters
 - Versioned storage schemas and compensating rollback on failed rule updates
@@ -134,6 +134,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 - Session rules survive service-worker suspension but are cleared with the browser session.
 - Requests served from Chromium's in-memory cache may be invisible to `webRequest`.
 - Request failures are not labeled as blocked because Chrome does not provide stable production error classification for every case.
+- Exact DNR rule attribution uses Chrome's debug-feedback API, which is available only to unpacked extensions; packaged builds retain requests with an explicit `unknown` decision.
 - First-party UI grouping currently uses hostname ancestry rather than registrable-domain/eTLD+1 classification.
 - On Chrome versions without top-level-domain DNR conditions, requests initiated inside cross-origin subframes may not match a top-level-site policy.
 - Request logs retain at most 250 entries per tab in session storage. They may contain full URLs but are never transmitted by OriginMatrix.
@@ -151,7 +152,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Request and blocking diagnostics with honest MV3 attribution
+- Privacy-preserving blocking statistics
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

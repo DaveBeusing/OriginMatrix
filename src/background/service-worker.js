@@ -23,6 +23,8 @@ import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
 import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
 import { profileDefinition } from "../engine/profiles.js";
+import { RuleAttributionRegistry } from "./rule-attribution-registry.js";
+import { DnrMatchObserver } from "./dnr-match-observer.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
@@ -31,6 +33,8 @@ const tabStateManager = new TabStateManager();
 const networkEngine = new NetworkEngine();
 const cosmeticEngine = new CosmeticEngine();
 const scriptletEngine = new ScriptletEngine();
+const ruleAttributionRegistry = new RuleAttributionRegistry();
+const dnrMatchObserver = new DnrMatchObserver({ tabStateManager, registry: ruleAttributionRegistry });
 const filterListService = new FilterListService({
   list: EASYLIST,
   networkEngine,
@@ -68,6 +72,7 @@ const requestObserver = new RequestObserver({
 });
 
 requestObserver.start();
+dnrMatchObserver.start();
 
 const startupReconciliation = reconcileRules().catch((error) => console.error("OriginMatrix reconciliation failed", error));
 
@@ -177,6 +182,7 @@ async function reconcileRules() {
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
   await filterListManager.initialize();
+  await refreshRuleAttribution();
 }
 
 async function getDashboardState() {
@@ -204,6 +210,7 @@ async function getDashboardState() {
       dynamicRuleBudgetAvailable: network.budget.dynamic.available,
       sessionRuleBudgetAvailable: network.budget.session.available,
       optimizedAway: optimization.optimizedAway,
+      dnrAttributionAvailable: dnrMatchObserver.available,
       ...scriptletEngine.getDiagnostics(),
       ...observation,
     },
@@ -255,7 +262,7 @@ async function clearSessionRules() {
 
 async function getRequestLog(tabId) {
   const state = await tabStateManager.get(tabId);
-  return { ok: true, tabId, topDomain: state?.topDomain ?? null, entries: state?.requestLog ?? [] };
+  return { ok: true, tabId, topDomain: state?.topDomain ?? null, attributionAvailable: dnrMatchObserver.available, entries: state?.requestLog ?? [] };
 }
 
 function getCosmeticSelectors(hostname) {
@@ -304,9 +311,20 @@ function hostnameFromUrl(value) {
 }
 
 function enqueuePolicyOperation(task) {
-  const operation = policyOperations.then(task);
+  const operation = policyOperations.then(task).then(async (result) => {
+    await refreshRuleAttribution();
+    return result;
+  });
   policyOperations = operation.catch(() => {});
   return operation;
+}
+
+async function refreshRuleAttribution() {
+  const [dynamicRules, sessionRules] = await Promise.all([
+    networkEngine.getDynamicRules(),
+    networkEngine.getSessionRules(),
+  ]);
+  ruleAttributionRegistry.replace({ dynamicRules, sessionRules });
 }
 
 function validateMatrixCoordinates({ site, scope, target, party }) {
