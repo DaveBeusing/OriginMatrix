@@ -22,6 +22,7 @@ test("provides distinct exception, cosmetic, and scriptlet models", () => {
   assert.deepEqual(createCosmeticFilter({ domains: ["example.com"], selector: ".advert" }), {
     type: "cosmetic", selector: ".advert", domains: ["example.com"], excludedDomains: [],
   });
+  assert.equal(createCosmeticFilter({ domains: ["example.com"], selector: ".advert", exception: true }).exception, true);
   assert.deepEqual(createScriptletFilter({ domains: ["example.com"], name: "set-constant", args: ["foo", "true"] }), {
     type: "scriptlet", name: "set-constant", args: ["foo", "true"], domains: ["example.com"], excludedDomains: [],
   });
@@ -31,4 +32,5 @@ test("rejects invalid normalized filter data", () => {
   assert.throws(() => createNetworkFilter({ pattern: "x", thirdParty: "yes" }), /thirdParty/);
   assert.throws(() => createNetworkFilter({ pattern: "x", resourceTypes: ["document"] }), /resource type/);
   assert.throws(() => validateFilter({ type: "unknown" }), /Unsupported filter type/);
+  assert.throws(() => createCosmeticFilter({ selector: ".ad", exception: "yes" }), /boolean/);
 });

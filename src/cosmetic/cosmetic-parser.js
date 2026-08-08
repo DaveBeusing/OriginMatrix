@@ -1,6 +1,6 @@
 import { FILTER_TYPE, validateFilter } from "../filters/filter-model.js";
 
-const PROCEDURAL_SELECTOR = /:(?:contains|has|has-text|matches-css|matches-path|remove|style|upward|watch-attr|xpath)\s*\(/i;
+const PROCEDURAL_SELECTOR = /:(?:contains|has-text|matches-css|matches-path|remove|style|upward|watch-attr|xpath)\s*\(/i;
 
 export class CosmeticParser {
   parseModels(filters) {

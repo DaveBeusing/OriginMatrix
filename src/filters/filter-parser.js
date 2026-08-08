@@ -4,7 +4,7 @@ import { parseScriptletRule } from "../scriptlets/scriptlet-parser.js";
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN_PATTERN = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*`;
 const HOST_ANCHORED_PATTERN = new RegExp(`^\\|\\|(${DOMAIN_PATTERN})\\^$`, "i");
-const COSMETIC_RULE = new RegExp(`^(${DOMAIN_PATTERN})##(.+)$`, "i");
+const COSMETIC_RULE = /^([^#]+)(##|#@#)(.+)$/;
 const RESOURCE_OPTIONS = new Map([
   ["stylesheet", "stylesheet"], ["image", "image"], ["font", "font"],
   ["media", "media"], ["script", "script"], ["xmlhttprequest", "xmlhttprequest"],
@@ -20,9 +20,7 @@ export function parseFilterRule(source) {
   if (/(?:##|#@#)\+js\(/.test(text)) return parseScriptletRule(text);
 
   const cosmeticMatch = text.match(COSMETIC_RULE);
-  if (cosmeticMatch && !cosmeticMatch[2].startsWith("+js(")) {
-    return supported(text, createCosmeticFilter({ domains: [cosmeticMatch[1]], selector: cosmeticMatch[2] }));
-  }
+  if (cosmeticMatch) return parseCosmeticRule(text, cosmeticMatch);
   if (text.includes("##") || text.includes("#@#")) return unsupported(text, "cosmetic-syntax-not-supported");
 
   const exception = text.startsWith("@@");
@@ -40,6 +38,28 @@ export function parseFilterRule(source) {
     return supported(text, exception ? createExceptionFilter(input) : createNetworkFilter(input));
   } catch (error) {
     return unsupported(text, "invalid-filter", error.message);
+  }
+}
+
+function parseCosmeticRule(source, match) {
+  const domains = [];
+  const excludedDomains = [];
+  for (const rawEntry of match[1].split(",")) {
+    const entry = rawEntry.trim();
+    const excluded = entry.startsWith("~");
+    const domain = (excluded ? entry.slice(1) : entry).toLowerCase();
+    if (!new RegExp(`^${DOMAIN_PATTERN}$`, "i").test(domain)) {
+      return unsupported(source, "invalid-cosmetic-domain", rawEntry);
+    }
+    (excluded ? excludedDomains : domains).push(domain);
+  }
+  if (domains.length === 0) return unsupported(source, "global-cosmetic-not-supported");
+  try {
+    return supported(source, createCosmeticFilter({
+      domains, excludedDomains, selector: match[3], exception: match[2] === "#@#",
+    }));
+  } catch (error) {
+    return unsupported(source, "invalid-cosmetic-filter", error.message);
   }
 }
 

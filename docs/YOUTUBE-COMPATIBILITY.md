@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `0.19.0`, EasyList snapshot `202608081115`.
+Version baseline: OriginMatrix `0.20.0`, EasyList snapshot `202608081115`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified manually in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -11,7 +11,10 @@ This document is deliberately conservative. Filter coverage is testable offline;
 - Supported site-scoped cosmetic selectors use the normal Cosmetic Engine.
 - Selected domain-scoped scriptlet rules can activate only bundled, argument-validated implementations.
 - The dynamic cosmetic observer remains active during same-document SPA navigation.
+- Native CSS `:has()` rules cover the pinned list's promoted feed, Shorts, and ad-slot structures without YouTube-specific code.
+- Domain-scoped `#@#` exceptions prevent matching hiding rules on excluded YouTube surfaces.
 - Diagnostics report unsupported rules instead of treating them as successful.
+- The pinned offline sample supports 38 of 42 targeted rules (90.5% syntax coverage).
 
 ## Partially working
 
@@ -21,7 +24,7 @@ This document is deliberately conservative. Filter coverage is testable offline;
 
 ## Unsupported
 
-- Wider scriptlet dialects, global/exception scriptlet rules, and procedural cosmetic selectors.
+- `$rewrite`, `generichide`, wider scriptlet dialects, global/exception scriptlet rules, and procedural cosmetic selectors.
 - Guaranteed classification of video-ad requests.
 - YouTube-specific hard-coded workarounds.
 - Automated playback, login, comments, playlist, fullscreen, and SPA end-to-end tests.
@@ -29,7 +32,7 @@ This document is deliberately conservative. Filter coverage is testable offline;
 
 ## Required next features
 
-- YouTube-focused iteration based on real unsupported-rule diagnostics.
+- Browser-driven execution of the acceptance checklist across signed-out and signed-in sessions.
 - Better unsupported-rule diagnostics tied to real page observations.
 - Browser-driven integration tests and repeatable test accounts/scenarios.
 - Generic handling for any missing network or cosmetic syntax before considering isolated YouTube-specific code.

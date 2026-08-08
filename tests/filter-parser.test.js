@@ -37,6 +37,11 @@ test("parses simple cosmetic and selected scriptlet rules", () => {
   assert.deepEqual(parseFilterRule("example.com##+js(set-constant, foo, true)").filter, {
     type: "scriptlet", name: "set-constant", args: ["foo", "true"], domains: ["example.com"], excludedDomains: [],
   });
+  assert.deepEqual(parseFilterRule("example.com,video.example.com,~account.example.com#@#.advertisement").filter, {
+    type: "cosmetic", selector: ".advertisement", domains: ["example.com", "video.example.com"],
+    excludedDomains: ["account.example.com"], exception: true,
+  });
+  assert.equal(parseFilterRule("example.*##.advertisement").reason, "invalid-cosmetic-domain");
 });
 
 test("reports unsupported and conflicting syntax without guessing", () => {

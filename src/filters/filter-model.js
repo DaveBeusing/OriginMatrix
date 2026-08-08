@@ -22,11 +22,15 @@ export function createExceptionFilter(input) {
 
 export function createCosmeticFilter(input) {
   const selector = requiredText(input?.selector, "Cosmetic selector");
+  if (input?.exception !== undefined && typeof input.exception !== "boolean") {
+    throw new TypeError("Cosmetic exception must be a boolean.");
+  }
   return freezeFilter({
     type: FILTER_TYPE.COSMETIC,
     selector,
     domains: normalizeDomains(input.domains),
     excludedDomains: normalizeDomains(input.excludedDomains),
+    ...(input.exception === true ? { exception: true } : {}),
   });
 }
 

@@ -6,15 +6,16 @@ import { SelectorStore } from "../src/cosmetic/selector-store.js";
 import { createCosmeticFilter, createNetworkFilter } from "../src/filters/filter-model.js";
 import { readFile } from "node:fs/promises";
 
-test("accepts simple CSS selectors and rejects procedural or unsafe syntax", () => {
+test("accepts native relational CSS and rejects procedural or unsafe syntax", () => {
   const parser = new CosmeticParser();
   const result = parser.parseModels([
     createCosmeticFilter({ domains: ["example.com"], selector: ".advertisement > img" }),
     createCosmeticFilter({ domains: ["example.com"], selector: "div:has(.sponsor)" }),
+    createCosmeticFilter({ domains: ["example.com"], selector: "div:has-text(sponsor)" }),
     createCosmeticFilter({ domains: ["example.com"], selector: ".ad { color: red" }),
     createNetworkFilter({ pattern: "||ads.example^" }),
   ]);
-  assert.equal(result.filters.length, 1);
+  assert.equal(result.filters.length, 2);
   assert.deepEqual(result.unsupported.map(({ reason }) => reason), ["procedural-selector-not-supported", "unsafe-selector-syntax"]);
 });
 
@@ -24,8 +25,9 @@ test("selects only matching site filters and honors exclusions", () => {
     createCosmeticFilter({ domains: ["example.com"], excludedDomains: ["shop.example.com"], selector: ".ad" }),
     createCosmeticFilter({ domains: ["news.example.com"], selector: "#sponsor" }),
     createCosmeticFilter({ domains: ["other.test"], selector: ".other" }),
+    createCosmeticFilter({ domains: ["news.example.com"], selector: ".ad", exception: true }),
   ]);
-  assert.deepEqual(store.getForHostname("NEWS.Example.com"), ["#sponsor", ".ad"]);
+  assert.deepEqual(store.getForHostname("NEWS.Example.com"), ["#sponsor"]);
   assert.deepEqual(store.getForHostname("shop.example.com"), []);
   assert.deepEqual(store.getForHostname("unrelated.test"), []);
 });

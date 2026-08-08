@@ -31,8 +31,12 @@ export class SelectorStore {
     for (let index = 0; index < labels.length; index += 1) {
       candidates.push(...(this.byDomain.get(labels.slice(index).join(".")) ?? []));
     }
-    return [...new Set(candidates
-      .filter(({ excludedDomains }) => !excludedDomains.some((domain) => domainMatches(normalized, domain)))
+    const applicable = candidates.filter(({ excludedDomains }) => (
+      !excludedDomains.some((domain) => domainMatches(normalized, domain))
+    ));
+    const exceptions = new Set(applicable.filter(({ exception }) => exception === true).map(({ selector }) => selector));
+    return [...new Set(applicable
+      .filter(({ exception, selector }) => exception !== true && !exceptions.has(selector))
       .map(({ selector }) => selector))].sort();
   }
 

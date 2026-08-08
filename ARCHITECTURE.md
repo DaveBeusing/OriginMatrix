@@ -73,6 +73,8 @@ Validated selectors are cached in bounded groups, and matching elements receive 
 
 This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `docs/YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
 
+Phase 12 improves YouTube coverage through generic Cosmetic Engine behavior rather than site-specific code. Domain lists and `#@#` hiding exceptions share the normalized cosmetic model, and `SelectorStore` subtracts applicable exceptions before selectors reach a document. Native CSS `:has()` is supported on the Chromium 121 baseline, enabling EasyList's relational ad-slot selectors for feeds, Shorts, and watch pages. Procedural lookalikes such as `:has-text()` remain rejected. The pinned offline diagnostic reaches 90.5% syntax coverage; `$rewrite` and `generichide` remain explicit unsupported cases, and runtime behavior still requires the documented browser checklist.
+
 ## Scriptlet Engine foundation
 
 `ScriptletRegistry` is an immutable allowlist of bundled implementation functions. Phase 10 provides `remove-node-text`, `set-constant`, and `abort-on-property-read`; each has a strict argument validator and rejects unsafe property paths, arbitrary constant expressions, oversized text, and unsupported selectors. Filter data cannot register implementations.
