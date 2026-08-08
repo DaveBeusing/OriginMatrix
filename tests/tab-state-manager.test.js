@@ -97,4 +97,17 @@ test("aggregates privacy-preserving request, block, domain, and cosmetic statist
     requests: 2, blockedRequests: 1, blockedAds: 1, blockedTrackers: 0,
     cosmeticElementsHidden: 5, domainsContacted: 2, domainsBlocked: 1,
   });
+  await manager.recordCosmeticMetrics({
+    tabId: 14, frameId: 0, elementsHidden: 5, mutations: 8, batches: 2,
+    rootsScanned: 3, scanTimeMs: 4.125, maxScanTimeMs: 3.125, contentScriptSetupMs: 2.555,
+  });
+  assert.deepEqual(await manager.getPerformanceDiagnostics(), {
+    contentFramesMeasured: 1,
+    contentScriptSetupTimeMs: 2.56,
+    mutationRecordsProcessed: 8,
+    mutationBatchesProcessed: 2,
+    mutationRootsScanned: 3,
+    cosmeticScanTimeMs: 4.13,
+    maximumCosmeticBatchTimeMs: 3.13,
+  });
 });

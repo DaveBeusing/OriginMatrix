@@ -84,6 +84,25 @@ test("disabling a list clears every active filter engine generation", async () =
   assert.equal(networkEngine.rules().some(({ id }) => id >= 500_000), false);
 });
 
+test("caches identical prepared generations and reports preparation timings", async () => {
+  let clock = 0;
+  const service = new FilterListService({
+    list: EASYLIST,
+    networkEngine: fakeNetworkEngine(),
+    loadText: async () => "||ads.example^",
+    now: () => { clock += 2; return clock; },
+  });
+  await service.activate();
+  await service.activate();
+  assert.deepEqual(service.getPerformanceDiagnostics(), {
+    parsingTimeMs: 2,
+    compilationTimeMs: 2,
+    preparationTimeMs: 10,
+    cacheHits: 1,
+    preparedGenerationCached: true,
+  });
+});
+
 test("bundled EasyList snapshot matches its pinned metadata", async () => {
   const bytes = await readFile(new URL(`../${EASYLIST.path}`, import.meta.url));
   const text = bytes.toString("utf8");

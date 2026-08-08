@@ -223,6 +223,12 @@ Phase 18 derives statistics exclusively from the current `chrome.storage.session
 
 Block counters advance only when a request first receives an exact `blocked` OriginMatrix DNR match. EasyList and the advertising base rule are categorized as ads; Matrix rules are not reclassified as ads or trackers. `blockedTrackers` remains zero until a dedicated categorized tracker dataset exists. Cosmetic content scripts report only cumulative element counts per browser-provided tab/frame sender, and the service worker converts repeated reports into deltas. Native CSS hiding that cannot be counted without an extra DOM scan is deliberately not estimated.
 
+## Performance diagnostics
+
+The dashboard reports service-worker reconciliation time and message activity, total active DNR rules, filter parsing and compilation durations, prepared-generation cache hits, and cumulative per-frame cosmetic processing metrics. Filter generations are reused only when the source, feature flags, and reserved DNR capacity are identical. Mutation processing remains debounced, scans collapsed DOM roots in batches, and caches validated selector groups.
+
+Runtime counters live only as long as their service worker or session-backed tab state. JavaScript heap size is shown only where Chromium exposes it; YouTube playback and comparative page-load impact deliberately remain manual browser-profile baselines because an extension cannot isolate those effects reliably from its own runtime.
+
 ## Policy transfer and profiles
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.

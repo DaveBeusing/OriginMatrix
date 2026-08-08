@@ -64,6 +64,9 @@ const advancedPolicyManager = new AdvancedPolicyManager({
   protectionService: { apply: applyProtectionFeatures },
 });
 const ruleOptimizer = new RuleOptimizer();
+const workerStartedAt = performance.now();
+let workerMessagesHandled = 0;
+let startupTimeMs = null;
 let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
 const requestObserver = new RequestObserver({
@@ -74,7 +77,9 @@ const requestObserver = new RequestObserver({
 requestObserver.start();
 dnrMatchObserver.start();
 
-const startupReconciliation = reconcileRules().catch((error) => console.error("OriginMatrix reconciliation failed", error));
+const startupReconciliation = reconcileRules()
+  .then(() => { startupTimeMs = roundPerformance(performance.now() - workerStartedAt); })
+  .catch((error) => console.error("OriginMatrix reconciliation failed", error));
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   handleMessage(message, sender).then(sendResponse).catch((error) => {
@@ -100,6 +105,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 async function handleMessage(message, sender) {
   if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
+  workerMessagesHandled += 1;
   switch (message.type) {
     case "GET_TAB_STATE": return Promise.all([policyOperations, startupReconciliation]).then(() => getTabState(message.tabId, message.url));
     case "SET_MATRIX_POLICY": return enqueuePolicyOperation(() => setMatrixPolicy(message));
@@ -187,13 +193,14 @@ async function reconcileRules() {
 }
 
 async function getDashboardState() {
-  const [persistent, temporary, network, observation, activeProfile, statistics] = await Promise.all([
+  const [persistent, temporary, network, observation, activeProfile, statistics, contentPerformance] = await Promise.all([
     policyStore.getPersistentPolicies(),
     policyStore.getTemporaryPolicies(),
     networkEngine.getDiagnostics(),
     tabStateManager.getDiagnostics(),
     profileStore.get(),
     tabStateManager.getStatistics(),
+    tabStateManager.getPerformanceDiagnostics(),
   ]);
   const optimization = ruleOptimizer.optimize([...network.dynamicRules, ...network.sessionRules]);
   return {
@@ -203,6 +210,18 @@ async function getDashboardState() {
     filterLists: filterListManager.getStatuses(),
     profile: profileDefinition(activeProfile),
     statistics,
+    performance: {
+      startupTimeMs: startupTimeMs ?? "measuring",
+      serviceWorkerWakeups: 1,
+      serviceWorkerMessages: workerMessagesHandled,
+      serviceWorkerUptimeMs: roundPerformance(performance.now() - workerStartedAt),
+      dnrRuleCount: network.dynamicRules.length + network.sessionRules.length + network.availableStaticRules,
+      memoryUsage: performance.memory?.usedJSHeapSize ?? "unavailable",
+      youtubePlaybackBehavior: "manual baseline required",
+      pageLoadImpact: "browser profiling required",
+      ...filterListService.getPerformanceDiagnostics(),
+      ...contentPerformance,
+    },
     diagnostics: {
       persistentPolicies: persistent.length,
       temporaryPolicies: temporary.length,
@@ -284,13 +303,15 @@ async function runScriptletsForSender(sender) {
   return { ok: true, executed: result.executed };
 }
 
-async function reportCosmeticMetrics({ elementsHidden }, sender) {
+async function reportCosmeticMetrics(message, sender) {
   if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0) {
     throw new TypeError("Cosmetic metrics require a tab frame sender.");
   }
-  await tabStateManager.recordCosmeticMetrics({ tabId: sender.tab.id, frameId: sender.frameId, elementsHidden });
+  await tabStateManager.recordCosmeticMetrics({ tabId: sender.tab.id, frameId: sender.frameId, ...message });
   return { ok: true };
 }
+
+function roundPerformance(value) { return Math.round(value * 100) / 100; }
 
 async function getYouTubeDiagnostics() {
   youtubeDiagnosticsPromise ??= loadBundledText(EASYLIST.path)
@@ -308,6 +329,7 @@ async function exportDebugReport() {
       generatedAt: new Date().toISOString(),
       extensionVersion: state.manifestVersion,
       diagnostics: state.diagnostics,
+      performance: state.performance,
       policies: state.policies,
     },
   };

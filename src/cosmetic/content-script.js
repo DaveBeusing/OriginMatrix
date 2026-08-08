@@ -1,8 +1,18 @@
 (() => {
+  const contentScriptStarted = performance.now();
   const injector = new globalThis.OriginMatrixCosmeticInjector(document);
   const dynamicFilter = new globalThis.OriginMatrixDynamicCosmeticFilter({
     documentObject: document,
-    onMetrics: (metrics) => chrome.runtime.sendMessage({ type: "REPORT_COSMETIC_METRICS", elementsHidden: metrics.elementsHidden })
+    onMetrics: (metrics) => chrome.runtime.sendMessage({
+      type: "REPORT_COSMETIC_METRICS",
+      elementsHidden: metrics.elementsHidden,
+      mutations: metrics.mutations,
+      batches: metrics.batches,
+      rootsScanned: metrics.rootsScanned,
+      scanTimeMs: metrics.scanTimeMs,
+      maxScanTimeMs: metrics.maxScanTimeMs,
+      contentScriptSetupMs: Math.max(0, performance.now() - contentScriptStarted),
+    })
       .catch((error) => console.warn("OriginMatrix cosmetic metrics unavailable", error)),
   });
   chrome.runtime.sendMessage({ type: "GET_COSMETIC_SELECTORS", hostname: location.hostname })

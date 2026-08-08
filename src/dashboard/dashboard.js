@@ -1,5 +1,6 @@
 const diagnosticsElement = document.querySelector("#diagnostic-values");
 const statisticsElement = document.querySelector("#statistic-values");
+const performanceElement = document.querySelector("#performance-values");
 const rulesBody = document.querySelector("#rules-body");
 const filterListsBody = document.querySelector("#filter-lists-body");
 const statusElement = document.querySelector("#status");
@@ -40,6 +41,7 @@ async function refreshDashboard() {
   document.querySelector("#version").textContent = `v${state.manifestVersion}`;
   diagnosticsElement.replaceChildren(...Object.entries(state.diagnostics).map(([name, value]) => metric(name, value)));
   statisticsElement.replaceChildren(...Object.entries(state.statistics).map(([name, value]) => metric(name, value)));
+  performanceElement.replaceChildren(...Object.entries(state.performance).map(([name, value]) => metric(name, value)));
   rulesBody.replaceChildren(...state.policies.map(policyRow));
   if (state.policies.length === 0) rulesBody.append(emptyRow(5, "No persistent policies."));
   filterListsBody.replaceChildren(...state.filterLists.map(filterListRow));

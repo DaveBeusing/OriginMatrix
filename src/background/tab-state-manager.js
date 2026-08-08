@@ -99,17 +99,21 @@ export class TabStateManager {
     });
   }
 
-  recordCosmeticMetrics({ tabId, frameId, elementsHidden }) {
-    if (!Number.isInteger(frameId) || frameId < 0 || !Number.isInteger(elementsHidden) || elementsHidden < 0) {
-      throw new TypeError("Cosmetic metrics require a frame and non-negative element count.");
+  recordCosmeticMetrics({ tabId, frameId, elementsHidden, mutations = 0, batches = 0, rootsScanned = 0, scanTimeMs = 0, maxScanTimeMs = 0, contentScriptSetupMs = 0 }) {
+    const counters = { elementsHidden, mutations, batches, rootsScanned };
+    const timings = { scanTimeMs, maxScanTimeMs, contentScriptSetupMs };
+    if (!Number.isInteger(frameId) || frameId < 0
+      || Object.values(counters).some((value) => !Number.isInteger(value) || value < 0)
+      || Object.values(timings).some((value) => !Number.isFinite(value) || value < 0)) {
+      throw new TypeError("Cosmetic metrics require a frame and non-negative counters and timings.");
     }
     return this.#mutate((document) => {
       const state = document.tabs[String(tabId)];
       if (!state) return false;
       const key = String(frameId);
-      const previous = state.cosmeticFrames[key] ?? 0;
-      state.cosmeticElementsHidden += elementsHidden >= previous ? elementsHidden - previous : elementsHidden;
-      state.cosmeticFrames[key] = elementsHidden;
+      const previous = normalizeCosmeticFrame(state.cosmeticFrames[key]);
+      state.cosmeticElementsHidden += cumulativeDelta(elementsHidden, previous.elementsHidden);
+      state.cosmeticFrames[key] = { ...counters, ...timings };
       return true;
     });
   }
@@ -156,6 +160,21 @@ export class TabStateManager {
       cosmeticElementsHidden: tabs.reduce((sum, tab) => sum + tab.cosmeticElementsHidden, 0),
       domainsContacted: contacted.size,
       domainsBlocked: blocked.size,
+    });
+  }
+
+  async getPerformanceDiagnostics() {
+    await this.queue;
+    const document = await this.#read();
+    const frames = Object.values(document.tabs).flatMap((tab) => Object.values(tab.cosmeticFrames).map(normalizeCosmeticFrame));
+    return Object.freeze({
+      contentFramesMeasured: frames.length,
+      contentScriptSetupTimeMs: round(frames.reduce((sum, frame) => sum + frame.contentScriptSetupMs, 0)),
+      mutationRecordsProcessed: frames.reduce((sum, frame) => sum + frame.mutations, 0),
+      mutationBatchesProcessed: frames.reduce((sum, frame) => sum + frame.batches, 0),
+      mutationRootsScanned: frames.reduce((sum, frame) => sum + frame.rootsScanned, 0),
+      cosmeticScanTimeMs: round(frames.reduce((sum, frame) => sum + frame.scanTimeMs, 0)),
+      maximumCosmeticBatchTimeMs: round(Math.max(0, ...frames.map((frame) => frame.maxScanTimeMs))),
     });
   }
 
@@ -229,6 +248,14 @@ function createTabState(tabId, topUrl, topDomain, timestamp) {
 function createDomainState() {
   return { total: 0, completed: 0, failed: 0, blocked: false, types: {} };
 }
+
+function normalizeCosmeticFrame(value) {
+  if (Number.isInteger(value)) return { elementsHidden: value, mutations: 0, batches: 0, rootsScanned: 0, scanTimeMs: 0, maxScanTimeMs: 0, contentScriptSetupMs: 0 };
+  return { elementsHidden: 0, mutations: 0, batches: 0, rootsScanned: 0, scanTimeMs: 0, maxScanTimeMs: 0, contentScriptSetupMs: 0, ...(value ?? {}) };
+}
+
+function cumulativeDelta(value, previous) { return value >= previous ? value - previous : value; }
+function round(value) { return Math.round(value * 100) / 100; }
 
 function hostnameFromUrl(value) {
   const hostname = new URL(value).hostname.toLowerCase();

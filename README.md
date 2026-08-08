@@ -140,6 +140,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 - On Chrome versions without top-level-domain DNR conditions, requests initiated inside cross-origin subframes may not match a top-level-site policy.
 - Request logs retain at most 250 entries per tab in session storage. They may contain full URLs but are never transmitted by OriginMatrix.
 - Statistics aggregate only currently tracked tab state in session storage; closing a tab removes its contribution, and no permanent browsing history is built.
+- Performance diagnostics expose measured startup, rule, parsing, cache, content-script, and batched MutationObserver data. Memory, YouTube playback, and comparative page-load impact remain explicit browser-profiling tasks rather than inferred values.
 - The conservative optimizer removes only semantically identical rules.
 
 ## Security and privacy
@@ -154,7 +155,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Systematic startup, compilation, memory, and page-overhead performance work
+- Browser-driven memory, YouTube playback, and comparative page-load benchmarks
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven
