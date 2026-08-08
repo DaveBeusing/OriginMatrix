@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `0.20.0`, EasyList snapshot `202608081115`.
+Version baseline: OriginMatrix `0.21.0`, EasyList snapshot `202608081115`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified manually in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -15,6 +15,7 @@ This document is deliberately conservative. Filter coverage is testable offline;
 - Domain-scoped `#@#` exceptions prevent matching hiding rules on excluded YouTube surfaces.
 - Diagnostics report unsupported rules instead of treating them as successful.
 - The pinned offline sample supports 38 of 42 targeted rules (90.5% syntax coverage).
+- Matrix domain cells expose attributable automatic EasyList decisions while explicit user Allow/Block rules remain authoritative.
 
 ## Partially working
 

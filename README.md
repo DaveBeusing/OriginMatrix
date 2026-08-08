@@ -23,6 +23,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - YouTube filter-coverage baseline with explicit compatibility diagnostics
 - Native relational cosmetic selectors and scoped hiding exceptions for modern sites
 - Selected domain-scoped scriptlet-filter parsing with allowlisted MAIN-world execution
+- Matrix cells distinguish automatic filter decisions from user Allow/Block overrides
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -80,7 +81,7 @@ After changing a matrix cell, reload the page when prompted. Use **Commit** to m
 
 ## Matrix interaction
 
-The popup reports **Protection: ON · Network filters active** when the bundled `base-network` ruleset is enabled. Its rules have a low priority, so an explicit Matrix Allow decision overrides automatic blocking.
+The popup reports **Protection: ON · Network filters active** when the bundled `base-network` ruleset is enabled. Automatic filters provide the default result; any resolved Matrix Allow or Block decision has higher priority. Domain cells mark safely attributable automatic host decisions as `A+` or `A−`, while user rules retain `+` and `−`. Path-dependent filter rules continue to work in DNR but are not guessed from domain-only matrix data.
 
 For normal resource cells, clicking cycles through:
 
@@ -148,7 +149,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Browser-driven YouTube compatibility verification
+- Protection profiles with explicit automatic-filter controls
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

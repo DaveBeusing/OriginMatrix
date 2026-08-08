@@ -83,3 +83,28 @@ test("classifies parent and child hostnames as first-party", () => {
   assert.equal(classifyParty("example.com", "cdn.example.com"), "firstParty");
   assert.equal(classifyParty("example.com", "example.net"), "thirdParty");
 });
+
+test("uses automatic filtering as the default and Matrix rules as explicit overrides", () => {
+  const automaticResolver = {
+    resolve: ({ targetDomain, resourceType }) => targetDomain === "ads.test" && resourceType === "script"
+      ? { action: "block", source: "EasyList" }
+      : { action: "inherit", source: null },
+  };
+  const automatic = buildMatrixModel({
+    tabId: 7, topDomain: "example.com", domains: { "ads.test": { total: 1, types: { script: 1 } } },
+    policies: [], resolver: new PolicyResolver(), automaticResolver,
+  }).rows.find((row) => row.kind === "domain").cells.script;
+  assert.equal(automatic.automaticAction, "block");
+  assert.equal(automatic.effectiveAction, "block");
+  assert.equal(automatic.effectiveSource, "automatic");
+  assert.equal(automatic.automaticSource, "EasyList");
+
+  const userAllow = createPolicy({ scope: "example.com", target: "ads.test", resourceType: "script", action: "allow" });
+  const overridden = buildMatrixModel({
+    tabId: 7, topDomain: "example.com", domains: { "ads.test": { total: 1, types: { script: 1 } } },
+    policies: [userAllow], resolver: new PolicyResolver(), automaticResolver,
+  }).rows.find((row) => row.kind === "domain").cells.script;
+  assert.equal(overridden.automaticAction, "block");
+  assert.equal(overridden.effectiveAction, "allow");
+  assert.equal(overridden.effectiveSource, "matrix");
+});

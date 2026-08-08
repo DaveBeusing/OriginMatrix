@@ -135,15 +135,18 @@ function createRow(rowData, resourceTypes) {
     const cell = document.createElement("td");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `matrix-cell effective-${cellData.effectiveAction} explicit-${cellData.explicitAction} ${cellData.source ? "explicit" : "inherited"}`;
+    button.className = `matrix-cell effective-${cellData.effectiveAction} effective-source-${cellData.effectiveSource} explicit-${cellData.explicitAction} ${cellData.source ? "explicit" : "inherited"}`;
     button.dataset.scope = rowData.scope;
     button.dataset.target = rowData.target;
     button.dataset.party = rowData.party;
     button.dataset.resourceType = resourceType;
     button.dataset.editAction = cellData.editAction;
-    button.title = `${rowData.label} ${RESOURCE_LABELS[resourceType]}: explicit ${cellData.explicitAction}, effective ${cellData.effectiveAction}`;
+    const automatic = cellData.automaticAction === "inherit" ? "none" : `${cellData.automaticAction} (${cellData.automaticSource})`;
+    button.title = `${rowData.label} ${RESOURCE_LABELS[resourceType]}: user ${cellData.explicitAction}, automatic ${automatic}, effective ${cellData.effectiveAction} via ${cellData.effectiveSource}`;
     button.setAttribute("aria-label", button.title);
-    button.textContent = cellData.explicitAction === "inherit" ? "·" : cellData.explicitAction === "allow" ? "+" : "−";
+    button.textContent = cellData.explicitAction !== "inherit"
+      ? cellData.explicitAction === "allow" ? "+" : "−"
+      : cellData.effectiveSource === "automatic" ? cellData.automaticAction === "allow" ? "A+" : "A−" : "·";
     cell.append(button);
     row.append(cell);
   }

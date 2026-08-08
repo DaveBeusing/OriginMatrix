@@ -15,7 +15,7 @@ export const MATRIX_RESOURCE_TYPES = Object.freeze([
   RESOURCE_TYPE.OTHER,
 ]);
 
-export function buildMatrixModel({ tabId, topDomain, domains, policies, temporaryPolicies = [], resolver }) {
+export function buildMatrixModel({ tabId, topDomain, domains, policies, temporaryPolicies = [], resolver, automaticResolver = null }) {
   const site = normalizeHostname(topDomain);
   const definitions = [
     { kind: "global", label: "GLOBAL", scope: WILDCARD, target: WILDCARD, party: PARTY.ANY, total: null },
@@ -31,7 +31,7 @@ export function buildMatrixModel({ tabId, topDomain, domains, policies, temporar
     ...definition,
     cells: Object.fromEntries(MATRIX_RESOURCE_TYPES.map((resourceType) => [
       resourceType,
-      projectCell({ definition, resourceType, tabId, site, policies, temporaryPolicies, resolver }),
+      projectCell({ definition, resourceType, tabId, site, policies, temporaryPolicies, resolver, automaticResolver }),
     ])),
   }));
   return { site, resourceTypes: MATRIX_RESOURCE_TYPES, rows };
@@ -45,7 +45,7 @@ export function classifyParty(site, target) {
     : PARTY.THIRD_PARTY;
 }
 
-function projectCell({ definition, resourceType, tabId, site, policies, temporaryPolicies, resolver }) {
+function projectCell({ definition, resourceType, tabId, site, policies, temporaryPolicies, resolver, automaticResolver }) {
   const coordinateMatch = (policy) =>
     policy.scope === definition.scope
     && policy.target === definition.target
@@ -56,14 +56,31 @@ function projectCell({ definition, resourceType, tabId, site, policies, temporar
     ?? null;
   const persistent = policies.find((policy) => coordinateMatch(policy) && !policy.temporary) ?? null;
   const explicit = temporary ?? persistent;
-  const effective = resolveForRow({ definition, resourceType, tabId, site, policies, resolver });
+  const matrix = resolveForRow({ definition, resourceType, tabId, site, policies, resolver });
+  const automatic = resolveAutomatic({ definition, resourceType, site, automaticResolver });
+  const matrixWins = matrix.action !== POLICY_ACTION.INHERIT;
   return {
     explicitAction: explicit?.action ?? POLICY_ACTION.INHERIT,
     editAction: temporary?.action ?? persistent?.action ?? POLICY_ACTION.INHERIT,
-    effectiveAction: effective.action,
+    automaticAction: automatic.action,
+    automaticSource: automatic.source,
+    effectiveAction: matrixWins ? matrix.action : automatic.action,
+    effectiveSource: matrixWins ? "matrix" : automatic.action === POLICY_ACTION.INHERIT ? "inherit" : "automatic",
     source: explicit ? (explicit.temporary ? "temporary" : "persistent") : null,
-    winningPolicyId: effective.policy?.id ?? null,
+    winningPolicyId: matrix.policy?.id ?? null,
   };
+}
+
+function resolveAutomatic({ definition, resourceType, site, automaticResolver }) {
+  if (definition.kind !== "domain" || !automaticResolver || typeof automaticResolver.resolve !== "function") {
+    return { action: POLICY_ACTION.INHERIT, source: null };
+  }
+  return automaticResolver.resolve({
+    topDomain: site,
+    targetDomain: definition.target,
+    resourceType,
+    party: classifyParty(site, definition.target),
+  });
 }
 
 function resolveForRow({ definition, resourceType, tabId, site, policies, resolver }) {

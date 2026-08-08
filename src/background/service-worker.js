@@ -77,7 +77,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 async function handleMessage(message, sender) {
   if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
   switch (message.type) {
-    case "GET_TAB_STATE": return policyOperations.then(() => getTabState(message.tabId, message.url));
+    case "GET_TAB_STATE": return Promise.all([policyOperations, startupReconciliation]).then(() => getTabState(message.tabId, message.url));
     case "SET_MATRIX_POLICY": return enqueuePolicyOperation(() => setMatrixPolicy(message));
     case "COMMIT_MATRIX": return enqueuePolicyOperation(() => commitMatrix(message));
     case "REVERT_MATRIX": return enqueuePolicyOperation(() => revertMatrix(message));
@@ -111,6 +111,7 @@ async function getTabState(tabId, url) {
     policies,
     temporaryPolicies: temporary,
     resolver: policyEngine.resolver,
+    automaticResolver: { resolve: (context) => filterListService.resolveAutomatic(context) },
   });
   const pendingChanges = temporary.filter((policy) => policy.tabId === tabId && [topDomain, "*"].includes(policy.scope)).length;
   return { ok: true, observation, matrix, protection, pendingChanges, reloadRequired: observation?.reloadRequired === true };

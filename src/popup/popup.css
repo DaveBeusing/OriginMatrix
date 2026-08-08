@@ -23,6 +23,7 @@ tbody th small { float: right; margin-left: 8px; color: #6f7a83; }
 .matrix-cell { width: 100%; min-height: 29px; border: 0; background: #292f34; color: #7f8a92; cursor: pointer; font-weight: 700; }
 .matrix-cell.inherited.effective-allow { background: #294c3b; color: #a8d8be; }
 .matrix-cell.inherited.effective-block { background: #522f32; color: #e4b0b3; }
+.matrix-cell.inherited.effective-source-automatic { box-shadow: inset 0 0 0 1px #c28a3a; color: #ffd38a; font-size: 10px; }
 .matrix-cell.explicit.effective-allow { background: #197044; color: white; }
 .matrix-cell.explicit.effective-block { background: #8d292f; color: white; }
 .matrix-cell.explicit-inherit.explicit { background: #292f34; color: #f2c66d; box-shadow: inset 0 0 0 2px #8f7a42; }
@@ -38,6 +39,7 @@ tbody th small { float: right; margin-left: 8px; color: #6f7a83; }
 .legend .allow::before { background: #197044; }
 .legend .block::before { background: #8d292f; }
 .legend .inherit::before { background: #292f34; }
+.legend .automatic::before { background: #c28a3a; }
 .cookie-note { margin: 4px 0 0; color: #6f7a83; font-size: 10px; }
 .change-state { display: flex; justify-content: space-between; margin-top: 7px; color: #84919a; font-size: 11px; }
 #reload-required { color: #f2c66d; text-transform: uppercase; letter-spacing: .03em; }

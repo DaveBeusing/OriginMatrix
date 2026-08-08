@@ -47,6 +47,12 @@ Parser diagnostics expose total, parsed, supported, unsupported, and ignored rul
 
 Filter rules occupy dynamic IDs `500000–899999`, between persistent Matrix IDs and session IDs. Automatic blocks use priority `10000`, filter exceptions use `20000`, and Matrix priorities begin at `100000000`. This makes filter conflicts deterministic while preserving explicit Matrix overrides. The compiler accounts for already-reserved Matrix rules before accepting a generation against the shared dynamic budget. Range-scoped replacement in `DynamicRuleManager` lets Matrix and filter generations update independently without deleting one another.
 
+## Automatic filters and Matrix overrides
+
+Phase 13 defines the product semantics independently of incidental DNR ordering: an applicable automatic block or exception is the default only while Matrix resolution returns `inherit`. Any effective Matrix `allow` or `block` wins. The compiler priorities mirror that rule—automatic block, automatic exception, then Matrix policy—so the browser and UI resolve conflicts consistently.
+
+`AutomaticFilterResolver` keeps a domain-suffix index of normalized, host-anchored network filters and applies their initiator, exclusion, resource, and party constraints. The matrix uses this index only for observed domain rows. It exposes automatic action/source separately from user policy and effective result. Arbitrary URL patterns still execute through DNR but are not attributed to a domain-only cell, preventing misleading UI claims. COOKIE remains Matrix-only because network filters do not describe cookie-header policy.
+
 ## Initial EasyList integration
 
 OriginMatrix ships an unmodified, version- and hash-pinned EasyList snapshot. A bundled snapshot was chosen over runtime downloading so protection is available offline, releases are reproducible, and Phase 6 does not introduce an incomplete update channel. The snapshot is filter data only and is parsed locally; it is never executable code.

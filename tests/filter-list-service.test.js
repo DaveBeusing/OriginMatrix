@@ -33,6 +33,10 @@ test("activates a bundled list through parser, compiler, and Network Engine", as
   assert.equal(status.rulesCompiled, 2);
   assert.equal(status.cosmeticRules, 1);
   assert.equal(status.scriptletRules, 1);
+  assert.equal(status.automaticFiltersIndexed, 2);
+  assert.deepEqual(service.resolveAutomatic({ topDomain: "site.test", targetDomain: "ads.example", resourceType: "image", party: "thirdParty" }), {
+    action: "block", source: "EasyList", matchedFilters: 1,
+  });
   assert.ok(networkEngine.rules().some(({ id }) => id === 100_001));
   assert.ok(networkEngine.rules().some(({ id }) => id >= 500_000));
 });
