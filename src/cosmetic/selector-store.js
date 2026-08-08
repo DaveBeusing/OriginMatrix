@@ -1,5 +1,7 @@
 import { FILTER_TYPE, validateFilter } from "../filters/filter-model.js";
 
+const MAX_SELECTORS_PER_DOCUMENT = 5_000;
+
 export class SelectorStore {
   constructor() {
     this.byDomain = new Map();
@@ -37,7 +39,7 @@ export class SelectorStore {
     const exceptions = new Set(applicable.filter(({ exception }) => exception === true).map(({ selector }) => selector));
     return [...new Set(applicable
       .filter(({ exception, selector }) => exception !== true && !exceptions.has(selector))
-      .map(({ selector }) => selector))].sort();
+      .map(({ selector }) => selector))].sort().slice(0, MAX_SELECTORS_PER_DOCUMENT);
   }
 
   getDiagnostics() {

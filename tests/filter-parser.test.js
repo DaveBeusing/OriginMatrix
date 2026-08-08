@@ -68,3 +68,9 @@ test("returns line-aware parser diagnostics", () => {
     rulesOptimized: 0,
   });
 });
+
+test("bounds filter source, line count, and individual rule work", () => {
+  assert.equal(parseFilterRule(`||example.com/${"x".repeat(8_192)}`).reason, "rule-too-long");
+  assert.throws(() => parseFilterText("\n".repeat(250_000)), /line count limit/);
+  assert.throws(() => parseFilterText("x".repeat(5_000_001)), /source size limit/);
+});

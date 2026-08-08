@@ -29,6 +29,7 @@ test("reports malformed, global, exception, and oversized calls", () => {
   assert.equal(parseScriptletRule("example.com##+js(set-constant, 'value, true)").reason, "unterminated-scriptlet-argument");
   assert.equal(parseScriptletRule("example.com##+js(set-constant, value, \\n)").reason, "invalid-scriptlet-escape");
   assert.equal(parseScriptletRule("example.com##+js(x,a,b,c,d,e,f,g,h,i)").reason, "too-many-scriptlet-arguments");
+  assert.equal(parseScriptletRule(`example.com##+js(remove-node-text, ${"x".repeat(513)}, value)`).reason, "scriptlet-arguments-too-large");
 });
 
 test("integrates scriptlet models and diagnostics into filter-list parsing", () => {

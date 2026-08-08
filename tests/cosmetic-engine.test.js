@@ -40,6 +40,14 @@ test("prepares and atomically activates a cosmetic generation", () => {
   assert.deepEqual(engine.getSelectors("www.example.com"), [".ad"]);
 });
 
+test("caps selectors delivered to one document", () => {
+  const store = new SelectorStore();
+  store.replace(Array.from({ length: 5_001 }, (_, index) => (
+    createCosmeticFilter({ domains: ["example.com"], selector: `.ad-${index}` })
+  )));
+  assert.equal(store.getForHostname("example.com").length, 5_000);
+});
+
 test("manifest loads the cosmetic injector before its content-script bootstrap", async () => {
   const manifest = JSON.parse(await readFile(new URL("../manifest.json", import.meta.url), "utf8"));
   assert.deepEqual(manifest.content_scripts[0].js, [

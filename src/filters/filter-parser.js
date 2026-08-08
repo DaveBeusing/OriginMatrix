@@ -5,6 +5,7 @@ const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN_PATTERN = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*`;
 const HOST_ANCHORED_PATTERN = new RegExp(`^\\|\\|(${DOMAIN_PATTERN})\\^$`, "i");
 const COSMETIC_RULE = /^([^#]+)(##|#@#)(.+)$/;
+export const FILTER_TEXT_LIMITS = Object.freeze({ sourceBytes: 5_000_000, lines: 250_000, lineCharacters: 8_192 });
 const RESOURCE_OPTIONS = new Map([
   ["stylesheet", "stylesheet"], ["image", "image"], ["font", "font"],
   ["media", "media"], ["script", "script"], ["xmlhttprequest", "xmlhttprequest"],
@@ -14,6 +15,7 @@ const RESOURCE_OPTIONS = new Map([
 
 export function parseFilterRule(source) {
   if (typeof source !== "string") throw new TypeError("Filter rule source must be a string.");
+  if (source.length > FILTER_TEXT_LIMITS.lineCharacters) return unsupported("", "rule-too-long");
   const text = source.trim();
   if (text.length === 0 || text.startsWith("!") || /^\[.*\]$/.test(text)) return { status: "ignored", source: text };
 
@@ -65,7 +67,9 @@ function parseCosmeticRule(source, match) {
 
 export function parseFilterText(source) {
   if (typeof source !== "string") throw new TypeError("Filter text must be a string.");
+  if (new TextEncoder().encode(source).length > FILTER_TEXT_LIMITS.sourceBytes) throw new RangeError("Filter text exceeds the source size limit.");
   const lines = source.split(/\r?\n/);
+  if (lines.length > FILTER_TEXT_LIMITS.lines) throw new RangeError("Filter text exceeds the line count limit.");
   const results = lines.map((line, index) => Object.freeze({ ...parseFilterRule(line), line: index + 1 }));
   const filters = results.filter(({ status }) => status === "supported").map(({ filter }) => filter);
   const ignored = results.filter(({ status }) => status === "ignored");

@@ -152,6 +152,8 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 - Request observation cannot modify network requests
 - Logical policies—not generated DNR rules—remain authoritative
 
+The reviewed trust boundaries, resource limits, and permission rationale are documented in [SECURITY.md](SECURITY.md).
+
 ## Roadmap
 
 - Local Public Suffix List integration

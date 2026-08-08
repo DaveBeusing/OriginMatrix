@@ -77,7 +77,9 @@ export function policyCoordinates(policy) {
 
 function validateDomain(value, field) {
   if (value === WILDCARD) return;
-  if (typeof value !== "string" || value.length === 0 || value.includes(":") || value.includes("/")) {
+  if (typeof value !== "string" || value.length > 253 || !value.split(".").every((label) => (
+    label.length > 0 && label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label)
+  ))) {
     throw new TypeError(`Policy ${field} must be '*' or a hostname.`);
   }
 }

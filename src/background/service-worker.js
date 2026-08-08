@@ -25,6 +25,7 @@ import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
 import { profileDefinition } from "../engine/profiles.js";
 import { RuleAttributionRegistry } from "./rule-attribution-registry.js";
 import { DnrMatchObserver } from "./dnr-match-observer.js";
+import { assertTrustedMessage } from "./message-security.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
@@ -82,7 +83,8 @@ const startupReconciliation = reconcileRules()
   .catch((error) => console.error("OriginMatrix reconciliation failed", error));
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message, sender).then(sendResponse).catch((error) => {
+  Promise.resolve().then(() => assertTrustedMessage(message, sender, chrome.runtime.id))
+    .then(() => handleMessage(message, sender)).then(sendResponse).catch((error) => {
     console.error("OriginMatrix message failed", error);
     sendResponse({ ok: false, error: error.message });
   });
@@ -104,7 +106,6 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 });
 
 async function handleMessage(message, sender) {
-  if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
   workerMessagesHandled += 1;
   switch (message.type) {
     case "GET_TAB_STATE": return Promise.all([policyOperations, startupReconciliation]).then(() => getTabState(message.tabId, message.url));

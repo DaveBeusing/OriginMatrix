@@ -15,3 +15,15 @@ test("rejects text and temporary policy imports", () => {
   const temporary = createPolicy({ action: "block", temporary: true, tabId: 1 });
   assert.throws(() => importPolicies(exportPolicies([temporary])), /persistent allow\/block/);
 });
+
+test("rejects resource-exhausting policy imports", () => {
+  assert.throws(() => importPolicies("x".repeat(1_000_001)), /size limit/);
+  assert.throws(() => importPolicies({ format: "originmatrix", version: 1, policies: Array(10_001).fill({}) }), /too many policies/);
+});
+
+test("rejects corrupted policy hostnames", () => {
+  assert.throws(() => importPolicies({
+    format: "originmatrix", version: 1,
+    policies: [{ scope: "not a host", action: "block" }],
+  }), /hostname/);
+});

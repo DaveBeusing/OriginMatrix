@@ -229,6 +229,10 @@ The dashboard reports service-worker reconciliation time and message activity, t
 
 Runtime counters live only as long as their service worker or session-backed tab state. JavaScript heap size is shown only where Chromium exposes it; YouTube playback and comparative page-load impact deliberately remain manual browser-profile baselines because an extension cannot isolate those effects reliably from its own runtime.
 
+## Security boundaries
+
+The service worker authenticates every runtime message against its own extension ID and rejects oversized or non-serializable payloads before dispatch. Parser inputs, policy imports, scriptlet arguments, selector delivery, stored list sources, and DNR generations are independently bounded. These checks complement schema validation and transactional activation; they do not rely on the UI as a security boundary. See `SECURITY.md` for the Phase 20 review and permission rationale.
+
 ## Policy transfer and profiles
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.

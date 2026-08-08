@@ -8,6 +8,8 @@ const ALIASES = new Map([
   ["abort-on-property-read.js", "abort-on-property-read"],
   ["aopr", "abort-on-property-read"],
 ]);
+const MAX_ARGUMENT_LENGTH = 512;
+const MAX_ARGUMENT_BYTES = 1_024;
 
 export function parseScriptletRule(source) {
   if (typeof source !== "string") throw new TypeError("Scriptlet rule source must be a string.");
@@ -89,6 +91,10 @@ function parseArguments(source) {
   if (escaped || quote) return { ok: false, reason: "unterminated-scriptlet-argument" };
   values.push(quotedToken ? value : value.trim());
   if (values.length > 9) return { ok: false, reason: "too-many-scriptlet-arguments" };
+  if (values.some((item) => item.length > MAX_ARGUMENT_LENGTH)
+    || new TextEncoder().encode(values.join("\u0000")).length > MAX_ARGUMENT_BYTES) {
+    return { ok: false, reason: "scriptlet-arguments-too-large" };
+  }
   return { ok: true, values };
 }
 
