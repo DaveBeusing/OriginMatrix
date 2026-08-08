@@ -37,6 +37,40 @@ test("profiles preserve site rules while replacing global defaults", async () =>
   await manager.applyProfile("strict");
   const policies = await store.getPersistentPolicies();
   assert.equal(policies.some((policy) => policy.scope === "example.com"), true);
-  assert.equal(policies.some((policy) => policy.party === "thirdParty" && policy.resourceType === "all" && policy.action === "block"), true);
+  assert.equal(policies.some((policy) => policy.party === "thirdParty" && policy.resourceType === "script" && policy.action === "block"), true);
   assert.equal(policies.some((policy) => policy.scope === "*" && policy.resourceType === "image"), false);
+});
+
+test("profile application coordinates policy, protection, and persisted profile state", async () => {
+  const store = new PolicyStore({ localArea: memoryStorage(), sessionArea: memoryStorage() });
+  let activeProfile = "balanced";
+  const applied = [];
+  const manager = new AdvancedPolicyManager({
+    store,
+    engine: { compiler: { compilePolicies() { return []; } }, async recompile() {} },
+    profileStore: { async get() { return activeProfile; }, async set(name) { activeProfile = name; } },
+    protectionService: { async apply(features) { applied.push(features); } },
+  });
+  const result = await manager.applyProfile("relaxed");
+  assert.equal(activeProfile, "relaxed");
+  assert.deepEqual(result.features, { network: true, cosmetic: true, scriptlets: false });
+  assert.deepEqual(applied, [{ network: true, cosmetic: true, scriptlets: false }]);
+});
+
+test("failed protection activation restores the previous profile and policies", async () => {
+  const store = new PolicyStore({ localArea: memoryStorage(), sessionArea: memoryStorage() });
+  const previous = createPolicy({ resourceType: "image", action: "block" });
+  await store.putPolicy(previous);
+  let activeProfile = "balanced";
+  let attempts = 0;
+  const manager = new AdvancedPolicyManager({
+    store,
+    engine: { compiler: { compilePolicies() { return []; } }, async recompile() {} },
+    profileStore: { async get() { return activeProfile; }, async set(name) { activeProfile = name; } },
+    protectionService: { async apply() { attempts += 1; if (attempts === 1) throw new Error("activation failed"); } },
+  });
+  await assert.rejects(() => manager.applyProfile("relaxed"), /activation failed/);
+  assert.equal(activeProfile, "balanced");
+  assert.deepEqual(await store.getPersistentPolicies(), [previous]);
+  assert.equal(attempts, 2);
 });

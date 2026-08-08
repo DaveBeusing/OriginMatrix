@@ -9,6 +9,7 @@ import { AdvancedPolicyManager } from "../engine/advanced-policy-manager.js";
 import { RuleOptimizer } from "../engine/rule-optimizer.js";
 import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projector.js";
 import { PolicyStore } from "../storage/policy-store.js";
+import { ProfileStore } from "../storage/profile-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 import { EASYLIST } from "../filters/filter-list-catalog.js";
@@ -17,9 +18,11 @@ import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
 import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
+import { profileDefinition } from "../engine/profiles.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
+const profileStore = new ProfileStore();
 const tabStateManager = new TabStateManager();
 const networkEngine = new NetworkEngine();
 const cosmeticEngine = new CosmeticEngine();
@@ -39,7 +42,12 @@ const policyEngine = new PolicyEngine({
   networkEngine,
 });
 const policyWorkflow = new PolicyWorkflow({ store: policyStore, engine: policyEngine });
-const advancedPolicyManager = new AdvancedPolicyManager({ store: policyStore, engine: policyEngine });
+const advancedPolicyManager = new AdvancedPolicyManager({
+  store: policyStore,
+  engine: policyEngine,
+  profileStore,
+  protectionService: { apply: applyProtectionFeatures },
+});
 const ruleOptimizer = new RuleOptimizer();
 let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
@@ -152,17 +160,19 @@ async function revertMatrix({ tabId, url }) {
 }
 
 async function reconcileRules() {
+  filterListService.configure(profileDefinition(await profileStore.get()).features);
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
   await filterListService.activate();
 }
 
 async function getDashboardState() {
-  const [persistent, temporary, network, observation] = await Promise.all([
+  const [persistent, temporary, network, observation, activeProfile] = await Promise.all([
     policyStore.getPersistentPolicies(),
     policyStore.getTemporaryPolicies(),
     networkEngine.getDiagnostics(),
     tabStateManager.getDiagnostics(),
+    profileStore.get(),
   ]);
   const optimization = ruleOptimizer.optimize([...network.dynamicRules, ...network.sessionRules]);
   return {
@@ -170,6 +180,7 @@ async function getDashboardState() {
     manifestVersion: chrome.runtime.getManifest().version,
     policies: persistent,
     filterLists: [filterListService.getStatus()],
+    profile: profileDefinition(activeProfile),
     diagnostics: {
       persistentPolicies: persistent.length,
       temporaryPolicies: temporary.length,
@@ -203,6 +214,11 @@ async function importPolicyDocument({ document, mode }) {
 
 async function applyProfile({ profile }) {
   return { ok: true, ...(await advancedPolicyManager.applyProfile(profile)) };
+}
+
+async function applyProtectionFeatures(features) {
+  filterListService.configure(features);
+  await filterListService.activate();
 }
 
 async function recompileWithResult() {

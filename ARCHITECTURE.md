@@ -215,7 +215,9 @@ The manifest options page is a standalone dashboard. It reads state through serv
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.
 
-Balanced and Strict profiles generate only global party policies; Custom clears global defaults. Applying a profile preserves all site-scoped policies. A Relaxed profile is not offered because its promised tracker blocking depends on a real, separately managed tracker dataset.
+Protection profiles combine immutable engine feature flags with Matrix defaults and are persisted independently from policies. Balanced enables network, cosmetic, and scriptlet engines without installing global Matrix overrides. Strict enables the same engines and blocks third-party scripts, frames, and XHR through explicit global Matrix policies. Relaxed retains network and cosmetic protection, disables scriptlets, and installs no global Matrix defaults. All profiles currently report only basic tracking coverage because the bundled EasyList snapshot is not a dedicated tracker dataset.
+
+Applying a profile preserves site-scoped policies, precompiles the candidate Matrix generation, activates the requested filter-engine generation, and stores the profile name. Failure restores the previous policies and protection features. Startup loads the stored profile before filter-list activation. This keeps UI state, logical policy state, and generated browser rules aligned across service-worker restarts.
 
 Non-JSON/uMatrix text imports fail explicitly. A future compatibility adapter must parse old syntax, report unsupported constructs, and produce the same validated OriginMatrix import document before activation.
 

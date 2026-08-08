@@ -49,6 +49,22 @@ test("reports activation errors without replacing the working generation", async
   assert.deepEqual(networkEngine.rules(), [{ id: 100_001 }]);
 });
 
+test("profile features can disable scriptlets without disabling network or cosmetic protection", async () => {
+  const service = new FilterListService({
+    list: EASYLIST,
+    networkEngine: fakeNetworkEngine(),
+    cosmeticEngine: new CosmeticEngine(),
+    scriptletEngine: new ScriptletEngine({ api: { executeScript: async () => [] } }),
+    loadText: async () => "||ads.example^\nexample.com##.advert\nexample.com##+js(set-constant, player.ads, undefined)",
+  });
+  service.configure({ network: true, cosmetic: true, scriptlets: false });
+  const status = await service.activate();
+  assert.equal(status.rulesCompiled, 1);
+  assert.equal(status.cosmeticRules, 1);
+  assert.equal(status.scriptletRules, 0);
+  assert.deepEqual(status.features, { network: true, cosmetic: true, scriptlets: false });
+});
+
 test("bundled EasyList snapshot matches its pinned metadata", async () => {
   const bytes = await readFile(new URL(`../${EASYLIST.path}`, import.meta.url));
   const text = bytes.toString("utf8");

@@ -15,6 +15,7 @@ export class FilterListService {
     this.scriptletEngine = scriptletEngine;
     this.automaticResolver = automaticResolver;
     this.loadText = loadText;
+    this.features = Object.freeze({ network: true, cosmetic: true, scriptlets: true });
     this.state = statusFrom(list, { state: list.enabled ? "loading" : "disabled" });
   }
 
@@ -30,14 +31,15 @@ export class FilterListService {
     this.state = statusFrom(this.list, { state: "loading" });
     try {
       const parsed = parseFilterText(await this.loadText(this.list.path));
-      const cosmeticGeneration = this.cosmeticEngine?.prepare(parsed.filters) ?? { filters: [], unsupported: [] };
-      const scriptletGeneration = this.scriptletEngine?.prepareGeneration(parsed.filters) ?? { filters: [], unsupported: [] };
-      const automaticGeneration = this.automaticResolver.prepare(parsed.filters, { source: this.list.title });
+      const networkFilters = this.features.network ? parsed.filters : [];
+      const cosmeticGeneration = this.features.cosmetic && this.cosmeticEngine ? this.cosmeticEngine.prepare(parsed.filters) : { filters: [], unsupported: [] };
+      const scriptletGeneration = this.features.scriptlets && this.scriptletEngine ? this.scriptletEngine.prepareGeneration(parsed.filters) : { filters: [], unsupported: [] };
+      const automaticGeneration = this.automaticResolver.prepare(networkFilters, { source: this.list.title });
       const dynamicRules = await this.networkEngine.getDynamicRules();
       const reservedDynamicRules = dynamicRules.filter(({ id }) => (
         id < DYNAMIC_RULE_RANGES.filters.minimum || id > DYNAMIC_RULE_RANGES.filters.maximum
       )).length;
-      const compiled = this.compiler.compile(parsed.filters, { reservedDynamicRules });
+      const compiled = this.compiler.compile(networkFilters, { reservedDynamicRules });
       await this.networkEngine.replaceFilterRules(compiled.rules);
       const cosmetic = this.cosmeticEngine?.activate(cosmeticGeneration) ?? { cosmeticRules: 0, cosmeticUnsupported: 0 };
       const scriptlets = this.scriptletEngine?.activate(scriptletGeneration) ?? { scriptletRules: 0, scriptletUnsupported: 0 };
@@ -52,6 +54,7 @@ export class FilterListService {
         cosmeticRules: cosmetic.cosmeticRules,
         scriptletRules: scriptlets.scriptletRules,
         automaticFiltersIndexed: automatic.automaticFiltersIndexed,
+        features: this.features,
       });
       return this.state;
     } catch (error) {
@@ -62,6 +65,15 @@ export class FilterListService {
 
   getStatus() { return this.state; }
   resolveAutomatic(context) { return this.automaticResolver.resolve(context); }
+
+  configure(features) {
+    const names = ["network", "cosmetic", "scriptlets"];
+    if (!features || names.some((name) => typeof features[name] !== "boolean")) {
+      throw new TypeError("Protection features must be explicit booleans.");
+    }
+    this.features = Object.freeze(Object.fromEntries(names.map((name) => [name, features[name]])));
+    return this.features;
+  }
 }
 
 function statusFrom(list, state) {

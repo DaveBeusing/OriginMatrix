@@ -1,11 +1,13 @@
 import { policyCoordinates } from "../shared/models.js";
-import { policiesForProfile } from "./profiles.js";
+import { policiesForProfile, profileDefinition } from "./profiles.js";
 import { importPolicies } from "../storage/policy-transfer.js";
 
 export class AdvancedPolicyManager {
-  constructor({ store, engine }) {
+  constructor({ store, engine, profileStore = null, protectionService = null }) {
     this.store = store;
     this.engine = engine;
+    this.profileStore = profileStore;
+    this.protectionService = protectionService;
   }
 
   async import(input, { mode = "replace" } = {}) {
@@ -18,21 +20,33 @@ export class AdvancedPolicyManager {
   }
 
   async applyProfile(name) {
+    const definition = profileDefinition(name);
     const previous = await this.store.getPersistentPolicies();
+    const previousProfile = await this.profileStore?.get();
     const sitePolicies = previous.filter((policy) => policy.scope !== "*");
     const next = [...sitePolicies, ...policiesForProfile(name)];
-    await this.#replace(previous, next);
-    return { profile: name, policies: next.length };
+    await this.#replace(previous, next, async () => {
+      await this.protectionService?.apply(definition.features);
+      await this.profileStore?.set(name);
+    }, async () => {
+      if (previousProfile) {
+        await this.protectionService?.apply(profileDefinition(previousProfile).features);
+        await this.profileStore?.set(previousProfile);
+      }
+    });
+    return { profile: name, policies: next.length, features: definition.features };
   }
 
-  async #replace(previous, next) {
+  async #replace(previous, next, afterReplace = async () => {}, afterRollback = async () => {}) {
     this.engine.compiler.compilePolicies(next, { temporary: false });
     try {
       await this.store.replacePolicies(next, { temporary: false });
       await this.engine.recompile({ temporary: false });
+      await afterReplace();
     } catch (error) {
       await this.store.replacePolicies(previous, { temporary: false });
       await this.engine.recompile({ temporary: false });
+      await afterRollback();
       throw error;
     }
   }

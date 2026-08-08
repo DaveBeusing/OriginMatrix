@@ -10,6 +10,7 @@ const typeFilter = document.querySelector("#log-type");
 const domainFilter = document.querySelector("#log-domain");
 const youtubeValues = document.querySelector("#youtube-values");
 const youtubeBody = document.querySelector("#youtube-body");
+const profileState = document.querySelector("#profile-state");
 let logEntries = [];
 
 initialize().catch(showError);
@@ -36,6 +37,17 @@ async function refreshDashboard() {
   rulesBody.replaceChildren(...state.policies.map(policyRow));
   if (state.policies.length === 0) rulesBody.append(emptyRow(5, "No persistent policies."));
   filterListsBody.replaceChildren(...state.filterLists.map(filterListRow));
+  renderProfile(state.profile);
+}
+
+function renderProfile(profile) {
+  const enabled = Object.entries(profile.features).filter(([, value]) => value).map(([name]) => name).join(", ");
+  profileState.textContent = `Active: ${profile.title} · ${enabled} · ${profile.matrixMode} Matrix`;
+  for (const button of document.querySelectorAll("[data-profile]")) {
+    const active = button.dataset.profile === profile.name;
+    button.disabled = active;
+    button.setAttribute("aria-pressed", String(active));
+  }
 }
 
 async function runAction(type, payload, success) {

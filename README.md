@@ -32,13 +32,13 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Deterministic policy resolution, priorities, and rule IDs
 - Cookie request and response header removal
 - Read-only request observation, domain counters, and bounded per-tab request logs
-- Balanced, Strict, and Custom global profiles
+- Restart-safe Balanced, Strict, and Relaxed protection profiles
 - Dashboard with diagnostics, rule inspection, import/export, debug reports, and request-log filters
 - Versioned storage schemas and compensating rollback on failed rule updates
 - Original scalable icon set for extension and toolbar surfaces
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
-Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters, simple cosmetic selectors, and selected domain-scoped `##+js(...)` rules are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected only on matching documents. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Scriptlet names map exclusively to three bundled, argument-validated implementations. Runtime filter downloads and updates, procedural cosmetic filters, broader scriptlet syntax, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters, simple cosmetic selectors, and selected domain-scoped `##+js(...)` rules are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected only on matching documents. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Scriptlet names map exclusively to three bundled, argument-validated implementations. Balanced enables all engines without overriding automatic decisions, Strict adds targeted third-party Matrix blocks, and Relaxed disables scriptlets while retaining network and cosmetic protection. Runtime filter downloads and updates, procedural cosmetic filters, broader scriptlet syntax, uMatrix text-rule conversion, a dedicated tracker list, and Public-Suffix-List-based domain grouping are not currently included.
 
 YouTube is tracked as a compatibility baseline, not as a guaranteed blocking claim. Generic native `:has()` filtering now covers promoted feed, Shorts, and ad-slot structures present in the pinned EasyList snapshot, while scoped `#@#` rules prevent incompatible hiding on excluded surfaces. The dashboard can analyze targeted bundled rules and report unsupported network, cosmetic, and scriptlet syntax. See [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md) for verified scope and the manual acceptance checklist.
 
@@ -149,7 +149,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Protection profiles with explicit automatic-filter controls
+- Filter-list management and per-list diagnostics
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

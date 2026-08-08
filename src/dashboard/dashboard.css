@@ -14,6 +14,11 @@ button, select, input { border: 1px solid #47745d; border-radius: 4px; padding: 
 button { cursor: pointer; }
 input { background: #151a1e; }
 button.danger { border-color: #7d464a; background: #612d31; }
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.profile-grid article { padding: 12px; border: 1px solid #30383e; background: #22282d; }
+.profile-grid h3 { margin: 0 0 6px; }
+.profile-grid p { min-height: 3em; color: #aab4bb; }
+button[aria-pressed="true"] { border-color: #82c9a5; background: #173d2b; cursor: default; }
 textarea { box-sizing: border-box; width: 100%; resize: vertical; padding: 10px; background: #101316; color: #dce3e7; border: 1px solid #3a444b; font-family: ui-monospace, monospace; }
 .table-scroll { max-height: 330px; overflow: auto; border: 1px solid #30383e; }
 .log-scroll { max-height: 430px; }

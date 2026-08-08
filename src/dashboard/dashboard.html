@@ -30,9 +30,14 @@
         <div class="table-scroll"><table><thead><tr><th>Line</th><th>Category</th><th>Reason</th><th>Unsupported rule sample</th></tr></thead><tbody id="youtube-body"><tr><td colspan="4" class="empty">Run the baseline analysis.</td></tr></tbody></table></div>
       </section>
       <section id="profiles">
-        <h2>Default profiles</h2>
-        <p>Profiles replace global defaults and preserve site-specific policies.</p>
-        <div class="buttons"><button data-profile="balanced">Balanced</button><button data-profile="strict">Strict</button><button data-profile="custom">Custom / clear defaults</button></div>
+        <h2>Protection profiles</h2>
+        <p id="profile-state">Loading active profile…</p>
+        <p>Profiles configure automatic engines and Matrix defaults while preserving site-specific policies.</p>
+        <div class="profile-grid">
+          <article><h3>Balanced</h3><p>Network, cosmetic, and scriptlet protection with normal Matrix defaults.</p><button data-profile="balanced">Apply Balanced</button></article>
+          <article><h3>Strict</h3><p>Balanced protection plus third-party script, frame, and XHR blocking.</p><button data-profile="strict">Apply Strict</button></article>
+          <article><h3>Relaxed</h3><p>Network and cosmetic protection, minimal Matrix defaults, and scriptlets off.</p><button data-profile="relaxed">Apply Relaxed</button></article>
+        </div>
       </section>
       <section id="rules">
         <h2>My Rules</h2>
