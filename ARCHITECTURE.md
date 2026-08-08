@@ -1,4 +1,4 @@
-# OriginMatrix architecture — Phase 5
+# OriginMatrix architecture — Phase 6
 
 ## Data flow
 
@@ -75,7 +75,9 @@ Chrome explicitly does not guarantee stable webRequest error strings, so failure
 
 `matrix-projector.js` is the browser-independent read model between policies, observed tab state, and the popup. It accepts observed domains and all logical policies, then returns five cells per row: SCRIPT, XHR, FRAME, IMAGE, and MEDIA.
 
-Each cell contains both its direct policy (`explicitAction`, `source`) and resolver result (`effectiveAction`, `winningPolicyId`). It also exposes `editAction`, which represents only the current tab override. This distinction lets a persistent policy remain visibly explicit while a Phase-4 click creates a temporary override rather than mutating persistent data.
+Each cell contains both its direct policy (`explicitAction`, `source`) and resolver result (`effectiveAction`, `winningPolicyId`). `editAction` uses the temporary action when present and otherwise the persistent action as the cycle baseline. A click still creates only a temporary edit until Commit.
+
+Temporary `inherit` markers are editor operations rather than effective policies. They suppress the same-coordinate persistent policy in the preview, never compile to DNR, and delete that persistent cell when committed. This makes the full allow/block/inherit cycle reversible without confusing inheritance with an executable network action.
 
 The popup renders the projection and sends only cell intent (`target`, `resourceType`, and next action). The service worker validates that intent, creates a site/target/type tab policy, and delegates storage and DNR updates to `PolicyEngine`. `inherit` removes that temporary cell policy. Buttons are native keyboard controls and expose full state through accessible labels.
 
@@ -95,3 +97,27 @@ Commit promotes only policies whose `tabId` and exact `scope` match the active p
 Both workflows compile candidate generations before modifying storage. Because Chrome exposes dynamic and session rules through separate update calls, their joint transition cannot be atomic. The workflow therefore snapshots both logical stores and performs compensating restoration and recompilation after failures. Service-worker policy operations are serialized to prevent concurrent cell edits, commits, and reverts from racing.
 
 `reloadRequired` lives in the session-persisted tab state. Any effective rule edit marks it, and a new main-frame navigation clears it. The popup separately reports the number of temporary changes, enabling Commit and Revert only when the current tab/scope has pending policies.
+
+## Full matrix vocabulary
+
+The matrix projector exposes eleven resource columns: ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER. Its synthetic rows map directly to policy coordinates:
+
+```text
+GLOBAL      scope=*     target=*  party=any
+*           scope=site  target=*  party=any
+1st-party   scope=site  target=*  party=firstParty
+3rd-party   scope=site  target=*  party=thirdParty
+domain      scope=site  target=domain  party=any
+```
+
+Aggregate cells resolve only against compatible parent and same-level policies. More-specific domain policies therefore do not incorrectly color a site or party row. ALL cells represent resource-agnostic policies; type-specific policies do not determine their effective color. Each cell still distinguishes its temporary edit, direct persistent/temporary policy, and effective inherited result.
+
+Global policies can be tested as tab-scoped session policies before Commit. Phase-5 Commit/Revert now selects both the current site scope and global scope for the active tab.
+
+## Cookie and grouped-resource compilation
+
+COOKIE is a logical OriginMatrix type rather than a DNR resource type. A cookie block compiles into two rules with identical conditions and priorities: one removes the request `Cookie` header and one removes the response `Set-Cookie` header. `DnrCompiler.compilePolicySet` consequently returns both rules and a `policyId → ruleIds[]` mapping.
+
+DNR has no cookie-only allow action. A generic `allow` rule could override unrelated block rules on the same request, so the compiler rejects COOKIE allow policies and the UI cycles COOKIE cells only between inherit and block. This is an explicit safety boundary rather than simulated functionality.
+
+OTHER currently expands to the local DNR types `other`, `object`, and `csp_report`. Static filter systems remain separate from this matrix compiler.

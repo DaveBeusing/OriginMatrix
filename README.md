@@ -1,6 +1,6 @@
 # OriginMatrix
 
-OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It now includes the Phase 5 temporary-to-persistent policy workflow.
+OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It now includes the Phase 6 full matrix vocabulary and aggregate policy rows.
 
 ## Implemented
 
@@ -27,9 +27,13 @@ OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (
 - Scope-specific Revert without affecting other tabs or sites
 - Session-persisted reload-required and pending-change indicators
 - Compensating rollback across policy stores and DNR generations
-- Unit tests for compilation, resolution, storage, observation, matrix projection, and policy workflows
+- ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER columns
+- GLOBAL, site-wide, first-party, third-party, and observed-domain rows
+- Global defaults plus site, party, target, and resource inheritance
+- Cookie request/response header removal through paired DNR rules
+- Unit tests for compilation, resolution, storage, observation, matrix projection, policy workflows, and header rules
 
-No ALL/COOKIE/OTHER columns, row-wide rules, filter lists, request log, or rule optimizer are included yet.
+No static filter lists, detailed request log, diagnostics dashboard, Public-Suffix-List grouping, or rule optimizer are included yet.
 
 ## Architecture
 
@@ -64,11 +68,13 @@ The tests exercise browser-independent modules. The final network-blocking behav
 - DNR applies rules declaratively; JavaScript does not synchronously intercept requests.
 - The rule affects only future requests, so an already loaded page must be reloaded.
 - `domainType: thirdParty` uses Chromium's DNR party classification.
-- The popup operates on HTTP(S) tabs and the five Phase-4 resource columns.
+- The popup operates on HTTP(S) tabs and the eleven Phase-6 resource columns.
 - Phase 4 exposes only SCRIPT, XHR, FRAME, IMAGE, and MEDIA cells and stores edits as temporary tab rules.
-- Commit and Revert operate only on temporary policies for the active tab and exact current-site scope.
+- Commit and Revert operate only on temporary policies for the active tab, selecting the current-site and GLOBAL scopes.
+- Global-row changes are also included in the active tab's Commit/Revert operation and should be used deliberately.
 - First-party classification in the matrix currently uses hostname ancestry. Registrable-domain/eTLD+1 grouping requires the planned local Public Suffix List integration.
 - On Chrome versions without top-level-domain DNR conditions, tab rules also use `initiatorDomains`; requests initiated inside cross-origin subframes may therefore not match the top-level site policy.
+- COOKIE uses `modifyHeaders` to remove request `Cookie` and response `Set-Cookie`. Cookie cells intentionally support only inherit/block: DNR cannot express a cookie-only allow exception without potentially bypassing unrelated request-blocking rules.
 - A session rule survives service-worker suspension but is not a persistent policy and disappears when the browser session ends.
 - Requests served from Chromium's in-memory cache can be invisible to `webRequest`.
 - Phase 3 reports successful and failed requests. It does not label failures as blocked because Chrome does not guarantee stable error strings and reliable DNR match feedback is not generally available in production.
@@ -76,4 +82,4 @@ The tests exercise browser-independent modules. The final network-blocking behav
 
 ## Roadmap
 
-The next step is Phase 6: add ALL, COOKIE, CSS, FONT, WEBSOCKET, and OTHER; row/column rules; first-/third-party rows; global defaults; and production-grade inheritance visualization.
+The next step is Phase 7: diagnostics, request log, import/export, rule optimization, optional profiles, and separately managed static DNR filter lists.

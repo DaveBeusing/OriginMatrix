@@ -5,6 +5,7 @@ export const POLICY_ACTION = Object.freeze({ ALLOW: "allow", BLOCK: "block", INH
 export const PARTY = Object.freeze({ ANY: "any", FIRST_PARTY: "firstParty", THIRD_PARTY: "thirdParty" });
 export const RESOURCE_TYPE = Object.freeze({
   ALL: "all",
+  COOKIE: "cookie",
   STYLESHEET: "stylesheet",
   IMAGE: "image",
   MEDIA: "media",
@@ -13,6 +14,7 @@ export const RESOURCE_TYPE = Object.freeze({
   FRAME: "sub_frame",
   FONT: "font",
   WEBSOCKET: "websocket",
+  OTHER: "other",
 });
 
 const ACTIONS = new Set(Object.values(POLICY_ACTION));

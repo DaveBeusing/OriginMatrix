@@ -9,3 +9,8 @@ test("creates a versioned empty document", () => {
 test("rejects unknown future schemas", () => {
   assert.throws(() => migratePolicyDocument({ schemaVersion: 2, policies: [] }), /Unsupported policy schema/);
 });
+
+test("normalizes legacy single rule IDs to arrays", () => {
+  const document = migratePolicyDocument({ schemaVersion: 1, policies: [], ruleIds: { policy: 123 } });
+  assert.deepEqual(document.ruleIds, { policy: [123] });
+});

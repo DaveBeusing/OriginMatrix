@@ -63,3 +63,23 @@ test("revert removes only matching temporary policies", async () => {
   assert.equal((await store.getTemporaryPolicies())[0].tabId, 5);
   assert.deepEqual(recompiles, [true]);
 });
+
+test("a Phase-6 commit can select site and global scopes together", async () => {
+  const { store, workflow } = harness();
+  await store.putPolicy(createPolicy({ scope: "*", resourceType: "script", action: "block", temporary: true, tabId: 4 }));
+  await store.putPolicy(createPolicy({ scope: "example.com", resourceType: "image", action: "allow", temporary: true, tabId: 4 }));
+  const result = await workflow.commit({ tabId: 4, scopes: ["example.com", "*"] });
+  assert.equal(result.changed, 2);
+  assert.equal((await store.getPersistentPolicies()).length, 2);
+  assert.equal((await store.getTemporaryPolicies()).length, 0);
+});
+
+test("committing a temporary inherit marker deletes the persistent cell", async () => {
+  const { store, workflow } = harness();
+  await store.putPolicy(createPolicy({ scope: "example.com", target: "cdn.test", resourceType: "script", action: "block" }));
+  await store.putPolicy(createPolicy({ scope: "example.com", target: "cdn.test", resourceType: "script", action: "inherit", temporary: true, tabId: 4 }));
+  const result = await workflow.commit({ tabId: 4, scope: "example.com" });
+  assert.equal(result.changed, 1);
+  assert.deepEqual(await store.getPersistentPolicies(), []);
+  assert.deepEqual(await store.getTemporaryPolicies(), []);
+});

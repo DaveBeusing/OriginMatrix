@@ -1,5 +1,6 @@
 const RESOURCE_LABELS = Object.freeze({
-  script: "JS", xmlhttprequest: "XHR", sub_frame: "FRM", image: "IMG", media: "MED",
+  all: "ALL", cookie: "COOKIE", stylesheet: "CSS", image: "IMG", media: "MED", script: "JS",
+  xmlhttprequest: "XHR", sub_frame: "FRM", font: "FONT", websocket: "WEBSOCKET", other: "OTHER",
 });
 const NEXT_ACTION = Object.freeze({ inherit: "allow", allow: "block", block: "inherit" });
 
@@ -30,9 +31,11 @@ matrixBody.addEventListener("click", async (event) => {
       type: "SET_MATRIX_POLICY",
       tabId: currentTab.id,
       url: currentTab.url,
+      scope: button.dataset.scope,
       target: button.dataset.target,
+      party: button.dataset.party,
       resourceType: button.dataset.resourceType,
-      action: NEXT_ACTION[button.dataset.editAction],
+      action: nextAction(button.dataset.resourceType, button.dataset.editAction),
     });
     renderState(response);
     noticeElement.textContent = "Rule updated. Reload required for previous requests.";
@@ -62,7 +65,7 @@ async function initialize() {
 
 function renderState(state) {
   siteElement.textContent = state.matrix.site;
-  renderMetrics(state.observation, state.matrix.rows.length);
+  renderMetrics(state.observation, Object.keys(state.observation?.domains ?? {}).length);
   pendingCountElement.textContent = `${state.pendingChanges} temporary ${state.pendingChanges === 1 ? "change" : "changes"}`;
   reloadRequiredElement.hidden = !state.reloadRequired;
   commitButton.disabled = state.pendingChanges === 0;
@@ -71,7 +74,7 @@ function renderState(state) {
   if (state.matrix.rows.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 6;
+    cell.colSpan = 12;
     cell.className = "empty";
     cell.textContent = "Reload to collect requests.";
     row.append(cell);
@@ -110,30 +113,40 @@ function setWorkflowBusy(busy) {
 
 function createRow(rowData, resourceTypes) {
   const row = document.createElement("tr");
+  row.className = `row-${rowData.kind}`;
   const heading = document.createElement("th");
   heading.scope = "row";
-  heading.title = rowData.target;
-  heading.textContent = rowData.target;
-  const count = document.createElement("small");
-  count.textContent = String(rowData.total);
-  heading.append(count);
+  heading.title = rowData.label;
+  heading.textContent = rowData.label;
+  if (Number.isInteger(rowData.total)) {
+    const count = document.createElement("small");
+    count.textContent = String(rowData.total);
+    heading.append(count);
+  }
   row.append(heading);
   for (const resourceType of resourceTypes) {
     const cellData = rowData.cells[resourceType];
     const cell = document.createElement("td");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `matrix-cell effective-${cellData.effectiveAction} ${cellData.source ? "explicit" : "inherited"}`;
+    button.className = `matrix-cell effective-${cellData.effectiveAction} explicit-${cellData.explicitAction} ${cellData.source ? "explicit" : "inherited"}`;
+    button.dataset.scope = rowData.scope;
     button.dataset.target = rowData.target;
+    button.dataset.party = rowData.party;
     button.dataset.resourceType = resourceType;
     button.dataset.editAction = cellData.editAction;
-    button.title = `${rowData.target} ${RESOURCE_LABELS[resourceType]}: explicit ${cellData.explicitAction}, effective ${cellData.effectiveAction}`;
+    button.title = `${rowData.label} ${RESOURCE_LABELS[resourceType]}: explicit ${cellData.explicitAction}, effective ${cellData.effectiveAction}`;
     button.setAttribute("aria-label", button.title);
     button.textContent = cellData.explicitAction === "inherit" ? "·" : cellData.explicitAction === "allow" ? "+" : "−";
     cell.append(button);
     row.append(cell);
   }
   return row;
+}
+
+function nextAction(resourceType, currentAction) {
+  if (resourceType === "cookie") return currentAction === "inherit" ? "block" : "inherit";
+  return NEXT_ACTION[currentAction];
 }
 
 function renderMetrics(observation, domainCount) {

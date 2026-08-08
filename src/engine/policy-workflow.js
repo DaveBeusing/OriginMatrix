@@ -1,4 +1,4 @@
-import { createPolicy, policyCoordinates } from "../shared/models.js";
+import { POLICY_ACTION, createPolicy, policyCoordinates } from "../shared/models.js";
 
 export class PolicyWorkflow {
   constructor({ store, engine }) {
@@ -6,24 +6,25 @@ export class PolicyWorkflow {
     this.engine = engine;
   }
 
-  async commit({ tabId, scope }) {
+  async commit({ tabId, scope, scopes = [scope] }) {
     const [persistent, temporary] = await Promise.all([
       this.store.getPersistentPolicies(),
       this.store.getTemporaryPolicies(),
     ]);
-    const selected = temporary.filter((policy) => policy.tabId === tabId && policy.scope === scope);
+    const selectedScopes = new Set(scopes);
+    const selected = temporary.filter((policy) => policy.tabId === tabId && selectedScopes.has(policy.scope));
     if (selected.length === 0) return { changed: 0 };
 
-    const promoted = selected.map((policy) => createPolicy({
+    const promoted = selected.filter((policy) => policy.action !== POLICY_ACTION.INHERIT).map((policy) => createPolicy({
       scope: policy.scope,
       target: policy.target,
       party: policy.party,
       resourceType: policy.resourceType,
       action: policy.action,
     }));
-    const promotedCoordinates = new Set(promoted.map(policyCoordinates));
+    const selectedCoordinates = new Set(selected.map(policyCoordinates));
     const nextPersistent = [
-      ...persistent.filter((policy) => !promotedCoordinates.has(policyCoordinates(policy))),
+      ...persistent.filter((policy) => !selectedCoordinates.has(policyCoordinates(policy))),
       ...promoted,
     ];
     const selectedIds = new Set(selected.map((policy) => policy.id));
@@ -33,12 +34,13 @@ export class PolicyWorkflow {
     return { changed: selected.length };
   }
 
-  async revert({ tabId, scope }) {
+  async revert({ tabId, scope, scopes = [scope] }) {
     const temporary = await this.store.getTemporaryPolicies();
-    const nextTemporary = temporary.filter((policy) => policy.tabId !== tabId || policy.scope !== scope);
+    const selectedScopes = new Set(scopes);
+    const nextTemporary = temporary.filter((policy) => policy.tabId !== tabId || !selectedScopes.has(policy.scope));
     if (nextTemporary.length === temporary.length) return { changed: 0 };
 
-    this.engine.compiler.compilePolicies(nextTemporary, { temporary: true });
+    this.engine.compiler.compilePolicies(nextTemporary.filter((policy) => policy.action !== POLICY_ACTION.INHERIT), { temporary: true });
     try {
       await this.store.replacePolicies(nextTemporary, { temporary: true });
       await this.engine.recompile({ temporary: true });
@@ -51,7 +53,7 @@ export class PolicyWorkflow {
 
   async #replaceBoth({ persistent, temporary, nextPersistent, nextTemporary }) {
     this.engine.compiler.compilePolicies(nextPersistent, { temporary: false });
-    this.engine.compiler.compilePolicies(nextTemporary, { temporary: true });
+    this.engine.compiler.compilePolicies(nextTemporary.filter((policy) => policy.action !== POLICY_ACTION.INHERIT), { temporary: true });
     try {
       await this.store.replacePolicies(nextPersistent, { temporary: false });
       await this.store.replacePolicies(nextTemporary, { temporary: true });

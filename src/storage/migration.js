@@ -21,5 +21,8 @@ export function migratePolicyDocument(value) {
 function sanitizeRuleIds(value) {
   if (value === undefined) return {};
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("ruleIds must be an object.");
-  return Object.fromEntries(Object.entries(value).filter(([, id]) => Number.isInteger(id) && id > 0));
+  return Object.fromEntries(Object.entries(value).flatMap(([policyId, ids]) => {
+    const normalized = Array.isArray(ids) ? ids : [ids];
+    return normalized.every((id) => Number.isInteger(id) && id > 0) ? [[policyId, normalized]] : [];
+  }));
 }

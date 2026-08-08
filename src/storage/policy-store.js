@@ -1,4 +1,4 @@
-import { POLICY_ACTION, createPolicy, policyIdentity } from "../shared/models.js";
+import { POLICY_ACTION, createPolicy, policyCoordinates, policyIdentity } from "../shared/models.js";
 import { migratePolicyDocument } from "./migration.js";
 
 const PERSISTENT_KEY = "policyDocument";
@@ -25,9 +25,14 @@ export class PolicyStore {
     const document = await this.#read(area, key);
     const identity = policyIdentity(policy);
     document.policies = document.policies.filter((item) => policyIdentity(item) !== identity);
-    if (policy.action !== POLICY_ACTION.INHERIT) document.policies.push(policy);
+    if (policy.action !== POLICY_ACTION.INHERIT) {
+      document.policies.push(policy);
+    } else if (policy.temporary) {
+      const persistent = await this.getPersistentPolicies();
+      if (persistent.some((item) => policyCoordinates(item) === policyCoordinates(policy))) document.policies.push(policy);
+    }
     await area.set({ [key]: document });
-    return policy.action === POLICY_ACTION.INHERIT ? null : policy;
+    return document.policies.find((item) => item.id === policy.id) ?? null;
   }
 
   async removePolicy(policyId, { temporary = false } = {}) {
@@ -53,7 +58,7 @@ export class PolicyStore {
 
   async replacePolicies(policies, { temporary = false } = {}) {
     const normalized = policies.map((policy) => createPolicy(policy));
-    if (normalized.some((policy) => policy.temporary !== temporary || policy.action === POLICY_ACTION.INHERIT)) {
+    if (normalized.some((policy) => policy.temporary !== temporary || (!temporary && policy.action === POLICY_ACTION.INHERIT))) {
       throw new TypeError(`Replacement contains an invalid ${temporary ? "temporary" : "persistent"} policy.`);
     }
     const ids = new Set(normalized.map((policy) => policy.id));

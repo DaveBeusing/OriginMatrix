@@ -1,4 +1,4 @@
-import { createPolicy, policyIdentity } from "../shared/models.js";
+import { POLICY_ACTION, createPolicy, policyIdentity } from "../shared/models.js";
 
 export class PolicyEngine {
   constructor({ store, resolver, compiler, browserAdapter }) {
@@ -27,8 +27,9 @@ export class PolicyEngine {
 
   async recompile({ temporary }) {
     const policies = temporary ? await this.store.getTemporaryPolicies() : await this.store.getPersistentPolicies();
-    const rules = this.compiler.compilePolicies(policies, { temporary });
-    await this.store.setRuleIds(new Map(policies.map((policy, index) => [policy.id, rules[index].id])), { temporary });
+    const compilable = policies.filter((policy) => policy.action !== POLICY_ACTION.INHERIT);
+    const { rules, ruleIds } = this.compiler.compilePolicySet(compilable, { temporary });
+    await this.store.setRuleIds(ruleIds, { temporary });
     await this.browserAdapter.replaceRules({ temporary, rules });
     return rules;
   }

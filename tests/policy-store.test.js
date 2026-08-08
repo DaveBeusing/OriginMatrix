@@ -32,3 +32,12 @@ test("bulk replacement validates policy lifetime", async () => {
   const temporary = createPolicy({ action: "block", temporary: true, tabId: 1 });
   await assert.rejects(() => store.replacePolicies([temporary], { temporary: false }), /invalid persistent policy/);
 });
+
+test("temporary inherit markers preview deletion of a persistent policy", async () => {
+  const store = new PolicyStore({ localArea: memoryStorage(), sessionArea: memoryStorage() });
+  const persistent = createPolicy({ scope: "example.com", target: "cdn.test", resourceType: "script", action: "block" });
+  await store.putPolicy(persistent);
+  await store.putPolicy(createPolicy({ scope: "example.com", target: "cdn.test", resourceType: "script", action: "inherit", temporary: true, tabId: 3 }));
+  assert.equal((await store.getTemporaryPolicies())[0].action, "inherit");
+  assert.equal((await store.getAllPolicies()).length, 2);
+});

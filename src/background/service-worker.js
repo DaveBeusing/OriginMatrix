@@ -74,19 +74,23 @@ async function getTabState(tabId, url) {
     topDomain,
     domains: observation?.domains ?? {},
     policies,
+    temporaryPolicies: temporary,
     resolver: policyEngine.resolver,
   });
-  const pendingChanges = temporary.filter((policy) => policy.tabId === tabId && policy.scope === topDomain).length;
+  const pendingChanges = temporary.filter((policy) => policy.tabId === tabId && [topDomain, "*"].includes(policy.scope)).length;
   return { ok: true, observation, matrix, pendingChanges, reloadRequired: observation?.reloadRequired === true };
 }
 
-async function setMatrixPolicy({ tabId, url, target, resourceType, action }) {
+async function setMatrixPolicy({ tabId, url, scope, target, party, resourceType, action }) {
   if (!MATRIX_RESOURCE_TYPES.includes(resourceType)) throw new TypeError(`Unsupported matrix resource type: ${resourceType}`);
   if (!Object.values(POLICY_ACTION).includes(action)) throw new TypeError(`Unsupported matrix action: ${action}`);
+  if (resourceType === "cookie" && action === POLICY_ACTION.ALLOW) throw new TypeError("Cookie cells support inherit or block only.");
+  const site = hostnameFromUrl(url);
+  validateMatrixCoordinates({ site, scope, target, party });
   const policy = createPolicy({
-    scope: hostnameFromUrl(url),
+    scope,
     target,
-    party: PARTY.ANY,
+    party,
     resourceType,
     action,
     temporary: true,
@@ -98,13 +102,15 @@ async function setMatrixPolicy({ tabId, url, target, resourceType, action }) {
 }
 
 async function commitMatrix({ tabId, url }) {
-  const result = await policyWorkflow.commit({ tabId, scope: hostnameFromUrl(url) });
+  const site = hostnameFromUrl(url);
+  const result = await policyWorkflow.commit({ tabId, scopes: [site, "*"] });
   if (result.changed > 0) await tabStateManager.setReloadRequired({ tabId, required: true, topUrl: url });
   return { ...(await getTabState(tabId, url)), changed: result.changed };
 }
 
 async function revertMatrix({ tabId, url }) {
-  const result = await policyWorkflow.revert({ tabId, scope: hostnameFromUrl(url) });
+  const site = hostnameFromUrl(url);
+  const result = await policyWorkflow.revert({ tabId, scopes: [site, "*"] });
   if (result.changed > 0) await tabStateManager.setReloadRequired({ tabId, required: true, topUrl: url });
   return { ...(await getTabState(tabId, url)), changed: result.changed };
 }
@@ -126,4 +132,12 @@ function enqueuePolicyOperation(task) {
   const operation = policyOperations.then(task);
   policyOperations = operation.catch(() => {});
   return operation;
+}
+
+function validateMatrixCoordinates({ site, scope, target, party }) {
+  if (![PARTY.ANY, PARTY.FIRST_PARTY, PARTY.THIRD_PARTY].includes(party)) throw new TypeError("Invalid matrix party.");
+  if (scope !== site && scope !== "*") throw new TypeError("Matrix scope does not match the active site.");
+  if (scope === "*" && (target !== "*" || party !== PARTY.ANY)) throw new TypeError("Global rows cannot target a site or party.");
+  if (target !== "*" && (scope !== site || party !== PARTY.ANY)) throw new TypeError("Domain rows require the current site and any-party scope.");
+  if (party !== PARTY.ANY && target !== "*") throw new TypeError("Party rows cannot target a domain.");
 }

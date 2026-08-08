@@ -1,11 +1,17 @@
-import { PARTY, POLICY_ACTION, RESOURCE_TYPE, WILDCARD, validatePolicy } from "../shared/models.js";
+import { PARTY, POLICY_ACTION, RESOURCE_TYPE, WILDCARD, policyCoordinates, validatePolicy } from "../shared/models.js";
 import { domainMatches, normalizeHostname } from "./domain-normalizer.js";
 
 export class PolicyResolver {
   resolve(request, policies) {
     const normalized = normalizeRequest(request);
-    const candidates = policies
-      .map((policy, index) => ({ policy: validatePolicy(policy), index }))
+    const validated = policies.map((policy) => validatePolicy(policy));
+    const deletedCoordinates = new Set(validated
+      .filter((policy) => policy.temporary && policy.tabId === normalized.tabId && policy.action === POLICY_ACTION.INHERIT)
+      .map(policyCoordinates));
+    const candidates = validated
+      .filter((policy) => policy.action !== POLICY_ACTION.INHERIT)
+      .filter((policy) => policy.temporary || !deletedCoordinates.has(policyCoordinates(policy)))
+      .map((policy, index) => ({ policy, index }))
       .filter(({ policy }) => matches(policy, normalized))
       .map(({ policy, index }) => ({ policy, index, score: specificity(policy) }))
       .sort((a, b) => b.score - a.score || a.policy.id.localeCompare(b.policy.id) || a.index - b.index);

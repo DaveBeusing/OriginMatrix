@@ -47,3 +47,11 @@ test("a temporary tab policy overrides a persistent specific policy only in its 
   assert.equal(resolver.resolve(request("example.com", "analytics.com", 9), [...policies, temporary]).action, "allow");
   assert.equal(resolver.resolve(request("example.com", "analytics.com", 10), [...policies, temporary]).action, "block");
 });
+
+test("a temporary inherit marker masks its persistent cell only in the same tab", () => {
+  const persistent = createPolicy({ scope: "example.com", target: "analytics.com", resourceType: "script", action: "block" });
+  const marker = createPolicy({ scope: "example.com", target: "analytics.com", resourceType: "script", action: "inherit", temporary: true, tabId: 9 });
+  const parent = createPolicy({ resourceType: "script", action: "allow" });
+  assert.equal(resolver.resolve(request("example.com", "analytics.com", 9), [parent, persistent, marker]).action, "allow");
+  assert.equal(resolver.resolve(request("example.com", "analytics.com", 10), [parent, persistent, marker]).action, "block");
+});
