@@ -19,6 +19,11 @@ export class NetworkEngine {
   getDynamicRules() { return this.dynamic.getRules(); }
   getSessionRules() { return this.session.getRules(); }
 
+  async getProtectionStatus(rulesetId = "base-network") {
+    const enabledRulesets = await this.static.getEnabledRulesets();
+    return { enabled: enabledRulesets.includes(rulesetId), rulesetId };
+  }
+
   async getDiagnostics() {
     const [dynamicRules, sessionRules, enabledStaticRulesets, availableStaticRules] = await Promise.all([
       this.dynamic.getRules(),

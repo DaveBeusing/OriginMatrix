@@ -27,7 +27,13 @@ Future filters ──────┘      ├── StaticRuleManager
                             └── RuleBudget
 ```
 
-`DynamicRuleManager` and `SessionRuleManager` validate IDs and rule counts before installation, support targeted install/removal, and replace complete generations with one corresponding Chrome update call. `StaticRuleManager` prepares enabled-ruleset management and available-static-rule accounting; no static ruleset is bundled in this phase.
+`DynamicRuleManager` and `SessionRuleManager` validate IDs and rule counts before installation, support targeted install/removal, and replace complete generations with one corresponding Chrome update call. `StaticRuleManager` manages enabled rulesets and available-static-rule accounting. The manifest enables the bundled `base-network` ruleset automatically.
+
+## Bundled static network filtering
+
+`rules/base-network.json` is a small, versioned proof-of-architecture ruleset. It blocks selected advertising endpoints and reserved `.example` test targets for subresources while leaving main-frame navigation untouched. It does not download data, parse external filter syntax, or act as a hand-maintained production filter database.
+
+Static rules use priority `10`. Matrix priorities are specificity-derived and start at `100,000,000`; therefore an explicit Matrix `allow` has higher priority than a matching automatic block. Dynamic and tab-scoped session generations remain independent from the static ruleset and keep their reserved ID ranges.
 
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
@@ -163,4 +169,4 @@ Non-JSON/uMatrix text imports fail explicitly. A future compatibility adapter mu
 
 `RuleOptimizer` currently removes only rules whose priority, action, and condition are semantically identical. It deliberately does not merge request domains or rewrite priorities: either operation could change allow/block conflict resolution. Its output is exposed diagnostically while logical policies and their generated rule-ID mappings remain authoritative.
 
-Static filter lists remain a separate future DNR ruleset pipeline. They must not be imported into or optimized together with matrix policies.
+External filter lists remain a separate future compiler pipeline. They must not be imported into or optimized together with matrix policies.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OriginMatrix",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "minimum_chrome_version": "102",
   "description": "A granular request firewall for the modern web.",
   "icons": {
@@ -22,6 +22,15 @@
   "background": {
     "service_worker": "src/background/service-worker.js",
     "type": "module"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "base-network",
+        "enabled": true,
+        "path": "rules/base-network.json"
+      }
+    ]
   },
   "action": {
     "default_title": "OriginMatrix",

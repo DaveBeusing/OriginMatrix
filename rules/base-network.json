@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "priority": 10,
+    "action": { "type": "block" },
+    "condition": {
+      "requestDomains": [
+        "doubleclick.net",
+        "googleadservices.com",
+        "googlesyndication.com"
+      ],
+      "resourceTypes": [
+        "stylesheet",
+        "image",
+        "font",
+        "media",
+        "script",
+        "xmlhttprequest",
+        "sub_frame",
+        "ping",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 10,
+    "action": { "type": "block" },
+    "condition": {
+      "requestDomains": [
+        "ads.example",
+        "tracker.example"
+      ],
+      "resourceTypes": [
+        "stylesheet",
+        "image",
+        "font",
+        "media",
+        "script",
+        "xmlhttprequest",
+        "sub_frame",
+        "ping",
+        "other"
+      ]
+    }
+  }
+]

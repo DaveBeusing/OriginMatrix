@@ -5,6 +5,7 @@ const RESOURCE_LABELS = Object.freeze({
 const NEXT_ACTION = Object.freeze({ inherit: "allow", allow: "block", block: "inherit" });
 
 const siteElement = document.querySelector("#site");
+const protectionElement = document.querySelector("#protection");
 const noticeElement = document.querySelector("#notice");
 const reloadButton = document.querySelector("#reload");
 const settingsButton = document.querySelector("#settings");
@@ -68,6 +69,8 @@ async function initialize() {
 
 function renderState(state) {
   siteElement.textContent = state.matrix.site;
+  protectionElement.textContent = state.protection?.enabled ? "ON · Network filters active" : "OFF";
+  protectionElement.dataset.enabled = String(state.protection?.enabled === true);
   renderMetrics(state.observation, Object.keys(state.observation?.domains ?? {}).length);
   pendingCountElement.textContent = `${state.pendingChanges} temporary ${state.pendingChanges === 1 ? "change" : "changes"}`;
   reloadRequiredElement.hidden = !state.reloadRequired;

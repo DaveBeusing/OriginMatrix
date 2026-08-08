@@ -62,6 +62,12 @@ test("prepares static ruleset activation behind the same engine", async () => {
   assert.deepEqual(api.calls.at(-1), ["static", { disableRulesetIds: ["base"], enableRulesetIds: ["privacy"] }]);
 });
 
+test("reports whether bundled network protection is active", async () => {
+  const engine = new NetworkEngine({ api: fakeDnrApi() });
+  assert.deepEqual(await engine.getProtectionStatus("base"), { enabled: true, rulesetId: "base" });
+  assert.deepEqual(await engine.getProtectionStatus(), { enabled: false, rulesetId: "base-network" });
+});
+
 test("refuses replacement before calling Chrome when the budget is exceeded", async () => {
   const api = fakeDnrApi();
   const engine = new NetworkEngine({ api, budget: new RuleBudget({ dynamic: 1 }) });

@@ -77,10 +77,11 @@ async function handleMessage(message) {
 }
 
 async function getTabState(tabId, url) {
-  const [policies, temporary, observation] = await Promise.all([
+  const [policies, temporary, observation, protection] = await Promise.all([
     policyStore.getAllPolicies(),
     policyStore.getTemporaryPolicies(),
     tabStateManager.get(tabId),
+    networkEngine.getProtectionStatus(),
   ]);
   const topDomain = hostnameFromUrl(url);
   const matrix = buildMatrixModel({
@@ -92,7 +93,7 @@ async function getTabState(tabId, url) {
     resolver: policyEngine.resolver,
   });
   const pendingChanges = temporary.filter((policy) => policy.tabId === tabId && [topDomain, "*"].includes(policy.scope)).length;
-  return { ok: true, observation, matrix, pendingChanges, reloadRequired: observation?.reloadRequired === true };
+  return { ok: true, observation, matrix, protection, pendingChanges, reloadRequired: observation?.reloadRequired === true };
 }
 
 async function setMatrixPolicy({ tabId, url, scope, target, party, resourceType, action }) {

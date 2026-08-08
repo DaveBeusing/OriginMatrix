@@ -9,6 +9,8 @@ dl { margin: 12px 0; border-block: 1px solid #30363b; }
 dl div { padding: 7px 0; }
 dt { color: #8e9aa4; }
 dd { margin: 0; font-family: ui-monospace, monospace; }
+#protection[data-enabled="true"] { color: #58d68d; }
+#protection[data-enabled="false"] { color: #ff8585; }
 .metrics { display: flex; gap: 12px; color: #8e9aa4; font-size: 11px; }
 .metrics strong { color: #e8ecef; font-family: ui-monospace, monospace; }
 .matrix-scroll { max-height: 290px; margin-top: 8px; overflow: auto; border: 1px solid #30363b; }
