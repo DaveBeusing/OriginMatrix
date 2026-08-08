@@ -11,11 +11,13 @@ import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projec
 import { PolicyStore } from "../storage/policy-store.js";
 import { ProfileStore } from "../storage/profile-store.js";
 import { FilterListSettingsStore } from "../storage/filter-list-settings-store.js";
+import { FilterListGenerationStore } from "../storage/filter-list-generation-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 import { EASYLIST } from "../filters/filter-list-catalog.js";
 import { FilterListService } from "../filters/filter-list-service.js";
 import { FilterListManager } from "../filters/filter-list-manager.js";
+import { FilterListUpdater } from "../filters/filter-list-updater.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
@@ -37,9 +39,12 @@ const filterListService = new FilterListService({
   scriptletEngine,
   loadText: loadBundledText,
 });
+const filterListGenerationStore = new FilterListGenerationStore({ listIds: [EASYLIST.id] });
 const filterListManager = new FilterListManager({
   services: [filterListService],
   settingsStore: new FilterListSettingsStore({ lists: [EASYLIST] }),
+  generationStore: filterListGenerationStore,
+  updater: new FilterListUpdater({ generationStore: filterListGenerationStore }),
 });
 const policyEngine = new PolicyEngine({
   store: policyStore,
@@ -100,6 +105,7 @@ async function handleMessage(message, sender) {
     case "IMPORT_POLICIES": return enqueuePolicyOperation(() => importPolicyDocument(message));
     case "APPLY_PROFILE": return enqueuePolicyOperation(() => applyProfile(message));
     case "SET_FILTER_LIST_ENABLED": return enqueuePolicyOperation(() => setFilterListEnabled(message));
+    case "UPDATE_FILTER_LIST": return enqueuePolicyOperation(() => updateFilterList(message));
     case "RECOMPILE_RULES": return enqueuePolicyOperation(recompileWithResult);
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
@@ -230,6 +236,10 @@ async function applyProtectionFeatures(features) {
 
 async function setFilterListEnabled({ id, enabled }) {
   return { ok: true, list: await filterListManager.setEnabled(id, enabled) };
+}
+
+async function updateFilterList({ id }) {
+  return { ok: true, list: await filterListManager.update(id) };
 }
 
 async function recompileWithResult() {

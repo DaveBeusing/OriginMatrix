@@ -38,3 +38,28 @@ test("restores the previous generation when a toggle fails", async () => {
   assert.equal(manager.getStatuses()[0].enabled, false);
   assert.equal(service.activations(), 2);
 });
+
+test("persists a staged update only after activation and rolls back on persistence failure", async () => {
+  const oldGeneration = { name: "old" };
+  const newGeneration = { name: "new" };
+  const activations = [];
+  let source = "old source";
+  let metadata = { version: "old" };
+  const service = {
+    list: { id: "easylist", enabled: true },
+    setEnabled() {}, getStatus() { return { enabled: true }; },
+    getSourceState() { return { source, metadata, generation: oldGeneration }; },
+    setSource(nextSource, nextMetadata) { source = nextSource; metadata = nextMetadata; },
+    async activatePrepared(generation) { activations.push(generation); return { enabled: true, version: generation.name }; },
+    async activate() {},
+  };
+  const updater = {
+    async downloadAndPrepare() { return { source: "new source", metadata: { version: "new" }, prepared: newGeneration }; },
+    async persist() { throw new Error("storage failed"); },
+  };
+  const manager = new FilterListManager({ services: [service], settingsStore: { async getAll() { return {}; } }, updater });
+  await assert.rejects(() => manager.update("easylist"), /storage failed/);
+  assert.deepEqual(activations, [newGeneration, oldGeneration]);
+  assert.equal(source, "old source");
+  assert.deepEqual(metadata, { version: "old" });
+});

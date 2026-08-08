@@ -125,6 +125,15 @@ async function toggleFilterList(event) {
   const button = event.target.closest("button[data-list-id]");
   if (!button) return;
   button.disabled = true;
+  if (button.dataset.action === "update") {
+    try {
+      statusElement.textContent = `Validating update for ${button.dataset.listId}…`;
+      await send({ type: "UPDATE_FILTER_LIST", id: button.dataset.listId });
+      statusElement.textContent = `${button.dataset.listId} updated successfully.`;
+      await refreshDashboard();
+    } catch (error) { showError(error); if (button.isConnected) button.disabled = false; }
+    return;
+  }
   const enabled = button.dataset.enabled !== "true";
   try {
     await send({ type: "SET_FILTER_LIST_ENABLED", id: button.dataset.listId, enabled });
@@ -140,13 +149,19 @@ function filterListRow(list) {
   const values = [list.title, list.enabled ? "Yes" : "No", list.state, list.version, list.lastUpdated ? new Date(list.lastUpdated).toLocaleString() : "—", list.rulesCompiled ?? 0, list.cosmeticRules ?? 0, list.scriptletRules ?? 0, list.rulesUnsupported ?? 0];
   for (const value of values) { const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell); }
   const action = document.createElement("td");
-  const button = document.createElement("button");
-  button.type = "button";
-  button.dataset.listId = list.id;
-  button.dataset.enabled = String(list.enabled);
-  button.textContent = list.enabled ? "Disable" : "Enable";
-  if (list.enabled) button.className = "danger";
-  action.append(button);
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.dataset.listId = list.id;
+  toggle.dataset.enabled = String(list.enabled);
+  toggle.dataset.action = "toggle";
+  toggle.textContent = list.enabled ? "Disable" : "Enable";
+  if (list.enabled) toggle.className = "danger";
+  const update = document.createElement("button");
+  update.type = "button";
+  update.dataset.listId = list.id;
+  update.dataset.action = "update";
+  update.textContent = "Update";
+  action.append(toggle, update);
   row.append(action);
   return row;
 }
