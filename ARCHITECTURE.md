@@ -47,6 +47,14 @@ Parser diagnostics expose total, parsed, supported, unsupported, and ignored rul
 
 Filter rules occupy dynamic IDs `500000–899999`, between persistent Matrix IDs and session IDs. Automatic blocks use priority `10000`, filter exceptions use `20000`, and Matrix priorities begin at `100000000`. This makes filter conflicts deterministic while preserving explicit Matrix overrides. The compiler accounts for already-reserved Matrix rules before accepting a generation against the shared dynamic budget. Range-scoped replacement in `DynamicRuleManager` lets Matrix and filter generations update independently without deleting one another.
 
+## Initial EasyList integration
+
+OriginMatrix ships an unmodified, version- and hash-pinned EasyList snapshot. A bundled snapshot was chosen over runtime downloading so protection is available offline, releases are reproducible, and Phase 6 does not introduce an incomplete update channel. The snapshot is filter data only and is parsed locally; it is never executable code.
+
+At service-worker reconciliation, `FilterListService` loads the packaged text, produces normalized models, compiles the supported network subset, and atomically replaces only the filter dynamic-rule partition. Parser or compiler failure leaves the prior DNR generation in place. The dashboard exposes list state, snapshot version, and loaded/supported/compiled counts. Remote validation, generation swapping across downloads, and rollback policy remain Phase 16 work.
+
+The minimum supported Chromium version is 121. Earlier versions shared a 5,000-rule limit between dynamic and session rules; Chromium 121 provides the larger safe dynamic-rule quota required for EasyList while retaining a separate session quota.
+
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
 The `PolicyEngine` depends only on `NetworkEngine.replaceRules({ temporary, rules })`: persistent matrix policies still become dynamic rules, while tab policies still become session rules. Generated DNR state remains reconstructable from logical stores.

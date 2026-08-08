@@ -7,6 +7,7 @@ const FILTER_RULE_MIN = DYNAMIC_RULE_RANGES.filters.minimum;
 const FILTER_RULE_SIZE = DYNAMIC_RULE_RANGES.filters.maximum - FILTER_RULE_MIN + 1;
 const BLOCK_PRIORITY = 10_000;
 const EXCEPTION_PRIORITY = 20_000;
+const MAX_AGGREGATED_DOMAINS = 1_000;
 const HOST_PATTERN = /^\|\|([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*)\^$/i;
 
 export class NetworkFilterCompiler {
@@ -81,10 +82,15 @@ function aggregateHostRules(rules) {
     group.condition.requestDomains.push(...requestDomains);
     groups.set(key, group);
   }
-  return [...standalone, ...groups.values().map((rule) => ({
-    ...rule,
-    condition: { ...rule.condition, requestDomains: [...new Set(rule.condition.requestDomains)].sort() },
-  }))];
+  const aggregated = [...groups.values()].flatMap((rule) => {
+    const domains = [...new Set(rule.condition.requestDomains)].sort();
+    const chunks = [];
+    for (let index = 0; index < domains.length; index += MAX_AGGREGATED_DOMAINS) {
+      chunks.push({ ...rule, condition: { ...rule.condition, requestDomains: domains.slice(index, index + MAX_AGGREGATED_DOMAINS) } });
+    }
+    return chunks;
+  });
+  return [...standalone, ...aggregated];
 }
 
 function assignRuleIds(rules) {

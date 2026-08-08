@@ -49,6 +49,13 @@ test("deduplicates filters and safely aggregates compatible host blocks", () => 
   assert.equal(result.diagnostics.rulesOptimized, 1);
 });
 
+test("chunks large host aggregations into bounded DNR conditions", () => {
+  const filters = Array.from({ length: 1_001 }, (_, index) => createNetworkFilter({ pattern: `||ads-${index}.example^` }));
+  const result = new NetworkFilterCompiler().compile(filters);
+  assert.equal(result.rules.length, 2);
+  assert.ok(result.rules.every(({ condition }) => condition.requestDomains.length <= 1_000));
+});
+
 test("does not aggregate rules with different actions or conditions", () => {
   const result = new NetworkFilterCompiler().compile([
     createNetworkFilter({ pattern: "||a.example^", thirdParty: true }),

@@ -11,11 +11,20 @@ import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projec
 import { PolicyStore } from "../storage/policy-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
+import { EASYLIST } from "../filters/filter-list-catalog.js";
+import { FilterListService } from "../filters/filter-list-service.js";
+import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
 const tabStateManager = new TabStateManager();
 const networkEngine = new NetworkEngine();
+const filterListService = new FilterListService({
+  list: EASYLIST,
+  networkEngine,
+  compiler: new NetworkFilterCompiler({ budget: networkEngine.budget }),
+  loadText: loadBundledText,
+});
 const policyEngine = new PolicyEngine({
   store: policyStore,
   resolver: new PolicyResolver(),
@@ -33,7 +42,7 @@ const requestObserver = new RequestObserver({
 
 requestObserver.start();
 
-reconcileRules().catch((error) => console.error("OriginMatrix reconciliation failed", error));
+const startupReconciliation = reconcileRules().catch((error) => console.error("OriginMatrix reconciliation failed", error));
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleMessage(message).then(sendResponse).catch((error) => {
@@ -64,7 +73,7 @@ async function handleMessage(message) {
     case "SET_MATRIX_POLICY": return enqueuePolicyOperation(() => setMatrixPolicy(message));
     case "COMMIT_MATRIX": return enqueuePolicyOperation(() => commitMatrix(message));
     case "REVERT_MATRIX": return enqueuePolicyOperation(() => revertMatrix(message));
-    case "GET_DASHBOARD_STATE": return policyOperations.then(getDashboardState);
+    case "GET_DASHBOARD_STATE": return Promise.all([policyOperations, startupReconciliation]).then(getDashboardState);
     case "EXPORT_POLICIES": return policyOperations.then(exportPolicyDocument);
     case "IMPORT_POLICIES": return enqueuePolicyOperation(() => importPolicyDocument(message));
     case "APPLY_PROFILE": return enqueuePolicyOperation(() => applyProfile(message));
@@ -133,6 +142,7 @@ async function revertMatrix({ tabId, url }) {
 async function reconcileRules() {
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
+  await filterListService.activate();
 }
 
 async function getDashboardState() {
@@ -147,6 +157,7 @@ async function getDashboardState() {
     ok: true,
     manifestVersion: chrome.runtime.getManifest().version,
     policies: persistent,
+    filterLists: [filterListService.getStatus()],
     diagnostics: {
       persistentPolicies: persistent.length,
       temporaryPolicies: temporary.length,
@@ -160,6 +171,12 @@ async function getDashboardState() {
       ...observation,
     },
   };
+}
+
+async function loadBundledText(path) {
+  const response = await fetch(chrome.runtime.getURL(path));
+  if (!response.ok) throw new Error(`Could not load bundled filter data: ${path}`);
+  return response.text();
 }
 
 async function exportPolicyDocument() {

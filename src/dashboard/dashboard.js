@@ -1,5 +1,6 @@
 const diagnosticsElement = document.querySelector("#diagnostic-values");
 const rulesBody = document.querySelector("#rules-body");
+const filterListsBody = document.querySelector("#filter-lists-body");
 const statusElement = document.querySelector("#status");
 const importData = document.querySelector("#import-data");
 const logBody = document.querySelector("#log-body");
@@ -31,6 +32,7 @@ async function refreshDashboard() {
   diagnosticsElement.replaceChildren(...Object.entries(state.diagnostics).map(([name, value]) => metric(name, value)));
   rulesBody.replaceChildren(...state.policies.map(policyRow));
   if (state.policies.length === 0) rulesBody.append(emptyRow(5, "No persistent policies."));
+  filterListsBody.replaceChildren(...state.filterLists.map(filterListRow));
 }
 
 async function runAction(type, payload, success) {
@@ -93,6 +95,7 @@ function renderLog() {
 
 function metric(name, value) { const wrapper = document.createElement("div"); const term = document.createElement("dt"); const detail = document.createElement("dd"); term.textContent = name.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`); detail.textContent = String(value); wrapper.append(term, detail); return wrapper; }
 function policyRow(policy) { const row = document.createElement("tr"); for (const value of [policy.scope, policy.target, policy.party, policy.resourceType, policy.action]) { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); } return row; }
+function filterListRow(list) { const row = document.createElement("tr"); for (const value of [list.title, list.enabled ? list.state : "disabled", list.version, list.rulesLoaded ?? 0, list.rulesSupported ?? 0, list.rulesCompiled ?? 0]) { const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell); } return row; }
 function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.outcome, entry.resourceType, `${entry.domain} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
 function emptyRow(span, text) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = span; cell.className = "empty"; cell.textContent = text; row.append(cell); return row; }
 function option(value, label) { const item = document.createElement("option"); item.value = value; item.textContent = label; return item; }

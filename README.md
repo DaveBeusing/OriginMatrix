@@ -17,6 +17,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Normalized network, exception, cosmetic, and scriptlet filter data models
 - Network filter parser with explicit support and diagnostics reporting
 - Budget-aware filter-to-DNR compiler with deterministic optimization
+- Bundled EasyList network protection with dashboard diagnostics
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -31,7 +32,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Original scalable icon set for extension and toolbar surfaces
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
-The bundled ruleset is intentionally small and validates the static-filter architecture; it is not yet a comprehensive ad-blocking list. Parsed network models compile into deterministic DNR blocks and exceptions with safe deduplication, host aggregation, isolated rule IDs, and shared dynamic-budget accounting. Unsupported options and syntax are counted and reported. Scriptlet syntax, downloaded filter lists, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList is parsed and compiled locally as data; unsupported syntax is reported and never guessed. The dashboard shows its version and loaded, supported, and compiled rule counts. Runtime filter downloads and updates, scriptlet syntax, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
 
 ## Architecture
 
@@ -65,6 +66,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the policy model, resolution hierarch
 4. Select **Load unpacked** and choose the repository root.
 5. Open an HTTP(S) page and reload it once so OriginMatrix can observe its requests.
 6. Open the OriginMatrix toolbar popup.
+
+OriginMatrix requires Chromium 121 or newer. This provides the independent session-rule quota and expanded safe dynamic-rule quota needed by the bundled filter generation.
 
 After changing a matrix cell, reload the page when prompted. Use **Commit** to make the current tab/site changes persistent or **Revert** to discard them. The **Settings** button opens diagnostics, profiles, persistent rules, import/export, and request logs.
 
@@ -138,7 +141,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Initial established network-filter-list integration
+- Site-aware cosmetic filtering foundation
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven
@@ -146,3 +149,5 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## License
 
 OriginMatrix is available under the [MIT License](LICENSE.md).
+
+The bundled EasyList snapshot is separately licensed by its upstream authors. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

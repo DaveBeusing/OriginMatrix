@@ -10,12 +10,17 @@
     <header><div><h1>OriginMatrix</h1><p>Policy and diagnostics dashboard</p></div><span id="version">…</span></header>
     <main>
       <nav aria-label="Dashboard sections">
-        <a href="#diagnostics">Diagnostics</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
+        <a href="#diagnostics">Diagnostics</a><a href="#filter-lists">Filter Lists</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
       </nav>
       <section id="diagnostics">
         <h2>Diagnostics</h2>
         <dl id="diagnostic-values"></dl>
         <div class="buttons"><button id="recompile">Recompile rules</button><button id="debug-report">Export debug report</button><button id="clear-session" class="danger">Clear session rules</button></div>
+      </section>
+      <section id="filter-lists">
+        <h2>Filter Lists</h2>
+        <p>Bundled snapshots are parsed locally. Remote updates are not enabled.</p>
+        <div class="table-scroll"><table><thead><tr><th>Filter List</th><th>State</th><th>Version</th><th>Rules loaded</th><th>Rules supported</th><th>Rules compiled</th></tr></thead><tbody id="filter-lists-body"></tbody></table></div>
       </section>
       <section id="profiles">
         <h2>Default profiles</h2>
