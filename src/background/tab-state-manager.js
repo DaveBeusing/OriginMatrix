@@ -1,5 +1,6 @@
 const TAB_STATE_KEY = "tabStateDocument";
 const TAB_STATE_SCHEMA_VERSION = 1;
+const MAX_LOG_ENTRIES = 250;
 
 export class TabStateManager {
   constructor(storageArea = chrome.storage.session) {
@@ -20,7 +21,7 @@ export class TabStateManager {
     });
   }
 
-  recordRequest({ tabId, url, type, topUrl, timestamp = Date.now() }) {
+  recordRequest({ tabId, requestId, url, type, topUrl, timestamp = Date.now() }) {
     return this.#mutate((document) => {
       const key = String(tabId);
       const targetDomain = hostnameFromUrl(url);
@@ -36,11 +37,20 @@ export class TabStateManager {
       domain.types[resourceType] = (domain.types[resourceType] ?? 0) + 1;
       state.domains[targetDomain] = domain;
       state.totalRequests += 1;
+      state.requestLog.push({
+        id: requestId ?? `${timestamp}:${state.totalRequests}`,
+        timestamp,
+        domain: targetDomain,
+        resourceType,
+        url,
+        outcome: "pending",
+      });
+      if (state.requestLog.length > MAX_LOG_ENTRIES) state.requestLog.splice(0, state.requestLog.length - MAX_LOG_ENTRIES);
       state.updatedAt = timestamp;
     });
   }
 
-  recordOutcome({ tabId, url, outcome, timestamp = Date.now() }) {
+  recordOutcome({ tabId, requestId, url, outcome, timestamp = Date.now() }) {
     if (outcome !== "completed" && outcome !== "failed") throw new TypeError(`Unsupported request outcome: ${outcome}`);
     return this.#mutate((document) => {
       const state = document.tabs[String(tabId)];
@@ -50,6 +60,8 @@ export class TabStateManager {
       if (!domain) return;
       domain[outcome] += 1;
       state[`${outcome}Requests`] += 1;
+      const entry = [...state.requestLog].reverse().find((item) => item.id === requestId);
+      if (entry) entry.outcome = outcome;
       state.updatedAt = timestamp;
     });
   }
@@ -70,6 +82,18 @@ export class TabStateManager {
     });
   }
 
+  async getDiagnostics() {
+    await this.queue;
+    const document = await this.#read();
+    const tabs = Object.values(document.tabs);
+    return {
+      trackedTabs: tabs.length,
+      observedDomains: tabs.reduce((sum, tab) => sum + Object.keys(tab.domains).length, 0),
+      observedRequests: tabs.reduce((sum, tab) => sum + tab.totalRequests, 0),
+      retainedLogEntries: tabs.reduce((sum, tab) => sum + tab.requestLog.length, 0),
+    };
+  }
+
   #mutate(change) {
     const operation = this.queue.then(async () => {
       const document = await this.#read();
@@ -87,7 +111,12 @@ export class TabStateManager {
     if (!value || value.schemaVersion !== TAB_STATE_SCHEMA_VERSION || !value.tabs || typeof value.tabs !== "object") {
       throw new TypeError("Unsupported or invalid tab-state document.");
     }
-    return structuredClone(value);
+    const document = structuredClone(value);
+    for (const state of Object.values(document.tabs)) {
+      if (!Array.isArray(state.requestLog)) state.requestLog = [];
+      if (typeof state.reloadRequired !== "boolean") state.reloadRequired = false;
+    }
+    return document;
   }
 }
 
@@ -105,6 +134,7 @@ function createTabState(tabId, topUrl, topDomain, timestamp) {
     completedRequests: 0,
     failedRequests: 0,
     reloadRequired: false,
+    requestLog: [],
     domains: {},
     startedAt: timestamp,
     updatedAt: timestamp,

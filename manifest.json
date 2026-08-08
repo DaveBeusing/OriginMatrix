@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OriginMatrix",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "minimum_chrome_version": "102",
   "description": "A granular request firewall for the modern web.",
   "permissions": [
@@ -20,5 +20,9 @@
   "action": {
     "default_title": "OriginMatrix",
     "default_popup": "src/popup/popup.html"
+  },
+  "options_ui": {
+    "page": "src/dashboard/dashboard.html",
+    "open_in_tab": true
   }
 }

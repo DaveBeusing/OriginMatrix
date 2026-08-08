@@ -25,6 +25,7 @@ export class RequestObserver {
       const topUrl = state?.topUrl ?? (await this.getTab(details.tabId))?.url;
       await this.tabStateManager.recordRequest({
         tabId: details.tabId,
+        requestId: details.requestId,
         url: details.url,
         type: details.type,
         topUrl,
@@ -42,6 +43,7 @@ export class RequestObserver {
       await this.pendingRequests.get(key);
       await this.tabStateManager.recordOutcome({
         tabId: details.tabId,
+        requestId: details.requestId,
         url: details.url,
         outcome,
         timestamp: details.timeStamp,

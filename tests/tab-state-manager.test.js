@@ -52,3 +52,16 @@ test("persists reload-required until the next navigation", async () => {
   await manager.startNavigation({ tabId: 11, url: "https://example.com/next" });
   assert.equal((await manager.get(11)).reloadRequired, false);
 });
+
+test("retains a bounded request log and updates outcomes by request ID", async () => {
+  const manager = new TabStateManager(memoryStorage());
+  await manager.startNavigation({ tabId: 12, url: "https://example.com/" });
+  for (let index = 0; index < 255; index += 1) {
+    await manager.recordRequest({ tabId: 12, requestId: `r${index}`, url: `https://cdn.test/${index}`, type: "image", timestamp: index });
+  }
+  await manager.recordOutcome({ tabId: 12, requestId: "r254", url: "https://cdn.test/254", outcome: "completed", timestamp: 300 });
+  const state = await manager.get(12);
+  assert.equal(state.requestLog.length, 250);
+  assert.equal(state.requestLog[0].id, "r5");
+  assert.equal(state.requestLog.at(-1).outcome, "completed");
+});

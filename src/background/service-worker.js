@@ -5,8 +5,11 @@ import { DnrCompiler } from "../engine/dnr-compiler.js";
 import { PolicyEngine } from "../engine/policy-engine.js";
 import { PolicyResolver } from "../engine/policy-resolver.js";
 import { PolicyWorkflow } from "../engine/policy-workflow.js";
+import { AdvancedPolicyManager } from "../engine/advanced-policy-manager.js";
+import { RuleOptimizer } from "../engine/rule-optimizer.js";
 import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projector.js";
 import { PolicyStore } from "../storage/policy-store.js";
+import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 
 const compiler = new DnrCompiler();
@@ -19,6 +22,8 @@ const policyEngine = new PolicyEngine({
   browserAdapter: new ChromeDnrAdapter(),
 });
 const policyWorkflow = new PolicyWorkflow({ store: policyStore, engine: policyEngine });
+const advancedPolicyManager = new AdvancedPolicyManager({ store: policyStore, engine: policyEngine });
+const ruleOptimizer = new RuleOptimizer();
 let policyOperations = Promise.resolve();
 const requestObserver = new RequestObserver({
   tabStateManager,
@@ -58,6 +63,14 @@ async function handleMessage(message) {
     case "SET_MATRIX_POLICY": return enqueuePolicyOperation(() => setMatrixPolicy(message));
     case "COMMIT_MATRIX": return enqueuePolicyOperation(() => commitMatrix(message));
     case "REVERT_MATRIX": return enqueuePolicyOperation(() => revertMatrix(message));
+    case "GET_DASHBOARD_STATE": return policyOperations.then(getDashboardState);
+    case "EXPORT_POLICIES": return policyOperations.then(exportPolicyDocument);
+    case "IMPORT_POLICIES": return enqueuePolicyOperation(() => importPolicyDocument(message));
+    case "APPLY_PROFILE": return enqueuePolicyOperation(() => applyProfile(message));
+    case "RECOMPILE_RULES": return enqueuePolicyOperation(recompileWithResult);
+    case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
+    case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
+    case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
 }
@@ -118,6 +131,74 @@ async function revertMatrix({ tabId, url }) {
 async function reconcileRules() {
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
+}
+
+async function getDashboardState() {
+  const [persistent, temporary, dynamicRules, sessionRules, observation] = await Promise.all([
+    policyStore.getPersistentPolicies(),
+    policyStore.getTemporaryPolicies(),
+    chrome.declarativeNetRequest.getDynamicRules(),
+    chrome.declarativeNetRequest.getSessionRules(),
+    tabStateManager.getDiagnostics(),
+  ]);
+  const optimization = ruleOptimizer.optimize([...dynamicRules, ...sessionRules]);
+  return {
+    ok: true,
+    manifestVersion: chrome.runtime.getManifest().version,
+    policies: persistent,
+    diagnostics: {
+      persistentPolicies: persistent.length,
+      temporaryPolicies: temporary.length,
+      dynamicRules: dynamicRules.length,
+      sessionRules: sessionRules.length,
+      optimizedAway: optimization.optimizedAway,
+      ...observation,
+    },
+  };
+}
+
+async function exportPolicyDocument() {
+  return { ok: true, document: exportPolicies(await policyStore.getPersistentPolicies()) };
+}
+
+async function importPolicyDocument({ document, mode }) {
+  const result = await advancedPolicyManager.import(document, { mode });
+  return { ok: true, ...result };
+}
+
+async function applyProfile({ profile }) {
+  return { ok: true, ...(await advancedPolicyManager.applyProfile(profile)) };
+}
+
+async function recompileWithResult() {
+  await reconcileRules();
+  return { ok: true };
+}
+
+async function clearSessionRules() {
+  await policyStore.replacePolicies([], { temporary: true });
+  await policyEngine.recompile({ temporary: true });
+  return { ok: true };
+}
+
+async function getRequestLog(tabId) {
+  const state = await tabStateManager.get(tabId);
+  return { ok: true, tabId, topDomain: state?.topDomain ?? null, entries: state?.requestLog ?? [] };
+}
+
+async function exportDebugReport() {
+  const state = await getDashboardState();
+  return {
+    ok: true,
+    report: {
+      format: "originmatrix-debug",
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      extensionVersion: state.manifestVersion,
+      diagnostics: state.diagnostics,
+      policies: state.policies,
+    },
+  };
 }
 
 function hostnameFromUrl(value) {

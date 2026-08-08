@@ -1,6 +1,6 @@
 # OriginMatrix
 
-OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It now includes the Phase 6 full matrix vocabulary and aggregate policy rows.
+OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It now includes the Phase 7 dashboard, diagnostics, request log, policy transfer, profiles, and conservative optimization tools.
 
 ## Implemented
 
@@ -31,9 +31,15 @@ OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Global defaults plus site, party, target, and resource inheritance
 - Cookie request/response header removal through paired DNR rules
-- Unit tests for compilation, resolution, storage, observation, matrix projection, policy workflows, and header rules
+- Bounded per-tab request log with outcome, type, domain, and URL filters
+- Dashboard for diagnostics, persistent rules, profiles, import/export, and logs
+- Atomic persistent-generation import with merge or replace modes
+- Versioned policy exports and privacy-reviewable debug reports
+- Balanced, Strict, and Custom global-default profiles
+- Conservative duplicate-rule optimizer diagnostics
+- Unit tests across engine, storage, observation, transfer, profiles, workflow, and optimization
 
-No static filter lists, detailed request log, diagnostics dashboard, Public-Suffix-List grouping, or rule optimizer are included yet.
+No downloaded/static filter-list integration, uMatrix text-rule conversion, Relaxed tracker profile, or Public-Suffix-List grouping is included yet. Those require dedicated data and compatibility layers and are not simulated by the matrix engine.
 
 ## Architecture
 
@@ -50,6 +56,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 5. Open OriginMatrix and click a matrix cell to cycle from inherit to allow or block.
 6. Use **Commit** to make the current site's temporary rules persistent, or **Revert** to discard them.
 7. Reload the page when the popup shows **Reload required**.
+8. Open **Settings** for diagnostics, profiles, import/export, persistent rules, and the request log.
 
 Inspect the extension service worker from the extensions page if Chrome reports an API or rule error.
 
@@ -75,6 +82,9 @@ The tests exercise browser-independent modules. The final network-blocking behav
 - First-party classification in the matrix currently uses hostname ancestry. Registrable-domain/eTLD+1 grouping requires the planned local Public Suffix List integration.
 - On Chrome versions without top-level-domain DNR conditions, tab rules also use `initiatorDomains`; requests initiated inside cross-origin subframes may therefore not match the top-level site policy.
 - COOKIE uses `modifyHeaders` to remove request `Cookie` and response `Set-Cookie`. Cookie cells intentionally support only inherit/block: DNR cannot express a cookie-only allow exception without potentially bypassing unrelated request-blocking rules.
+- Request logs retain at most 250 entries per tab in session storage and may contain full URLs. They are never transmitted by OriginMatrix.
+- Import supports only `{ format: "originmatrix", version: 1 }` JSON. uMatrix text is rejected explicitly rather than partially or silently mistranslated.
+- The optimizer removes only semantically identical rules. Broader domain merging is deferred until conflict equivalence can be proven.
 - A session rule survives service-worker suspension but is not a persistent policy and disappears when the browser session ends.
 - Requests served from Chromium's in-memory cache can be invisible to `webRequest`.
 - Phase 3 reports successful and failed requests. It does not label failures as blocked because Chrome does not guarantee stable error strings and reliable DNR match feedback is not generally available in production.
@@ -82,4 +92,4 @@ The tests exercise browser-independent modules. The final network-blocking behav
 
 ## Roadmap
 
-The next step is Phase 7: diagnostics, request log, import/export, rule optimization, optional profiles, and separately managed static DNR filter lists.
+Further work should focus on a local Public Suffix List, a versioned static-ruleset pipeline, explicit uMatrix compatibility reporting, and production browser integration tests.

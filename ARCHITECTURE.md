@@ -1,4 +1,4 @@
-# OriginMatrix architecture — Phase 6
+# OriginMatrix architecture — Phase 7
 
 ## Data flow
 
@@ -121,3 +121,27 @@ COOKIE is a logical OriginMatrix type rather than a DNR resource type. A cookie 
 DNR has no cookie-only allow action. A generic `allow` rule could override unrelated block rules on the same request, so the compiler rejects COOKIE allow policies and the UI cycles COOKIE cells only between inherit and block. This is an explicit safety boundary rather than simulated functionality.
 
 OTHER currently expands to the local DNR types `other`, `object`, and `csp_report`. Static filter systems remain separate from this matrix compiler.
+
+## Request log
+
+`TabStateManager` retains up to 250 lifecycle entries per tab in `chrome.storage.session`. Each entry records request ID, timestamp, target domain, normalized resource type, URL, and the reliable final outcome (`completed`, `failed`, or still `pending`). Outcome events update their matching start entry after the observer's per-request ordering barrier.
+
+The dashboard filters this bounded local log by outcome, type, and domain. Chrome cache invisibility and non-stable error descriptions remain unchanged; the log does not claim that every failure was blocked.
+
+## Dashboard and diagnostics
+
+The manifest options page is a standalone dashboard. It reads state through service-worker messages and does not access storage or DNR directly. Diagnostics report logical policy counts, generated dynamic/session rules, tracked tabs, observed domains/requests, retained log entries, and conservative optimizer results. Actions can recompile both generations, clear session policies/rules, or export a debug report.
+
+## Policy transfer and profiles
+
+Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.
+
+Balanced and Strict profiles generate only global party policies; Custom clears global defaults. Applying a profile preserves all site-scoped policies. A Relaxed profile is not offered because its promised tracker blocking depends on a real, separately managed tracker dataset.
+
+Non-JSON/uMatrix text imports fail explicitly. A future compatibility adapter must parse old syntax, report unsupported constructs, and produce the same validated OriginMatrix import document before activation.
+
+## Rule optimization boundary
+
+`RuleOptimizer` currently removes only rules whose priority, action, and condition are semantically identical. It deliberately does not merge request domains or rewrite priorities: either operation could change allow/block conflict resolution. Its output is exposed diagnostically while logical policies and their generated rule-ID mappings remain authoritative.
+
+Static filter lists remain a separate future DNR ruleset pipeline. They must not be imported into or optimized together with matrix policies.

@@ -1,0 +1,42 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { AdvancedPolicyManager } from "../src/engine/advanced-policy-manager.js";
+import { PolicyStore } from "../src/storage/policy-store.js";
+import { exportPolicies } from "../src/storage/policy-transfer.js";
+import { createPolicy } from "../src/shared/models.js";
+
+function memoryStorage() {
+  const data = {};
+  return { async get(key) { return { [key]: data[key] }; }, async set(values) { Object.assign(data, structuredClone(values)); } };
+}
+
+function harness() {
+  const store = new PolicyStore({ localArea: memoryStorage(), sessionArea: memoryStorage() });
+  const engine = {
+    compiler: { compilePolicies() { return []; } },
+    async recompile() {},
+  };
+  return { store, manager: new AdvancedPolicyManager({ store, engine }) };
+}
+
+test("merge import replaces matching coordinates and preserves other rules", async () => {
+  const { store, manager } = harness();
+  await store.putPolicy(createPolicy({ scope: "example.com", resourceType: "script", action: "allow" }));
+  await store.putPolicy(createPolicy({ scope: "other.test", resourceType: "image", action: "block" }));
+  const imported = createPolicy({ scope: "example.com", resourceType: "script", action: "block" });
+  await manager.import(exportPolicies([imported]), { mode: "merge" });
+  const policies = await store.getPersistentPolicies();
+  assert.equal(policies.length, 2);
+  assert.equal(policies.find((policy) => policy.scope === "example.com").action, "block");
+});
+
+test("profiles preserve site rules while replacing global defaults", async () => {
+  const { store, manager } = harness();
+  await store.putPolicy(createPolicy({ resourceType: "image", action: "block" }));
+  await store.putPolicy(createPolicy({ scope: "example.com", target: "cdn.test", action: "allow" }));
+  await manager.applyProfile("strict");
+  const policies = await store.getPersistentPolicies();
+  assert.equal(policies.some((policy) => policy.scope === "example.com"), true);
+  assert.equal(policies.some((policy) => policy.party === "thirdParty" && policy.resourceType === "all" && policy.action === "block"), true);
+  assert.equal(policies.some((policy) => policy.scope === "*" && policy.resourceType === "image"), false);
+});

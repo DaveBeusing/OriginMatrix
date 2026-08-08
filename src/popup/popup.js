@@ -7,6 +7,7 @@ const NEXT_ACTION = Object.freeze({ inherit: "allow", allow: "block", block: "in
 const siteElement = document.querySelector("#site");
 const noticeElement = document.querySelector("#notice");
 const reloadButton = document.querySelector("#reload");
+const settingsButton = document.querySelector("#settings");
 const commitButton = document.querySelector("#commit");
 const revertButton = document.querySelector("#revert");
 const pendingCountElement = document.querySelector("#pending-count");
@@ -50,6 +51,8 @@ reloadButton.addEventListener("click", async () => {
   await chrome.tabs.reload(currentTab.id);
   window.close();
 });
+
+settingsButton.addEventListener("click", () => chrome.runtime.openOptionsPage());
 
 commitButton.addEventListener("click", () => runWorkflow("COMMIT_MATRIX", "Committed"));
 revertButton.addEventListener("click", () => runWorkflow("REVERT_MATRIX", "Reverted"));
