@@ -20,6 +20,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Bundled EasyList network protection with dashboard diagnostics
 - Site-aware EasyList cosmetic filtering for simple CSS selectors
 - Batched dynamic cosmetic filtering with bounded DOM observation
+- YouTube filter-coverage baseline with explicit compatibility diagnostics
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -35,6 +36,8 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
 Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters and simple cosmetic selectors are parsed locally as data; unsupported syntax is reported and never guessed. Cosmetic selectors are indexed by site and injected only on matching documents. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Runtime filter downloads and updates, procedural cosmetic filters, scriptlet syntax, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+
+YouTube is tracked as a compatibility baseline, not as a guaranteed blocking claim. The dashboard can analyze targeted bundled rules and report unsupported network, cosmetic, and scriptlet syntax. See [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md) for verified scope and the manual acceptance checklist.
 
 ## Architecture
 
@@ -143,7 +146,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- YouTube compatibility baseline and filter diagnostics
+- Secure bundled Scriptlet Engine foundation
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

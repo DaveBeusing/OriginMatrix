@@ -67,6 +67,12 @@ The service worker prepares the cosmetic generation before replacing network rul
 
 Validated selectors are cached in bounded groups, and matching elements receive a dedicated hide attribute covered by the injected stylesheet. Metrics track mutation records, batches, scanned roots, hidden elements, cumulative scan time, and worst-batch time. The observer does not evaluate remote code, parse new filters, or perform an unconditional full-DOM scan for every mutation.
 
+## YouTube compatibility diagnostics
+
+`youtube-compatibility.js` performs an offline, versioned analysis of EasyList rules explicitly targeting YouTube, Googlevideo, ytimg, and related endpoints. It separates supported network blocks, exceptions, and cosmetic selectors from unsupported network, cosmetic, and scriptlet syntax, retaining bounded line-aware samples for diagnosis.
+
+This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `docs/YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
+
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
 The `PolicyEngine` depends only on `NetworkEngine.replaceRules({ temporary, rules })`: persistent matrix policies still become dynamic rules, while tab policies still become session rules. Generated DNR state remains reconstructable from logical stores.

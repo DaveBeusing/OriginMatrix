@@ -8,6 +8,8 @@ const logSite = document.querySelector("#log-site");
 const outcomeFilter = document.querySelector("#log-outcome");
 const typeFilter = document.querySelector("#log-type");
 const domainFilter = document.querySelector("#log-domain");
+const youtubeValues = document.querySelector("#youtube-values");
+const youtubeBody = document.querySelector("#youtube-body");
 let logEntries = [];
 
 initialize().catch(showError);
@@ -20,6 +22,7 @@ document.querySelector("#import-replace").addEventListener("click", () => import
 document.querySelector("#export").addEventListener("click", exportDocument);
 document.querySelector("#debug-report").addEventListener("click", exportDebugReport);
 document.querySelector("#refresh-log").addEventListener("click", refreshLog);
+document.querySelector("#youtube-diagnostics").addEventListener("click", runYouTubeDiagnostics);
 outcomeFilter.addEventListener("change", renderLog);
 typeFilter.addEventListener("change", renderLog);
 domainFilter.addEventListener("input", renderLog);
@@ -84,6 +87,18 @@ async function refreshLog() {
   } catch (error) { showError(error); }
 }
 
+async function runYouTubeDiagnostics() {
+  try {
+    statusElement.textContent = "Analyzing bundled YouTube-related rules…";
+    const { diagnostics } = await send({ type: "GET_YOUTUBE_DIAGNOSTICS" });
+    const values = Object.fromEntries(Object.entries(diagnostics).filter(([, value]) => typeof value !== "object"));
+    youtubeValues.replaceChildren(...Object.entries(values).map(([name, value]) => metric(name, value)));
+    youtubeBody.replaceChildren(...diagnostics.samples.map(youtubeDiagnosticRow));
+    if (diagnostics.samples.length === 0) youtubeBody.append(emptyRow(4, "No unsupported targeted samples."));
+    statusElement.textContent = `YouTube baseline: ${diagnostics.supportedRules}/${diagnostics.relevantRules} targeted rules supported. Runtime behavior remains unverified.`;
+  } catch (error) { showError(error); }
+}
+
 function renderLog() {
   const domainQuery = domainFilter.value.trim().toLowerCase();
   const entries = logEntries.filter((entry) => (outcomeFilter.value === "all" || entry.outcome === outcomeFilter.value)
@@ -97,6 +112,7 @@ function metric(name, value) { const wrapper = document.createElement("div"); co
 function policyRow(policy) { const row = document.createElement("tr"); for (const value of [policy.scope, policy.target, policy.party, policy.resourceType, policy.action]) { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); } return row; }
 function filterListRow(list) { const row = document.createElement("tr"); for (const value of [list.title, list.enabled ? list.state : "disabled", list.version, list.rulesLoaded ?? 0, list.rulesSupported ?? 0, list.rulesCompiled ?? 0, list.cosmeticRules ?? 0]) { const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell); } return row; }
 function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.outcome, entry.resourceType, `${entry.domain} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
+function youtubeDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.category, sample.reason, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
 function emptyRow(span, text) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = span; cell.className = "empty"; cell.textContent = text; row.append(cell); return row; }
 function option(value, label) { const item = document.createElement("option"); item.value = value; item.textContent = label; return item; }
 function downloadJson(value, filename) { const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); URL.revokeObjectURL(url); }

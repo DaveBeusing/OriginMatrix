@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OriginMatrix",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "minimum_chrome_version": "121",
   "description": "A granular request firewall for the modern web.",
   "icons": {

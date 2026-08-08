@@ -15,6 +15,7 @@ import { EASYLIST } from "../filters/filter-list-catalog.js";
 import { FilterListService } from "../filters/filter-list-service.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
+import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
@@ -38,6 +39,7 @@ const policyWorkflow = new PolicyWorkflow({ store: policyStore, engine: policyEn
 const advancedPolicyManager = new AdvancedPolicyManager({ store: policyStore, engine: policyEngine });
 const ruleOptimizer = new RuleOptimizer();
 let policyOperations = Promise.resolve();
+let youtubeDiagnosticsPromise = null;
 const requestObserver = new RequestObserver({
   tabStateManager,
   getTab: (tabId) => chrome.tabs.get(tabId),
@@ -84,6 +86,7 @@ async function handleMessage(message) {
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
     case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
+    case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
@@ -214,6 +217,12 @@ async function getRequestLog(tabId) {
 
 function getCosmeticSelectors(hostname) {
   return { ok: true, selectors: cosmeticEngine.getSelectors(hostname) };
+}
+
+async function getYouTubeDiagnostics() {
+  youtubeDiagnosticsPromise ??= loadBundledText(EASYLIST.path)
+    .then((source) => analyzeYouTubeCompatibility(source, { listVersion: EASYLIST.snapshotVersion }));
+  return { ok: true, diagnostics: await youtubeDiagnosticsPromise };
 }
 
 async function exportDebugReport() {
