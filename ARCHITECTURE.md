@@ -1,4 +1,4 @@
-# OriginMatrix architecture — Phase 3
+# OriginMatrix architecture — Phase 4
 
 ## Data flow
 
@@ -70,3 +70,13 @@ Chrome network lifecycle
 `TabStateManager` serializes mutations to prevent concurrent request callbacks from overwriting counters. A main-frame request resets the tab state. Each target hostname records totals and resource-type counts; the tab and domain records also distinguish completed and failed outcomes. Closing a tab removes both its observation state and temporary policies.
 
 Chrome explicitly does not guarantee stable webRequest error strings, so failures are not classified as DNR blocks. Requests served from the in-memory cache can also be invisible to the observer. The UI exposes only the data Phase 3 can report honestly.
+
+## Basic matrix
+
+`matrix-projector.js` is the browser-independent read model between policies, observed tab state, and the popup. It accepts observed domains and all logical policies, then returns five cells per row: SCRIPT, XHR, FRAME, IMAGE, and MEDIA.
+
+Each cell contains both its direct policy (`explicitAction`, `source`) and resolver result (`effectiveAction`, `winningPolicyId`). It also exposes `editAction`, which represents only the current tab override. This distinction lets a persistent policy remain visibly explicit while a Phase-4 click creates a temporary override rather than mutating persistent data.
+
+The popup renders the projection and sends only cell intent (`target`, `resourceType`, and next action). The service worker validates that intent, creates a site/target/type tab policy, and delegates storage and DNR updates to `PolicyEngine`. `inherit` removes that temporary cell policy. Buttons are native keyboard controls and expose full state through accessible labels.
+
+First-/third-party projection currently recognizes hostname equality and parent/child hostnames. Public-Suffix-List-backed registrable-domain classification remains a later prerequisite for production-grade site grouping.

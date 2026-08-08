@@ -1,32 +1,39 @@
-:root {
-  color-scheme: dark;
-  font: 13px/1.4 system-ui, sans-serif;
-  background: #15181b;
-  color: #e8ecef;
-}
-
-body { margin: 0; min-width: 330px; }
-main { padding: 16px; }
-header { display: flex; align-items: center; justify-content: space-between; }
+:root { color-scheme: dark; font: 13px/1.4 system-ui, sans-serif; background: #15181b; color: #e8ecef; }
+body { margin: 0; width: 620px; }
+main { padding: 14px; }
+header, .section-heading, dl div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h1 { margin: 0; font-size: 18px; letter-spacing: .02em; }
-h2 { margin: 0 0 8px; font-size: 12px; color: #b8c2ca; text-transform: uppercase; letter-spacing: .04em; }
+h2 { margin: 0; font-size: 12px; color: #b8c2ca; text-transform: uppercase; letter-spacing: .04em; }
 .phase { color: #8e9aa4; font-size: 11px; text-transform: uppercase; }
-dl { margin: 18px 0; border-block: 1px solid #30363b; }
-dl div { display: flex; justify-content: space-between; padding: 9px 0; }
+dl { margin: 12px 0; border-block: 1px solid #30363b; }
+dl div { padding: 7px 0; }
 dt { color: #8e9aa4; }
 dd { margin: 0; font-family: ui-monospace, monospace; }
-#status[data-active="true"] { color: #58d68d; }
-#notice { min-height: 2.8em; color: #b8c2ca; }
-#notice.error { color: #ff7878; }
-.metrics { display: flex; gap: 14px; color: #8e9aa4; font-size: 11px; }
+.metrics { display: flex; gap: 12px; color: #8e9aa4; font-size: 11px; }
 .metrics strong { color: #e8ecef; font-family: ui-monospace, monospace; }
-.domains { max-height: 176px; margin: 10px 0 0; padding: 0; overflow: auto; list-style: none; border-block: 1px solid #30363b; }
-.domains li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
-.domains li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, monospace; }
-.domains li strong { color: #8e9aa4; font-family: ui-monospace, monospace; }
-.domains li.empty { color: #6f7a83; }
-.actions { display: grid; gap: 8px; }
-button { border: 1px solid #478d6b; border-radius: 4px; padding: 9px; background: #276749; color: white; cursor: pointer; }
-button.secondary { border-color: #48535c; background: #252b30; }
-button:disabled { cursor: wait; opacity: .55; }
-button:focus-visible { outline: 2px solid #79b8ff; outline-offset: 2px; }
+.matrix-scroll { max-height: 290px; margin-top: 8px; overflow: auto; border: 1px solid #30363b; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { border: 1px solid #30363b; padding: 0; text-align: center; }
+thead th { position: sticky; top: 0; z-index: 1; padding: 5px 3px; background: #20252a; color: #9ba7af; font-size: 10px; }
+thead th:first-child { width: 260px; text-align: left; padding-left: 8px; }
+tbody th { overflow: hidden; padding: 5px 8px; text-align: left; text-overflow: ellipsis; white-space: nowrap; font: 12px ui-monospace, monospace; }
+tbody th small { float: right; margin-left: 8px; color: #6f7a83; }
+.matrix-cell { width: 100%; min-height: 29px; border: 0; background: #292f34; color: #7f8a92; cursor: pointer; font-weight: 700; }
+.matrix-cell.inherited.effective-allow { background: #294c3b; color: #a8d8be; }
+.matrix-cell.inherited.effective-block { background: #522f32; color: #e4b0b3; }
+.matrix-cell.explicit.effective-allow { background: #197044; color: white; }
+.matrix-cell.explicit.effective-block { background: #8d292f; color: white; }
+.matrix-cell:hover { filter: brightness(1.22); }
+.matrix-cell:focus-visible, button:focus-visible { outline: 2px solid #79b8ff; outline-offset: -2px; }
+.matrix-cell:disabled { cursor: wait; opacity: .55; }
+.empty { padding: 18px; color: #6f7a83; text-align: center; }
+.legend { display: flex; gap: 12px; margin-top: 8px; color: #84919a; font-size: 10px; text-transform: uppercase; }
+.legend span::before { display: inline-block; width: 7px; height: 7px; margin-right: 4px; content: ""; }
+.legend .allow::before { background: #197044; }
+.legend .block::before { background: #8d292f; }
+.legend .inherit::before { background: #292f34; }
+#notice { min-height: 1.4em; margin: 9px 0; color: #b8c2ca; }
+#notice.error { color: #ff7878; }
+.actions { display: flex; justify-content: flex-end; }
+.actions button { border: 1px solid #48535c; border-radius: 4px; padding: 8px 18px; background: #252b30; color: white; cursor: pointer; }
+.actions button:disabled { cursor: wait; opacity: .55; }

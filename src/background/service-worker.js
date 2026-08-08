@@ -4,8 +4,9 @@ import { TabStateManager } from "./tab-state-manager.js";
 import { DnrCompiler } from "../engine/dnr-compiler.js";
 import { PolicyEngine } from "../engine/policy-engine.js";
 import { PolicyResolver } from "../engine/policy-resolver.js";
+import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projector.js";
 import { PolicyStore } from "../storage/policy-store.js";
-import { createThirdPartyScriptPolicy } from "../shared/models.js";
+import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
@@ -45,37 +46,42 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 async function handleMessage(message) {
   if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
   switch (message.type) {
-    case "GET_TAB_STATE": return getTabState(message.tabId);
-    case "ENABLE_THIRD_PARTY_SCRIPTS_BLOCK": return enableRule(message.tabId, message.url);
-    case "DISABLE_THIRD_PARTY_SCRIPTS_BLOCK": return disableRule(message.tabId);
+    case "GET_TAB_STATE": return getTabState(message.tabId, message.url);
+    case "SET_MATRIX_POLICY": return setMatrixPolicy(message);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
 }
 
-async function getTabState(tabId) {
-  const [policy, observation] = await Promise.all([
-    policyStore.getTemporaryPolicy(tabId),
+async function getTabState(tabId, url) {
+  const [policies, observation] = await Promise.all([
+    policyStore.getAllPolicies(),
     tabStateManager.get(tabId),
   ]);
-  return { ok: true, active: Boolean(policy), site: policy?.scope ?? null, observation };
+  const topDomain = observation?.topDomain ?? hostnameFromUrl(url);
+  const matrix = buildMatrixModel({
+    tabId,
+    topDomain,
+    domains: observation?.domains ?? {},
+    policies,
+    resolver: policyEngine.resolver,
+  });
+  return { ok: true, observation, matrix };
 }
 
-async function enableRule(tabId, url) {
-  const policy = createThirdPartyScriptPolicy({ site: hostnameFromUrl(url), tabId });
+async function setMatrixPolicy({ tabId, url, target, resourceType, action }) {
+  if (!MATRIX_RESOURCE_TYPES.includes(resourceType)) throw new TypeError(`Unsupported matrix resource type: ${resourceType}`);
+  if (!Object.values(POLICY_ACTION).includes(action)) throw new TypeError(`Unsupported matrix action: ${action}`);
+  const policy = createPolicy({
+    scope: hostnameFromUrl(url),
+    target,
+    party: PARTY.ANY,
+    resourceType,
+    action,
+    temporary: true,
+    tabId,
+  });
   await policyEngine.apply(policy);
-  return { ok: true, active: true, site: policy.scope };
-}
-
-async function disableRule(tabId) {
-  const previous = await policyStore.getTemporaryPolicy(tabId);
-  if (previous) await policyStore.removePolicy(previous.id, { temporary: true });
-  try {
-    await policyEngine.recompile({ temporary: true });
-  } catch (error) {
-    if (previous) await policyStore.putPolicy(previous);
-    throw error;
-  }
-  return { ok: true, active: false };
+  return getTabState(tabId, url);
 }
 
 async function reconcileRules() {

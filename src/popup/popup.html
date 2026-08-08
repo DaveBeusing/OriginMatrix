@@ -10,26 +10,28 @@
     <main>
       <header>
         <h1>OriginMatrix</h1>
-        <span class="phase">Phase 3</span>
+        <span class="phase">Phase 4</span>
       </header>
-      <dl>
-        <div><dt>Site</dt><dd id="site">Loading…</dd></div>
-        <div><dt>Status</dt><dd id="status" data-active="false">Inactive</dd></div>
-      </dl>
-      <section aria-labelledby="observed-title">
-        <h2 id="observed-title">Observed requests</h2>
-        <div class="metrics">
-          <span><strong id="request-count">0</strong> total</span>
-          <span><strong id="domain-count">0</strong> domains</span>
-          <span><strong id="failed-count">0</strong> failed</span>
+      <dl><div><dt>Site</dt><dd id="site">Loading…</dd></div></dl>
+      <section aria-labelledby="matrix-title">
+        <div class="section-heading">
+          <h2 id="matrix-title">Observed domains</h2>
+          <div class="metrics">
+            <span><strong id="request-count">0</strong> requests</span>
+            <span><strong id="domain-count">0</strong> domains</span>
+            <span><strong id="failed-count">0</strong> failed</span>
+          </div>
         </div>
-        <ol id="domains" class="domains"><li class="empty">Reload to collect requests.</li></ol>
+        <div class="matrix-scroll">
+          <table id="matrix">
+            <thead><tr><th scope="col">Domain</th><th scope="col">JS</th><th scope="col">XHR</th><th scope="col">FRM</th><th scope="col">IMG</th><th scope="col">MED</th></tr></thead>
+            <tbody id="matrix-body"><tr><td colspan="6" class="empty">Reload to collect requests.</td></tr></tbody>
+          </table>
+        </div>
       </section>
+      <div class="legend" aria-label="Matrix legend"><span class="allow">allow</span><span class="block">block</span><span class="inherit">inherit</span></div>
       <p id="notice" role="status" aria-live="polite"></p>
-      <div class="actions">
-        <button id="toggle" type="button" disabled>Block third-party scripts</button>
-        <button id="reload" class="secondary" type="button" disabled>Reload page</button>
-      </div>
+      <div class="actions"><button id="reload" type="button" disabled>Reload page</button></div>
     </main>
     <script type="module" src="popup.js"></script>
   </body>
