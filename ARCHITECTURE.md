@@ -35,6 +35,12 @@ Future filters ──────┘      ├── StaticRuleManager
 
 Static rules use priority `10`. Matrix priorities are specificity-derived and start at `100,000,000`; therefore an explicit Matrix `allow` has higher priority than a matching automatic block. Dynamic and tab-scoped session generations remain independent from the static ruleset and keep their reserved ID ranges.
 
+## Filter rule model
+
+`src/filters/filter-model.js` defines immutable normalized models for network blocks, network exceptions, cosmetic selectors, and scriptlet references. These abstract models—not generated DNR rules—are the source of truth for the future filter pipeline. Network models retain pattern, domain restrictions, excluded domains, resource types, party constraint, and semantic action without Chrome-specific conditions or rule IDs.
+
+The Phase-3 parser intentionally recognizes only `||host^`, `@@||host^`, and `host##selector`. Comments and list headers are ignored; options, scriptlets, and every unknown form are returned as unsupported instead of being guessed. The expanded network grammar, diagnostics, and compilation to DNR belong to subsequent phases.
+
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
 The `PolicyEngine` depends only on `NetworkEngine.replaceRules({ temporary, rules })`: persistent matrix policies still become dynamic rules, while tab policies still become session rules. Generated DNR state remains reconstructable from logical stores.
