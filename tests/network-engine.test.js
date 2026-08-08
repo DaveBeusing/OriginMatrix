@@ -4,7 +4,7 @@ import { NetworkEngine } from "../src/network/network-engine.js";
 import { RuleBudget } from "../src/network/rule-budget.js";
 
 function fakeDnrApi() {
-  let dynamic = [{ id: 1 }];
+  let dynamic = [{ id: 100_001 }];
   let session = [{ id: 10 }];
   let enabled = ["base"];
   const calls = [];
@@ -34,23 +34,32 @@ function fakeDnrApi() {
 test("replaces dynamic and session generations atomically through their managers", async () => {
   const api = fakeDnrApi();
   const engine = new NetworkEngine({ api });
-  await engine.replaceRules({ temporary: false, rules: [{ id: 2 }, { id: 3 }] });
+  await engine.replaceRules({ temporary: false, rules: [{ id: 100_002 }, { id: 100_003 }] });
   await engine.replaceRules({ temporary: true, rules: [{ id: 11 }] });
-  assert.deepEqual(await engine.getDynamicRules(), [{ id: 2 }, { id: 3 }]);
+  assert.deepEqual(await engine.getDynamicRules(), [{ id: 100_002 }, { id: 100_003 }]);
   assert.deepEqual(await engine.getSessionRules(), [{ id: 11 }]);
-  assert.deepEqual(api.calls[0], ["dynamic", { removeRuleIds: [1], addRules: [{ id: 2 }, { id: 3 }] }]);
+  assert.deepEqual(api.calls[0], ["dynamic", { removeRuleIds: [100_001], addRules: [{ id: 100_002 }, { id: 100_003 }] }]);
   assert.deepEqual(api.calls[1], ["session", { removeRuleIds: [10], addRules: [{ id: 11 }] }]);
 });
 
 test("installs and removes individual dynamic and session rules", async () => {
   const api = fakeDnrApi();
   const engine = new NetworkEngine({ api });
-  await engine.dynamic.install([{ id: 2 }]);
-  await engine.dynamic.remove([1]);
+  await engine.dynamic.install([{ id: 100_002 }]);
+  await engine.dynamic.remove([100_001]);
   await engine.session.install([{ id: 11 }]);
   await engine.session.remove([10]);
-  assert.deepEqual(await engine.getDynamicRules(), [{ id: 2 }]);
+  assert.deepEqual(await engine.getDynamicRules(), [{ id: 100_002 }]);
   assert.deepEqual(await engine.getSessionRules(), [{ id: 11 }]);
+});
+
+test("replaces Matrix and filter partitions without deleting each other", async () => {
+  const api = fakeDnrApi();
+  const engine = new NetworkEngine({ api });
+  await engine.replaceFilterRules([{ id: 500_001 }]);
+  assert.deepEqual(await engine.getDynamicRules(), [{ id: 100_001 }, { id: 500_001 }]);
+  await engine.replaceRules({ temporary: false, rules: [{ id: 100_002 }] });
+  assert.deepEqual(await engine.getDynamicRules(), [{ id: 500_001 }, { id: 100_002 }]);
 });
 
 test("prepares static ruleset activation behind the same engine", async () => {

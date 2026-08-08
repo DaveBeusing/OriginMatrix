@@ -16,6 +16,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Bundled, automatically enabled static network protection
 - Normalized network, exception, cosmetic, and scriptlet filter data models
 - Network filter parser with explicit support and diagnostics reporting
+- Budget-aware filter-to-DNR compiler with deterministic optimization
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
 - Explicit and inherited Allow/Block/Inheritance visualization
@@ -30,7 +31,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Original scalable icon set for extension and toolbar surfaces
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 
-The bundled ruleset is intentionally small and validates the static-filter architecture; it is not yet a comprehensive ad-blocking list. The filter parser accepts domain and URL patterns, network exceptions, supported resource types, party constraints, domain restrictions, and simple site-scoped cosmetic selectors. Unsupported options and syntax are counted and reported. Scriptlet syntax, downloaded filter lists, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
+The bundled ruleset is intentionally small and validates the static-filter architecture; it is not yet a comprehensive ad-blocking list. Parsed network models compile into deterministic DNR blocks and exceptions with safe deduplication, host aggregation, isolated rule IDs, and shared dynamic-budget accounting. Unsupported options and syntax are counted and reported. Scriptlet syntax, downloaded filter lists, uMatrix text-rule conversion, a Relaxed tracker-list profile, and Public-Suffix-List-based domain grouping are not currently included.
 
 ## Architecture
 
@@ -137,7 +138,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Filter-to-DNR compiler with budget-aware optimization
+- Initial established network-filter-list integration
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

@@ -1,5 +1,6 @@
 import { DynamicRuleManager } from "./dynamic-rule-manager.js";
 import { RuleBudget } from "./rule-budget.js";
+import { DYNAMIC_RULE_RANGES } from "./rule-ranges.js";
 import { SessionRuleManager } from "./session-rule-manager.js";
 import { StaticRuleManager } from "./static-rule-manager.js";
 
@@ -13,7 +14,11 @@ export class NetworkEngine {
   }
 
   replaceRules({ temporary, rules }) {
-    return temporary ? this.session.replace(rules) : this.dynamic.replace(rules);
+    return temporary ? this.session.replace(rules) : this.dynamic.replaceInRange(rules, DYNAMIC_RULE_RANGES.matrix);
+  }
+
+  replaceFilterRules(rules) {
+    return this.dynamic.replaceInRange(rules, DYNAMIC_RULE_RANGES.filters);
   }
 
   getDynamicRules() { return this.dynamic.getRules(); }

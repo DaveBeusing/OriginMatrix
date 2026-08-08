@@ -41,7 +41,11 @@ Static rules use priority `10`. Matrix priorities are specificity-derived and st
 
 The network parser recognizes host-anchored and URL patterns, `@@` exceptions, supported resource-type options, `third-party`/`~third-party`, `domain=` inclusions and exclusions, and simple site-scoped cosmetic selectors. Comments and list headers are ignored. Unsupported patterns, options, cosmetic forms, and scriptlets are returned with a reason and line number instead of being guessed.
 
-Parser diagnostics expose total, parsed, supported, unsupported, and ignored rule counts. Compiled and optimized counts remain zero until the Phase-5 compiler exists. Parsing produces only normalized filter models and has no dependency on Chrome or DNR.
+Parser diagnostics expose total, parsed, supported, unsupported, and ignored rule counts. Parsing produces only normalized filter models and has no dependency on Chrome or DNR.
+
+`NetworkFilterCompiler` is separate from the Matrix `DnrCompiler`. It translates normalized network blocks and exceptions into standard DNR rules accepted by the shared Network Engine, while non-network models remain untouched for later engines. Exact host filters are safely aggregated through `requestDomains`; other URL patterns remain independent. Duplicate models are removed before compilation.
+
+Filter rules occupy dynamic IDs `500000–899999`, between persistent Matrix IDs and session IDs. Automatic blocks use priority `10000`, filter exceptions use `20000`, and Matrix priorities begin at `100000000`. This makes filter conflicts deterministic while preserving explicit Matrix overrides. The compiler accounts for already-reserved Matrix rules before accepting a generation against the shared dynamic budget. Range-scoped replacement in `DynamicRuleManager` lets Matrix and filter generations update independently without deleting one another.
 
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 

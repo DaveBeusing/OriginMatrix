@@ -1,7 +1,9 @@
-const PERSISTENT_MIN = 100_000;
-const PERSISTENT_SIZE = 400_000;
-const SESSION_MIN = 900_000;
-const SESSION_SIZE = 100_000;
+import { DYNAMIC_RULE_RANGES, SESSION_RULE_RANGE } from "../network/rule-ranges.js";
+
+const PERSISTENT_MIN = DYNAMIC_RULE_RANGES.matrix.minimum;
+const PERSISTENT_SIZE = DYNAMIC_RULE_RANGES.matrix.maximum - PERSISTENT_MIN + 1;
+const SESSION_MIN = SESSION_RULE_RANGE.minimum;
+const SESSION_SIZE = SESSION_RULE_RANGE.maximum - SESSION_MIN + 1;
 
 export class RuleIdManager {
   assign(policies) {
