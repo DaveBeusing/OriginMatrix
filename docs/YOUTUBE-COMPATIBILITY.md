@@ -20,7 +20,7 @@ This document is deliberately conservative. Filter coverage is testable offline;
 
 ## Unsupported
 
-- Filter-list scriptlets and procedural cosmetic selectors.
+- Filter-list scriptlet syntax and procedural cosmetic selectors. The bundled Scriptlet Engine exists, but no list rule can activate it yet.
 - Guaranteed classification of video-ad requests.
 - YouTube-specific hard-coded workarounds.
 - Automated playback, login, comments, playlist, fullscreen, and SPA end-to-end tests.
@@ -28,7 +28,7 @@ This document is deliberately conservative. Filter coverage is testable offline;
 
 ## Required next features
 
-- Secure bundled Scriptlet Engine and selected scriptlet parsing.
+- Selected scriptlet parsing and mapping to the bundled registry.
 - Better unsupported-rule diagnostics tied to real page observations.
 - Browser-driven integration tests and repeatable test accounts/scenarios.
 - Generic handling for any missing network or cosmetic syntax before considering isolated YouTube-specific code.

@@ -73,6 +73,12 @@ Validated selectors are cached in bounded groups, and matching elements receive 
 
 This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `docs/YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
 
+## Scriptlet Engine foundation
+
+`ScriptletRegistry` is an immutable allowlist of bundled implementation functions. Phase 10 provides `remove-node-text`, `set-constant`, and `abort-on-property-read`; each has a strict argument validator and rejects unsafe property paths, arbitrary constant expressions, oversized text, and unsupported selectors. Filter data cannot register implementations.
+
+`ScriptletEngine.prepare` applies domain inclusions/exclusions, resolves known identifiers, deduplicates invocations, and brands plans through the registry. `execute` accepts only branded plans and passes the already-bundled function reference plus validated string arguments to `chrome.scripting.executeScript` in the `MAIN` world. No code string, `eval`, `Function`, remote script, or dynamically downloaded implementation is accepted. Filter-list scriptlet syntax is deliberately not parsed or activated until Phase 11.
+
 `RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
 
 The `PolicyEngine` depends only on `NetworkEngine.replaceRules({ temporary, rules })`: persistent matrix policies still become dynamic rules, while tab policies still become session rules. Generated DNR state remains reconstructable from logical stores.

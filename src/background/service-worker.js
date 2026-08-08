@@ -16,12 +16,14 @@ import { FilterListService } from "../filters/filter-list-service.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
+import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
 const tabStateManager = new TabStateManager();
 const networkEngine = new NetworkEngine();
 const cosmeticEngine = new CosmeticEngine();
+const scriptletEngine = new ScriptletEngine();
 const filterListService = new FilterListService({
   list: EASYLIST,
   networkEngine,
@@ -175,6 +177,7 @@ async function getDashboardState() {
       dynamicRuleBudgetAvailable: network.budget.dynamic.available,
       sessionRuleBudgetAvailable: network.budget.session.available,
       optimizedAway: optimization.optimizedAway,
+      ...scriptletEngine.getDiagnostics(),
       ...observation,
     },
   };
