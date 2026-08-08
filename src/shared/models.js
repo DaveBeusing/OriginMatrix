@@ -66,7 +66,11 @@ export function validatePolicy(policy, { allowInherit = true } = {}) {
 
 export function policyIdentity(policy) {
   const lifetime = policy.temporary ? `tab:${policy.tabId}` : "persistent";
-  return [lifetime, policy.scope, policy.target, policy.party, policy.resourceType].join(":");
+  return `${lifetime}:${policyCoordinates(policy)}`;
+}
+
+export function policyCoordinates(policy) {
+  return [policy.scope, policy.target, policy.party, policy.resourceType].join(":");
 }
 
 function validateDomain(value, field) {

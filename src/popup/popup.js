@@ -6,6 +6,10 @@ const NEXT_ACTION = Object.freeze({ inherit: "allow", allow: "block", block: "in
 const siteElement = document.querySelector("#site");
 const noticeElement = document.querySelector("#notice");
 const reloadButton = document.querySelector("#reload");
+const commitButton = document.querySelector("#commit");
+const revertButton = document.querySelector("#revert");
+const pendingCountElement = document.querySelector("#pending-count");
+const reloadRequiredElement = document.querySelector("#reload-required");
 const requestCountElement = document.querySelector("#request-count");
 const domainCountElement = document.querySelector("#domain-count");
 const failedCountElement = document.querySelector("#failed-count");
@@ -34,6 +38,8 @@ matrixBody.addEventListener("click", async (event) => {
     noticeElement.textContent = "Rule updated. Reload required for previous requests.";
   } catch (error) {
     showError(error);
+  } finally {
+    if (button.isConnected) button.disabled = false;
   }
 });
 
@@ -41,6 +47,9 @@ reloadButton.addEventListener("click", async () => {
   await chrome.tabs.reload(currentTab.id);
   window.close();
 });
+
+commitButton.addEventListener("click", () => runWorkflow("COMMIT_MATRIX", "Committed"));
+revertButton.addEventListener("click", () => runWorkflow("REVERT_MATRIX", "Reverted"));
 
 async function initialize() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -54,6 +63,10 @@ async function initialize() {
 function renderState(state) {
   siteElement.textContent = state.matrix.site;
   renderMetrics(state.observation, state.matrix.rows.length);
+  pendingCountElement.textContent = `${state.pendingChanges} temporary ${state.pendingChanges === 1 ? "change" : "changes"}`;
+  reloadRequiredElement.hidden = !state.reloadRequired;
+  commitButton.disabled = state.pendingChanges === 0;
+  revertButton.disabled = state.pendingChanges === 0;
   matrixBody.replaceChildren();
   if (state.matrix.rows.length === 0) {
     const row = document.createElement("tr");
@@ -66,6 +79,33 @@ function renderState(state) {
     return;
   }
   for (const rowData of state.matrix.rows) matrixBody.append(createRow(rowData, state.matrix.resourceTypes));
+}
+
+async function runWorkflow(type, pastTense) {
+  setWorkflowBusy(true);
+  noticeElement.classList.remove("error");
+  try {
+    const response = await send({ type, tabId: currentTab.id, url: currentTab.url });
+    renderState(response);
+    noticeElement.textContent = response.changed > 0
+      ? `${pastTense} ${response.changed} ${response.changed === 1 ? "rule" : "rules"}.`
+      : "No temporary rules to update.";
+  } catch (error) {
+    showError(error);
+  } finally {
+    setWorkflowBusy(false);
+  }
+}
+
+function setWorkflowBusy(busy) {
+  if (busy) {
+    commitButton.disabled = true;
+    revertButton.disabled = true;
+    return;
+  }
+  const count = Number.parseInt(pendingCountElement.textContent, 10) || 0;
+  commitButton.disabled = count === 0;
+  revertButton.disabled = count === 0;
 }
 
 function createRow(rowData, resourceTypes) {

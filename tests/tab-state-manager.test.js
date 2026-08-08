@@ -44,3 +44,11 @@ test("maps advanced and unknown webRequest types", () => {
   assert.equal(normalizeResourceType("websocket"), "websocket");
   assert.equal(normalizeResourceType("main_frame"), "other");
 });
+
+test("persists reload-required until the next navigation", async () => {
+  const manager = new TabStateManager(memoryStorage());
+  await manager.setReloadRequired({ tabId: 11, required: true, topUrl: "https://example.com/" });
+  assert.equal((await manager.get(11)).reloadRequired, true);
+  await manager.startNavigation({ tabId: 11, url: "https://example.com/next" });
+  assert.equal((await manager.get(11)).reloadRequired, false);
+});

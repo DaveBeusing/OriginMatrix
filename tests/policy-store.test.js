@@ -26,3 +26,9 @@ test("inherit removes the explicit policy at the same identity", async () => {
   await store.putPolicy(createPolicy({ scope: "example.com", resourceType: "script", action: "inherit" }));
   assert.deepEqual(await store.getPersistentPolicies(), []);
 });
+
+test("bulk replacement validates policy lifetime", async () => {
+  const store = new PolicyStore({ localArea: memoryStorage(), sessionArea: memoryStorage() });
+  const temporary = createPolicy({ action: "block", temporary: true, tabId: 1 });
+  await assert.rejects(() => store.replacePolicies([temporary], { temporary: false }), /invalid persistent policy/);
+});

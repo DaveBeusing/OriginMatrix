@@ -58,6 +58,18 @@ export class TabStateManager {
     return this.#mutate((document) => { delete document.tabs[String(tabId)]; });
   }
 
+  setReloadRequired({ tabId, required, topUrl }) {
+    return this.#mutate((document) => {
+      const key = String(tabId);
+      let state = document.tabs[key];
+      if (!state && topUrl) {
+        state = createTabState(tabId, topUrl, hostnameFromUrl(topUrl), Date.now());
+        document.tabs[key] = state;
+      }
+      if (state) state.reloadRequired = Boolean(required);
+    });
+  }
+
   #mutate(change) {
     const operation = this.queue.then(async () => {
       const document = await this.#read();
@@ -92,6 +104,7 @@ function createTabState(tabId, topUrl, topDomain, timestamp) {
     totalRequests: 0,
     completedRequests: 0,
     failedRequests: 0,
+    reloadRequired: false,
     domains: {},
     startedAt: timestamp,
     updatedAt: timestamp,

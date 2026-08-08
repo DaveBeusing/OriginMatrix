@@ -1,6 +1,6 @@
 # OriginMatrix
 
-OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It now includes the Phase 4 basic matrix on top of the policy and observation cores.
+OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (Chrome 102+). It now includes the Phase 5 temporary-to-persistent policy workflow.
 
 ## Implemented
 
@@ -23,9 +23,13 @@ OriginMatrix is a Manifest V3 request-firewall prototype for Chromium browsers (
 - Click and keyboard activation cycling `inherit → allow → block`
 - Separate explicit and effective cell states with inherited/explicit colors
 - Tab-scoped session-policy updates from matrix cells
-- Unit tests for compilation, resolution, domains, storage, migration, IDs, observation, and matrix projection
+- Commit of current-site tab policies into persistent dynamic rules
+- Scope-specific Revert without affecting other tabs or sites
+- Session-persisted reload-required and pending-change indicators
+- Compensating rollback across policy stores and DNR generations
+- Unit tests for compilation, resolution, storage, observation, matrix projection, and policy workflows
 
-No ALL/COOKIE/OTHER columns, row-wide rules, commit/revert workflow, filter lists, request log, or rule optimizer are included yet.
+No ALL/COOKIE/OTHER columns, row-wide rules, filter lists, request log, or rule optimizer are included yet.
 
 ## Architecture
 
@@ -40,7 +44,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
 3. Choose **Load unpacked** and select this repository directory.
 4. Open an HTTP(S) site and reload once so the observer can collect its requests.
 5. Open OriginMatrix and click a matrix cell to cycle from inherit to allow or block.
-6. Reload the page to apply the changed rule to all requests.
+6. Use **Commit** to make the current site's temporary rules persistent, or **Revert** to discard them.
+7. Reload the page when the popup shows **Reload required**.
 
 Inspect the extension service worker from the extensions page if Chrome reports an API or rule error.
 
@@ -61,6 +66,7 @@ The tests exercise browser-independent modules. The final network-blocking behav
 - `domainType: thirdParty` uses Chromium's DNR party classification.
 - The popup operates on HTTP(S) tabs and the five Phase-4 resource columns.
 - Phase 4 exposes only SCRIPT, XHR, FRAME, IMAGE, and MEDIA cells and stores edits as temporary tab rules.
+- Commit and Revert operate only on temporary policies for the active tab and exact current-site scope.
 - First-party classification in the matrix currently uses hostname ancestry. Registrable-domain/eTLD+1 grouping requires the planned local Public Suffix List integration.
 - On Chrome versions without top-level-domain DNR conditions, tab rules also use `initiatorDomains`; requests initiated inside cross-origin subframes may therefore not match the top-level site policy.
 - A session rule survives service-worker suspension but is not a persistent policy and disappears when the browser session ends.
@@ -70,4 +76,4 @@ The tests exercise browser-independent modules. The final network-blocking behav
 
 ## Roadmap
 
-The next step is Phase 5: add Commit and Revert, promote selected session policies to persistent policies, update dynamic and session generations consistently, and show reload-required state explicitly.
+The next step is Phase 6: add ALL, COOKIE, CSS, FONT, WEBSOCKET, and OTHER; row/column rules; first-/third-party rows; global defaults; and production-grade inheritance visualization.

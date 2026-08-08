@@ -4,6 +4,7 @@ import { TabStateManager } from "./tab-state-manager.js";
 import { DnrCompiler } from "../engine/dnr-compiler.js";
 import { PolicyEngine } from "../engine/policy-engine.js";
 import { PolicyResolver } from "../engine/policy-resolver.js";
+import { PolicyWorkflow } from "../engine/policy-workflow.js";
 import { buildMatrixModel, MATRIX_RESOURCE_TYPES } from "../engine/matrix-projector.js";
 import { PolicyStore } from "../storage/policy-store.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
@@ -17,6 +18,8 @@ const policyEngine = new PolicyEngine({
   compiler,
   browserAdapter: new ChromeDnrAdapter(),
 });
+const policyWorkflow = new PolicyWorkflow({ store: policyStore, engine: policyEngine });
+let policyOperations = Promise.resolve();
 const requestObserver = new RequestObserver({
   tabStateManager,
   getTab: (tabId) => chrome.tabs.get(tabId),
@@ -36,8 +39,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   try {
-    await Promise.all([policyStore.removeTemporaryPolicy(tabId), tabStateManager.remove(tabId)]);
-    await policyEngine.recompile({ temporary: true });
+    await Promise.all([
+      enqueuePolicyOperation(async () => {
+        await policyStore.removeTemporaryPolicy(tabId);
+        await policyEngine.recompile({ temporary: true });
+      }),
+      tabStateManager.remove(tabId),
+    ]);
   } catch (error) {
     console.error("Could not remove closed tab policy", error);
   }
@@ -46,18 +54,21 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 async function handleMessage(message) {
   if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
   switch (message.type) {
-    case "GET_TAB_STATE": return getTabState(message.tabId, message.url);
-    case "SET_MATRIX_POLICY": return setMatrixPolicy(message);
+    case "GET_TAB_STATE": return policyOperations.then(() => getTabState(message.tabId, message.url));
+    case "SET_MATRIX_POLICY": return enqueuePolicyOperation(() => setMatrixPolicy(message));
+    case "COMMIT_MATRIX": return enqueuePolicyOperation(() => commitMatrix(message));
+    case "REVERT_MATRIX": return enqueuePolicyOperation(() => revertMatrix(message));
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
 }
 
 async function getTabState(tabId, url) {
-  const [policies, observation] = await Promise.all([
+  const [policies, temporary, observation] = await Promise.all([
     policyStore.getAllPolicies(),
+    policyStore.getTemporaryPolicies(),
     tabStateManager.get(tabId),
   ]);
-  const topDomain = observation?.topDomain ?? hostnameFromUrl(url);
+  const topDomain = hostnameFromUrl(url);
   const matrix = buildMatrixModel({
     tabId,
     topDomain,
@@ -65,7 +76,8 @@ async function getTabState(tabId, url) {
     policies,
     resolver: policyEngine.resolver,
   });
-  return { ok: true, observation, matrix };
+  const pendingChanges = temporary.filter((policy) => policy.tabId === tabId && policy.scope === topDomain).length;
+  return { ok: true, observation, matrix, pendingChanges, reloadRequired: observation?.reloadRequired === true };
 }
 
 async function setMatrixPolicy({ tabId, url, target, resourceType, action }) {
@@ -81,7 +93,20 @@ async function setMatrixPolicy({ tabId, url, target, resourceType, action }) {
     tabId,
   });
   await policyEngine.apply(policy);
+  await tabStateManager.setReloadRequired({ tabId, required: true, topUrl: url });
   return getTabState(tabId, url);
+}
+
+async function commitMatrix({ tabId, url }) {
+  const result = await policyWorkflow.commit({ tabId, scope: hostnameFromUrl(url) });
+  if (result.changed > 0) await tabStateManager.setReloadRequired({ tabId, required: true, topUrl: url });
+  return { ...(await getTabState(tabId, url)), changed: result.changed };
+}
+
+async function revertMatrix({ tabId, url }) {
+  const result = await policyWorkflow.revert({ tabId, scope: hostnameFromUrl(url) });
+  if (result.changed > 0) await tabStateManager.setReloadRequired({ tabId, required: true, topUrl: url });
+  return { ...(await getTabState(tabId, url)), changed: result.changed };
 }
 
 async function reconcileRules() {
@@ -95,4 +120,10 @@ function hostnameFromUrl(value) {
     throw new TypeError("OriginMatrix only supports HTTP(S) tabs.");
   }
   return url.hostname.toLowerCase();
+}
+
+function enqueuePolicyOperation(task) {
+  const operation = policyOperations.then(task);
+  policyOperations = operation.catch(() => {});
+  return operation;
 }

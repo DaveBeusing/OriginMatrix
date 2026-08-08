@@ -51,6 +51,21 @@ export class PolicyStore {
     await this.sessionArea.set({ [SESSION_KEY]: document });
   }
 
+  async replacePolicies(policies, { temporary = false } = {}) {
+    const normalized = policies.map((policy) => createPolicy(policy));
+    if (normalized.some((policy) => policy.temporary !== temporary || policy.action === POLICY_ACTION.INHERIT)) {
+      throw new TypeError(`Replacement contains an invalid ${temporary ? "temporary" : "persistent"} policy.`);
+    }
+    const ids = new Set(normalized.map((policy) => policy.id));
+    if (ids.size !== normalized.length) throw new TypeError("Replacement contains duplicate policy IDs.");
+    const area = temporary ? this.sessionArea : this.localArea;
+    const key = temporary ? SESSION_KEY : PERSISTENT_KEY;
+    const document = await this.#read(area, key);
+    document.policies = normalized;
+    document.ruleIds = {};
+    await area.set({ [key]: document });
+  }
+
   async setRuleIds(mapping, { temporary = false } = {}) {
     const area = temporary ? this.sessionArea : this.localArea;
     const key = temporary ? SESSION_KEY : PERSISTENT_KEY;

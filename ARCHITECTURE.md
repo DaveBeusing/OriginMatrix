@@ -1,4 +1,4 @@
-# OriginMatrix architecture — Phase 4
+# OriginMatrix architecture — Phase 5
 
 ## Data flow
 
@@ -80,3 +80,18 @@ Each cell contains both its direct policy (`explicitAction`, `source`) and resol
 The popup renders the projection and sends only cell intent (`target`, `resourceType`, and next action). The service worker validates that intent, creates a site/target/type tab policy, and delegates storage and DNR updates to `PolicyEngine`. `inherit` removes that temporary cell policy. Buttons are native keyboard controls and expose full state through accessible labels.
 
 First-/third-party projection currently recognizes hostname equality and parent/child hostnames. Public-Suffix-List-backed registrable-domain classification remains a later prerequisite for production-grade site grouping.
+
+## Temporary and persistent workflow
+
+Matrix clicks continue to create tab-scoped policies and session DNR rules. `PolicyWorkflow` owns the Phase-5 transitions:
+
+```text
+Commit: selected tab/scope policies → persistent policies → dynamic rules
+Revert: selected tab/scope policies → removed → session rules recompiled
+```
+
+Commit promotes only policies whose `tabId` and exact `scope` match the active popup. A promoted policy receives a canonical persistent identity and replaces a persistent policy at the same site/target/party/type coordinates. Policies from other sites and tabs remain untouched. Revert removes only the matching temporary policies.
+
+Both workflows compile candidate generations before modifying storage. Because Chrome exposes dynamic and session rules through separate update calls, their joint transition cannot be atomic. The workflow therefore snapshots both logical stores and performs compensating restoration and recompilation after failures. Service-worker policy operations are serialized to prevent concurrent cell edits, commits, and reverts from racing.
+
+`reloadRequired` lives in the session-persisted tab state. Any effective rule edit marks it, and a new main-frame navigation clears it. The popup separately reports the number of temporary changes, enabling Commit and Revert only when the current tab/scope has pending policies.

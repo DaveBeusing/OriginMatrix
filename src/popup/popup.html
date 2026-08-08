@@ -10,7 +10,7 @@
     <main>
       <header>
         <h1>OriginMatrix</h1>
-        <span class="phase">Phase 4</span>
+        <span class="phase">Phase 5</span>
       </header>
       <dl><div><dt>Site</dt><dd id="site">Loading…</dd></div></dl>
       <section aria-labelledby="matrix-title">
@@ -30,8 +30,13 @@
         </div>
       </section>
       <div class="legend" aria-label="Matrix legend"><span class="allow">allow</span><span class="block">block</span><span class="inherit">inherit</span></div>
+      <div class="change-state"><span id="pending-count">0 temporary changes</span><strong id="reload-required" hidden>Reload required</strong></div>
       <p id="notice" role="status" aria-live="polite"></p>
-      <div class="actions"><button id="reload" type="button" disabled>Reload page</button></div>
+      <div class="actions">
+        <button id="revert" class="secondary" type="button" disabled>Revert</button>
+        <button id="commit" type="button" disabled>Commit</button>
+        <button id="reload" class="secondary" type="button" disabled>Reload page</button>
+      </div>
     </main>
     <script type="module" src="popup.js"></script>
   </body>

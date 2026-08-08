@@ -32,8 +32,11 @@ tbody th small { float: right; margin-left: 8px; color: #6f7a83; }
 .legend .allow::before { background: #197044; }
 .legend .block::before { background: #8d292f; }
 .legend .inherit::before { background: #292f34; }
+.change-state { display: flex; justify-content: space-between; margin-top: 7px; color: #84919a; font-size: 11px; }
+#reload-required { color: #f2c66d; text-transform: uppercase; letter-spacing: .03em; }
 #notice { min-height: 1.4em; margin: 9px 0; color: #b8c2ca; }
 #notice.error { color: #ff7878; }
-.actions { display: flex; justify-content: flex-end; }
-.actions button { border: 1px solid #48535c; border-radius: 4px; padding: 8px 18px; background: #252b30; color: white; cursor: pointer; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.actions button { border: 1px solid #478d6b; border-radius: 4px; padding: 8px 18px; background: #276749; color: white; cursor: pointer; }
+.actions button.secondary { border-color: #48535c; background: #252b30; }
 .actions button:disabled { cursor: wait; opacity: .55; }
