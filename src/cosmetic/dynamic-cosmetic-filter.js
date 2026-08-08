@@ -9,6 +9,7 @@
       debounceMs = 50,
       maxQueuedRoots = 100,
       selectorGroupSize = 40,
+      onMetrics = () => {},
     } = {}) {
       this.document = documentObject;
       this.Observer = Observer;
@@ -18,6 +19,7 @@
       this.debounceMs = debounceMs;
       this.maxQueuedRoots = maxQueuedRoots;
       this.selectorGroupSize = selectorGroupSize;
+      this.onMetrics = onMetrics;
       this.selectorCache = new Map();
       this.roots = new Set();
       this.timer = null;
@@ -31,7 +33,7 @@
       const prepared = this.prepareSelectors(selectors);
       this.groups = prepared.groups;
       this.metrics = { ...emptyMetrics(), selectors: prepared.selectors, invalidSelectors: prepared.invalidSelectors };
-      if (this.groups.length === 0) return this.getMetrics();
+      if (this.groups.length === 0) { this.onMetrics(this.getMetrics()); return this.getMetrics(); }
       this.observer = new this.Observer((mutations) => this.handleMutations(mutations));
       this.observer.observe(this.document, {
         childList: true,
@@ -86,6 +88,7 @@
       this.metrics.elementsHidden += hidden;
       this.metrics.scanTimeMs += duration;
       this.metrics.maxScanTimeMs = Math.max(this.metrics.maxScanTimeMs, duration);
+      this.onMetrics(this.getMetrics());
     }
 
     scan(root) {

@@ -217,6 +217,12 @@ The dashboard filters the bounded local log by decision, outcome, type, and doma
 
 The manifest options page is a standalone dashboard. It reads state through service-worker messages and does not access storage or DNR directly. Diagnostics report logical policy counts, generated dynamic/session rules, tracked tabs, observed domains/requests, retained log entries, and conservative optimizer results. Actions can recompile both generations, clear session policies/rules, or export a debug report.
 
+## Privacy-preserving statistics
+
+Phase 18 derives statistics exclusively from the current `chrome.storage.session` tab document. It reports requests, exactly attributed blocked requests, EasyList/base-rule ad blocks, tracker blocks, dynamically hidden cosmetic elements, contacted domains, and blocked domains. Closing a tab removes its entire contribution; main-frame navigation resets page-level state. No separate long-term URL, hostname, or browsing-history database is created.
+
+Block counters advance only when a request first receives an exact `blocked` OriginMatrix DNR match. EasyList and the advertising base rule are categorized as ads; Matrix rules are not reclassified as ads or trackers. `blockedTrackers` remains zero until a dedicated categorized tracker dataset exists. Cosmetic content scripts report only cumulative element counts per browser-provided tab/frame sender, and the service worker converts repeated reports into deltas. Native CSS hiding that cannot be counted without an extra DOM scan is deliberately not estimated.
+
 ## Policy transfer and profiles
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.

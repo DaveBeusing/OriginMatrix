@@ -116,6 +116,7 @@ async function handleMessage(message, sender) {
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
     case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
     case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender));
+    case "REPORT_COSMETIC_METRICS": return reportCosmeticMetrics(message, sender);
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
@@ -186,12 +187,13 @@ async function reconcileRules() {
 }
 
 async function getDashboardState() {
-  const [persistent, temporary, network, observation, activeProfile] = await Promise.all([
+  const [persistent, temporary, network, observation, activeProfile, statistics] = await Promise.all([
     policyStore.getPersistentPolicies(),
     policyStore.getTemporaryPolicies(),
     networkEngine.getDiagnostics(),
     tabStateManager.getDiagnostics(),
     profileStore.get(),
+    tabStateManager.getStatistics(),
   ]);
   const optimization = ruleOptimizer.optimize([...network.dynamicRules, ...network.sessionRules]);
   return {
@@ -200,6 +202,7 @@ async function getDashboardState() {
     policies: persistent,
     filterLists: filterListManager.getStatuses(),
     profile: profileDefinition(activeProfile),
+    statistics,
     diagnostics: {
       persistentPolicies: persistent.length,
       temporaryPolicies: temporary.length,
@@ -279,6 +282,14 @@ async function runScriptletsForSender(sender) {
     frameIds: [sender.frameId],
   });
   return { ok: true, executed: result.executed };
+}
+
+async function reportCosmeticMetrics({ elementsHidden }, sender) {
+  if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0) {
+    throw new TypeError("Cosmetic metrics require a tab frame sender.");
+  }
+  await tabStateManager.recordCosmeticMetrics({ tabId: sender.tab.id, frameId: sender.frameId, elementsHidden });
+  return { ok: true };
 }
 
 async function getYouTubeDiagnostics() {

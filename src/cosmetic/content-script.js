@@ -1,6 +1,10 @@
 (() => {
   const injector = new globalThis.OriginMatrixCosmeticInjector(document);
-  const dynamicFilter = new globalThis.OriginMatrixDynamicCosmeticFilter({ documentObject: document });
+  const dynamicFilter = new globalThis.OriginMatrixDynamicCosmeticFilter({
+    documentObject: document,
+    onMetrics: (metrics) => chrome.runtime.sendMessage({ type: "REPORT_COSMETIC_METRICS", elementsHidden: metrics.elementsHidden })
+      .catch((error) => console.warn("OriginMatrix cosmetic metrics unavailable", error)),
+  });
   chrome.runtime.sendMessage({ type: "GET_COSMETIC_SELECTORS", hostname: location.hostname })
     .then((response) => {
       if (!response?.ok) throw new Error(response?.error ?? "Cosmetic Engine did not respond.");

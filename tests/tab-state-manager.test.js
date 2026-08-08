@@ -72,7 +72,7 @@ test("stores attributable DNR decisions separately from request outcomes", async
   await manager.recordRequest({ tabId: 13, requestId: "blocked", url: "https://ads.test/ad.js", type: "script", timestamp: 2 });
   assert.equal(await manager.recordRuleMatch({
     tabId: 13, requestId: "blocked", ruleId: 500_001, rulesetId: "_dynamic",
-    decision: "blocked", engine: "network", source: "EasyList",
+    decision: "blocked", engine: "network", source: "EasyList", category: "ads",
   }), true);
   await manager.recordOutcome({ tabId: 13, requestId: "blocked", url: "https://ads.test/ad.js", outcome: "failed" });
   const entry = (await manager.get(13)).requestLog[0];
@@ -80,6 +80,21 @@ test("stores attributable DNR decisions separately from request outcomes", async
   assert.equal(entry.decision, "blocked");
   assert.equal(entry.outcome, "failed");
   assert.equal(entry.engine, "network");
+  assert.equal(entry.category, "ads");
   assert.match(entry.reason, /EasyList.*_dynamic:500001/);
   assert.equal(await manager.recordRuleMatch({ tabId: 13, requestId: "missing", ruleId: 1, rulesetId: "base-network", decision: "blocked", engine: "network", source: "Base" }), false);
+});
+
+test("aggregates privacy-preserving request, block, domain, and cosmetic statistics", async () => {
+  const manager = new TabStateManager(memoryStorage());
+  await manager.startNavigation({ tabId: 14, url: "https://example.com/" });
+  await manager.recordRequest({ tabId: 14, requestId: "ad", url: "https://ads.test/ad.js", type: "script" });
+  await manager.recordRequest({ tabId: 14, requestId: "content", url: "https://cdn.test/app.js", type: "script" });
+  await manager.recordRuleMatch({ tabId: 14, requestId: "ad", ruleId: 500_001, rulesetId: "_dynamic", decision: "blocked", engine: "network", source: "EasyList", category: "ads" });
+  await manager.recordCosmeticMetrics({ tabId: 14, frameId: 0, elementsHidden: 3 });
+  await manager.recordCosmeticMetrics({ tabId: 14, frameId: 0, elementsHidden: 5 });
+  assert.deepEqual(await manager.getStatistics(), {
+    requests: 2, blockedRequests: 1, blockedAds: 1, blockedTrackers: 0,
+    cosmeticElementsHidden: 5, domainsContacted: 2, domainsBlocked: 1,
+  });
 });

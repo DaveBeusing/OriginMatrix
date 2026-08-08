@@ -13,7 +13,7 @@ export class RuleAttributionRegistry {
   resolve({ rulesetId, ruleId }) {
     const known = this.rules.get(key(rulesetId, ruleId));
     if (known) return known;
-    if (rulesetId === "base-network") return Object.freeze({ decision: "blocked", engine: "network", source: "Base network rules" });
+    if (rulesetId === "base-network") return Object.freeze({ decision: "blocked", engine: "network", source: "Base network rules", category: ruleId === 1 ? "ads" : null });
     if (rulesetId === "_dynamic" && inRange(ruleId, DYNAMIC_RULE_RANGES.filters)) return unknown("network", "Filter list");
     if (rulesetId === "_dynamic" && inRange(ruleId, DYNAMIC_RULE_RANGES.matrix)) return unknown("matrix", "Persistent Matrix");
     if (rulesetId === "_session" && inRange(ruleId, SESSION_RULE_RANGE)) return unknown("matrix", "Temporary Matrix");
@@ -27,6 +27,7 @@ function attributionFor(rule, temporary) {
     decision: decisionForAction(rule.action?.type),
     engine: filter ? "network" : "matrix",
     source: filter ? "EasyList" : temporary ? "Temporary Matrix" : "Persistent Matrix",
+    category: filter ? "ads" : null,
   });
 }
 
@@ -37,6 +38,6 @@ function decisionForAction(action) {
   return "unknown";
 }
 
-function unknown(engine, source) { return Object.freeze({ decision: "unknown", engine, source }); }
+function unknown(engine, source) { return Object.freeze({ decision: "unknown", engine, source, category: null }); }
 function inRange(id, range) { return Number.isInteger(id) && id >= range.minimum && id <= range.maximum; }
 function key(rulesetId, ruleId) { return `${rulesetId}:${ruleId}`; }

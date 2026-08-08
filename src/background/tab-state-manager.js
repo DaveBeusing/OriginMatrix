@@ -72,19 +72,44 @@ export class TabStateManager {
     });
   }
 
-  recordRuleMatch({ tabId, requestId, ruleId, rulesetId, decision, engine, source }) {
+  recordRuleMatch({ tabId, requestId, ruleId, rulesetId, decision, engine, source, category = null }) {
     if (!["allowed", "blocked", "modified", "unknown"].includes(decision)) throw new TypeError(`Unsupported request decision: ${decision}`);
+    if (![null, "ads", "trackers"].includes(category)) throw new TypeError(`Unsupported blocking category: ${category}`);
     return this.#mutate((document) => {
       const state = document.tabs[String(tabId)];
       const entry = state && [...state.requestLog].reverse().find((item) => item.id === requestId);
       if (!entry) return false;
       const rank = { unknown: 0, modified: 1, allowed: 2, blocked: 3 };
       if (rank[decision] < rank[entry.decision ?? "unknown"]) return true;
+      const newlyBlocked = decision === "blocked" && entry.decision !== "blocked";
       entry.decision = decision;
       entry.engine = engine;
       entry.reason = `${source} matched ${rulesetId}:${ruleId}.`;
       entry.ruleId = ruleId;
       entry.rulesetId = rulesetId;
+      entry.category = category;
+      if (newlyBlocked) {
+        state.blockedRequests += 1;
+        if (category === "ads") state.blockedAds += 1;
+        if (category === "trackers") state.blockedTrackers += 1;
+        const domain = state.domains[entry.domain];
+        if (domain) domain.blocked = true;
+      }
+      return true;
+    });
+  }
+
+  recordCosmeticMetrics({ tabId, frameId, elementsHidden }) {
+    if (!Number.isInteger(frameId) || frameId < 0 || !Number.isInteger(elementsHidden) || elementsHidden < 0) {
+      throw new TypeError("Cosmetic metrics require a frame and non-negative element count.");
+    }
+    return this.#mutate((document) => {
+      const state = document.tabs[String(tabId)];
+      if (!state) return false;
+      const key = String(frameId);
+      const previous = state.cosmeticFrames[key] ?? 0;
+      state.cosmeticElementsHidden += elementsHidden >= previous ? elementsHidden - previous : elementsHidden;
+      state.cosmeticFrames[key] = elementsHidden;
       return true;
     });
   }
@@ -117,6 +142,23 @@ export class TabStateManager {
     };
   }
 
+  async getStatistics() {
+    await this.queue;
+    const document = await this.#read();
+    const tabs = Object.values(document.tabs);
+    const contacted = new Set(tabs.flatMap((tab) => Object.keys(tab.domains)));
+    const blocked = new Set(tabs.flatMap((tab) => Object.entries(tab.domains).filter(([, value]) => value.blocked).map(([domain]) => domain)));
+    return Object.freeze({
+      requests: tabs.reduce((sum, tab) => sum + tab.totalRequests, 0),
+      blockedRequests: tabs.reduce((sum, tab) => sum + tab.blockedRequests, 0),
+      blockedAds: tabs.reduce((sum, tab) => sum + tab.blockedAds, 0),
+      blockedTrackers: tabs.reduce((sum, tab) => sum + tab.blockedTrackers, 0),
+      cosmeticElementsHidden: tabs.reduce((sum, tab) => sum + tab.cosmeticElementsHidden, 0),
+      domainsContacted: contacted.size,
+      domainsBlocked: blocked.size,
+    });
+  }
+
   #mutate(change) {
     const operation = this.queue.then(async () => {
       const document = await this.#read();
@@ -145,8 +187,14 @@ export class TabStateManager {
         if (typeof entry.reason !== "string") entry.reason = "No attributable OriginMatrix DNR match.";
         if (!("ruleId" in entry)) entry.ruleId = null;
         if (!("rulesetId" in entry)) entry.rulesetId = null;
+        if (!("category" in entry)) entry.category = null;
       }
       if (typeof state.reloadRequired !== "boolean") state.reloadRequired = false;
+      if (!Number.isInteger(state.blockedRequests)) state.blockedRequests = 0;
+      if (!Number.isInteger(state.blockedAds)) state.blockedAds = 0;
+      if (!Number.isInteger(state.blockedTrackers)) state.blockedTrackers = 0;
+      if (!Number.isInteger(state.cosmeticElementsHidden)) state.cosmeticElementsHidden = 0;
+      if (!state.cosmeticFrames || typeof state.cosmeticFrames !== "object") state.cosmeticFrames = {};
     }
     return document;
   }
@@ -165,6 +213,11 @@ function createTabState(tabId, topUrl, topDomain, timestamp) {
     totalRequests: 0,
     completedRequests: 0,
     failedRequests: 0,
+    blockedRequests: 0,
+    blockedAds: 0,
+    blockedTrackers: 0,
+    cosmeticElementsHidden: 0,
+    cosmeticFrames: {},
     reloadRequired: false,
     requestLog: [],
     domains: {},
@@ -174,7 +227,7 @@ function createTabState(tabId, topUrl, topDomain, timestamp) {
 }
 
 function createDomainState() {
-  return { total: 0, completed: 0, failed: 0, types: {} };
+  return { total: 0, completed: 0, failed: 0, blocked: false, types: {} };
 }
 
 function hostnameFromUrl(value) {

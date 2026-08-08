@@ -34,6 +34,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Deterministic policy resolution, priorities, and rule IDs
 - Cookie request and response header removal
 - Bounded per-tab request logs with lifecycle data and optional exact DNR attribution
+- Privacy-preserving current-session request, block, domain, and cosmetic statistics
 - Restart-safe Balanced, Strict, and Relaxed protection profiles
 - Dashboard with diagnostics, rule inspection, import/export, debug reports, and request-log filters
 - Versioned storage schemas and compensating rollback on failed rule updates
@@ -138,6 +139,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 - First-party UI grouping currently uses hostname ancestry rather than registrable-domain/eTLD+1 classification.
 - On Chrome versions without top-level-domain DNR conditions, requests initiated inside cross-origin subframes may not match a top-level-site policy.
 - Request logs retain at most 250 entries per tab in session storage. They may contain full URLs but are never transmitted by OriginMatrix.
+- Statistics aggregate only currently tracked tab state in session storage; closing a tab removes its contribution, and no permanent browsing history is built.
 - The conservative optimizer removes only semantically identical rules.
 
 ## Security and privacy
@@ -152,7 +154,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 ## Roadmap
 
 - Local Public Suffix List integration
-- Privacy-preserving blocking statistics
+- Systematic startup, compilation, memory, and page-overhead performance work
 - Explicit uMatrix compatibility reports and import adapter
 - Production browser integration tests
 - Further rule optimization where semantic equivalence can be proven

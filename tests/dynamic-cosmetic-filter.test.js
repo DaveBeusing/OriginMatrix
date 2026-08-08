@@ -95,3 +95,16 @@ test("caches valid selector groups and excludes invalid selectors", () => {
   filter.start([".ad", "[invalid"]);
   assert.equal(filter.selectorCache.size, 1);
 });
+
+test("reports batched cumulative cosmetic metrics", () => {
+  const existing = new FakeElement([".ad"]);
+  const scheduled = [];
+  const reported = [];
+  const filter = new DynamicCosmeticFilter({
+    documentObject: { documentElement: new FakeElement([], [existing]) }, Observer: FakeObserver,
+    schedule: (callback) => { scheduled.push(callback); return 1; }, cancel: () => {}, onMetrics: (metrics) => reported.push(metrics.elementsHidden),
+  });
+  filter.start([".ad"]);
+  scheduled.shift()();
+  assert.deepEqual(reported, [1]);
+});
