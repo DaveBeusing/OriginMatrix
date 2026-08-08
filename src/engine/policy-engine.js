@@ -1,11 +1,11 @@
 import { POLICY_ACTION, createPolicy, policyIdentity } from "../shared/models.js";
 
 export class PolicyEngine {
-  constructor({ store, resolver, compiler, browserAdapter }) {
+  constructor({ store, resolver, compiler, networkEngine }) {
     this.store = store;
     this.resolver = resolver;
     this.compiler = compiler;
-    this.browserAdapter = browserAdapter;
+    this.networkEngine = networkEngine;
   }
 
   async resolve(request) { return this.resolver.resolve(request, await this.store.getAllPolicies()); }
@@ -30,7 +30,7 @@ export class PolicyEngine {
     const compilable = policies.filter((policy) => policy.action !== POLICY_ACTION.INHERIT);
     const { rules, ruleIds } = this.compiler.compilePolicySet(compilable, { temporary });
     await this.store.setRuleIds(ruleIds, { temporary });
-    await this.browserAdapter.replaceRules({ temporary, rules });
+    await this.networkEngine.replaceRules({ temporary, rules });
     return rules;
   }
 }

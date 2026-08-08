@@ -1,4 +1,4 @@
-# OriginMatrix architecture — Phase 7
+# OriginMatrix architecture
 
 ## Data flow
 
@@ -8,11 +8,30 @@ UI intent
   → PolicyStore (source of truth)
   → PolicyResolver / DnrCompiler
   → RuleIdManager
-  → ChromeDnrAdapter
+  → NetworkEngine
   → updateDynamicRules() or updateSessionRules()
 ```
 
-UI code does not construct or install DNR rules. Browser API access is isolated in `ChromeDnrAdapter`; all engine modules are browser-independent.
+UI code does not construct or install DNR rules. Direct DNR API access is isolated in `src/network/`; all policy and compiler modules remain browser-independent.
+
+## Network Engine foundation
+
+`NetworkEngine` is the single DNR boundary shared by matrix policies and future automatic filter compilers:
+
+```text
+Matrix DnrCompiler ──┐
+                     ├── NetworkEngine
+Future filters ──────┘      ├── StaticRuleManager
+                            ├── DynamicRuleManager
+                            ├── SessionRuleManager
+                            └── RuleBudget
+```
+
+`DynamicRuleManager` and `SessionRuleManager` validate IDs and rule counts before installation, support targeted install/removal, and replace complete generations with one corresponding Chrome update call. `StaticRuleManager` prepares enabled-ruleset management and available-static-rule accounting; no static ruleset is bundled in this phase.
+
+`RuleBudget` centralizes conservative defaults for static, dynamic, and session capacity and rejects oversized generations before Chrome is called. Runtime diagnostics expose used and available dynamic/session capacity alongside enabled and available static-rule information.
+
+The `PolicyEngine` depends only on `NetworkEngine.replaceRules({ temporary, rules })`: persistent matrix policies still become dynamic rules, while tab policies still become session rules. Generated DNR state remains reconstructable from logical stores.
 
 ## Policy model
 

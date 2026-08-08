@@ -1,4 +1,4 @@
-import { ChromeDnrAdapter } from "./browser-adapter.js";
+import { NetworkEngine } from "../network/network-engine.js";
 import { RequestObserver } from "./request-observer.js";
 import { TabStateManager } from "./tab-state-manager.js";
 import { DnrCompiler } from "../engine/dnr-compiler.js";
@@ -15,11 +15,12 @@ import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
 const tabStateManager = new TabStateManager();
+const networkEngine = new NetworkEngine();
 const policyEngine = new PolicyEngine({
   store: policyStore,
   resolver: new PolicyResolver(),
   compiler,
-  browserAdapter: new ChromeDnrAdapter(),
+  networkEngine,
 });
 const policyWorkflow = new PolicyWorkflow({ store: policyStore, engine: policyEngine });
 const advancedPolicyManager = new AdvancedPolicyManager({ store: policyStore, engine: policyEngine });
@@ -134,14 +135,13 @@ async function reconcileRules() {
 }
 
 async function getDashboardState() {
-  const [persistent, temporary, dynamicRules, sessionRules, observation] = await Promise.all([
+  const [persistent, temporary, network, observation] = await Promise.all([
     policyStore.getPersistentPolicies(),
     policyStore.getTemporaryPolicies(),
-    chrome.declarativeNetRequest.getDynamicRules(),
-    chrome.declarativeNetRequest.getSessionRules(),
+    networkEngine.getDiagnostics(),
     tabStateManager.getDiagnostics(),
   ]);
-  const optimization = ruleOptimizer.optimize([...dynamicRules, ...sessionRules]);
+  const optimization = ruleOptimizer.optimize([...network.dynamicRules, ...network.sessionRules]);
   return {
     ok: true,
     manifestVersion: chrome.runtime.getManifest().version,
@@ -149,8 +149,12 @@ async function getDashboardState() {
     diagnostics: {
       persistentPolicies: persistent.length,
       temporaryPolicies: temporary.length,
-      dynamicRules: dynamicRules.length,
-      sessionRules: sessionRules.length,
+      dynamicRules: network.dynamicRules.length,
+      sessionRules: network.sessionRules.length,
+      enabledStaticRulesets: network.enabledStaticRulesets.length,
+      availableStaticRules: network.availableStaticRules,
+      dynamicRuleBudgetAvailable: network.budget.dynamic.available,
+      sessionRuleBudgetAvailable: network.budget.session.available,
       optimizedAway: optimization.optimizedAway,
       ...observation,
     },

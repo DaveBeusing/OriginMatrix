@@ -38,14 +38,18 @@ Policy Engine and Store  ← source of truth
        ↓
 Resolver → DNR Compiler → Rule IDs
        ↓
-Chrome DNR Adapter
+Unified Network Engine
+  ├─ Static Rule Manager
+  ├─ Dynamic Rule Manager
+  ├─ Session Rule Manager
+  └─ Rule Budget
        ↓
 Chromium network stack
 
 Network lifecycle → read-only Request Observer → Tab State → UI
 ```
 
-UI modules send policy intent and never construct DNR rules. Browser-specific API access is isolated from the browser-independent engine. Blocking and observation are deliberately separate systems.
+UI modules send policy intent and never construct DNR rules. All direct `chrome.declarativeNetRequest` access is isolated in `src/network/`; the browser-independent matrix engine supplies validated rule generations through the unified Network Engine interface. Blocking and observation are deliberately separate systems.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the policy model, resolution hierarchy, storage schema, compilation rules, observation flow, and MV3 design decisions.
 
