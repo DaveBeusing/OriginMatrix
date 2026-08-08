@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">OriginMatrix</title>
+  <desc id="desc">A technical three by three routing matrix with allowed, blocked, and inherited cells.</desc>
+  <rect x="5" y="5" width="118" height="118" rx="23" fill="#111820"/>
+  <path d="M35 35H93M35 64H93M35 93H93M35 35V93M64 35V93M93 35V93" fill="none" stroke="#AAB8C2" stroke-width="4" stroke-linecap="round" opacity=".52"/>
+
+  <rect x="24" y="24" width="22" height="22" rx="4" fill="#38D39F"/>
+  <rect x="53" y="24" width="22" height="22" rx="4" fill="#283640" stroke="#AAB8C2" stroke-width="3"/>
+  <rect x="82" y="24" width="22" height="22" rx="4" fill="#FF665E"/>
+  <path d="M87 41L99 29" stroke="#111820" stroke-width="4" stroke-linecap="round"/>
+
+  <rect x="24" y="53" width="22" height="22" rx="4" fill="#283640" stroke="#AAB8C2" stroke-width="3"/>
+  <rect x="53" y="53" width="22" height="22" rx="6" fill="#111820" stroke="#AAB8C2" stroke-width="3"/>
+  <circle cx="64" cy="64" r="3.5" fill="#AAB8C2"/>
+  <rect x="82" y="53" width="22" height="22" rx="4" fill="#38D39F"/>
+
+  <rect x="24" y="82" width="22" height="22" rx="4" fill="#FF665E"/>
+  <path d="M29 99L41 87" stroke="#111820" stroke-width="4" stroke-linecap="round"/>
+  <rect x="53" y="82" width="22" height="22" rx="4" fill="#38D39F"/>
+  <rect x="82" y="82" width="22" height="22" rx="4" fill="#283640" stroke="#AAB8C2" stroke-width="3"/>
+</svg>
