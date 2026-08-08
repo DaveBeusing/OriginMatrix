@@ -1,45 +1,45 @@
-import { PARTY, POLICY_ACTION, RESOURCE_TYPE } from "../shared/models.js";
+import { PARTY, POLICY_ACTION, RESOURCE_TYPE, WILDCARD, validatePolicy } from "../shared/models.js";
+import { specificity } from "./policy-resolver.js";
+import { RuleIdManager } from "./rule-id-manager.js";
 
-const SESSION_RULE_ID_BASE = 900_000;
+const PRIORITY_SCALE = 1_000_000;
 
 export class DnrCompiler {
-  compileSessionPolicy(policy) {
-    validatePolicy(policy);
+  constructor(ruleIdManager = new RuleIdManager()) {
+    this.ruleIdManager = ruleIdManager;
+  }
 
-    return {
-      id: SESSION_RULE_ID_BASE + policy.tabId,
-      priority: 900,
-      action: { type: "block" },
-      condition: {
-        initiatorDomains: [policy.scope],
-        domainType: "thirdParty",
-        resourceTypes: ["script"],
-        tabIds: [policy.tabId],
-      },
-    };
+  compilePolicies(policies, { temporary = false } = {}) {
+    const compilable = policies.map((policy) => validatePolicy(policy, { allowInherit: false }));
+    if (compilable.some((policy) => policy.temporary !== temporary)) {
+      throw new TypeError(`Expected only ${temporary ? "temporary" : "persistent"} policies.`);
+    }
+    const ids = this.ruleIdManager.assign(compilable);
+    const tieOrder = new Map([...compilable]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((policy, index, sorted) => [policy.id, sorted.length - index]));
+    if (compilable.length >= PRIORITY_SCALE) throw new RangeError("Too many policies for deterministic priority allocation.");
+    return compilable.map((policy) => compileRule(policy, ids.get(policy.id), tieOrder.get(policy.id)));
+  }
+
+  compileSessionPolicy(policy) {
+    return this.compilePolicies([policy], { temporary: true })[0];
   }
 }
 
-function validatePolicy(policy) {
-  if (!policy || typeof policy !== "object") {
-    throw new TypeError("Policy must be an object.");
-  }
-  if (policy.temporary !== true) {
-    throw new TypeError("Phase 1 compiler only accepts temporary policies.");
-  }
-  if (policy.action !== POLICY_ACTION.BLOCK) {
-    throw new TypeError("Phase 1 compiler only supports block policies.");
-  }
-  if (policy.party !== PARTY.THIRD_PARTY) {
-    throw new TypeError("Phase 1 compiler only supports third-party policies.");
-  }
-  if (policy.resourceType !== RESOURCE_TYPE.SCRIPT) {
-    throw new TypeError("Phase 1 compiler only supports script policies.");
-  }
-  if (typeof policy.scope !== "string" || policy.scope.length === 0) {
-    throw new TypeError("Policy scope must be a non-empty hostname.");
-  }
-  if (!Number.isInteger(policy.tabId) || policy.tabId < 0) {
-    throw new TypeError("Policy tabId must be a non-negative integer.");
-  }
+function compileRule(policy, id, tiePriority) {
+  const condition = {};
+  if (policy.scope !== WILDCARD) condition.initiatorDomains = [policy.scope];
+  if (policy.target !== WILDCARD) condition.requestDomains = [policy.target];
+  if (policy.party !== PARTY.ANY) condition.domainType = policy.party;
+  if (policy.resourceType !== RESOURCE_TYPE.ALL) condition.resourceTypes = [policy.resourceType];
+  if (policy.temporary) condition.tabIds = [policy.tabId];
+  if (Object.keys(condition).length === 0) condition.urlFilter = "*";
+
+  return {
+    id,
+    priority: specificity(policy) * PRIORITY_SCALE + tiePriority,
+    action: { type: policy.action },
+    condition,
+  };
 }

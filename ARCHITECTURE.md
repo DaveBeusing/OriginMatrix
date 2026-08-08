@@ -1,36 +1,57 @@
-# OriginMatrix architecture — Phase 0/1
+# OriginMatrix architecture — Phase 2
 
 ## Data flow
 
 ```text
-Popup intent
-  → service worker
-  → temporary policy model
-  → DNR compiler
-  → updateSessionRules()
-  → Chromium network stack
+UI intent
+  → PolicyEngine
+  → PolicyStore (source of truth)
+  → PolicyResolver / DnrCompiler
+  → RuleIdManager
+  → ChromeDnrAdapter
+  → updateDynamicRules() or updateSessionRules()
 ```
 
-The popup supplies only the active tab identity and URL. It cannot create, assign IDs to, or install DNR rules.
+UI code does not construct or install DNR rules. Browser API access is isolated in `ChromeDnrAdapter`; all engine modules are browser-independent.
 
 ## Policy model
 
-The Phase 1 policy records the top-level hostname as `scope`, wildcard target, third-party party type, script resource type, block action, tab ID, and temporary lifetime. `createThirdPartyScriptPolicy` validates the external inputs. `inherit` and `allow` are model constants for future compatibility but are deliberately not compiled in Phase 1.
+Every policy uses one canonical shape: `id`, `scope`, `target`, `party`, `resourceType`, `action`, `temporary`, and optional `tabId`. Missing scope and target values become `*`; missing party and resource type values become `any` and `all`. Hostnames are normalized to lowercase. IDs are derived from policy coordinates rather than actions, so changing an action replaces the same logical matrix cell.
 
-## Compilation and rule identity
+`inherit` means that no explicit policy exists at that coordinate. Saving it removes the corresponding stored policy and it never reaches DNR compilation.
 
-`DnrCompiler` is browser-independent and rejects policy shapes outside the Phase 1 contract. It emits one `block` rule with `initiatorDomains`, `domainType: thirdParty`, `resourceTypes: script`, and `tabIds`. The deterministic Phase 1 ID is `900000 + tabId`, providing one replaceable session rule per tab. A general collision-safe allocator belongs to Phase 2.
+## Resolution
 
-## Storage and worker lifecycle
+`PolicyResolver` matches top-level domain, target domain, party, resource type, and optional tab. Domain policies include subdomains. Matching candidates receive deterministic specificity scores:
 
-`PolicyStore` persists the logical temporary policy map in `chrome.storage.session`. The DNR session rule and logical policy therefore do not depend on a continuously running worker. Closing a tab removes its stored policy; Chromium automatically limits the DNR rule to that tab.
+```text
+global 100; resource 200; target 300; target+resource 400
+site 500; site+resource 600; site+target 700
+site+target+resource 800; temporary tab 900 + base specificity
+```
 
-Rule installation and removal compensate for subsequent storage failures: a newly installed rule is removed if its policy cannot be saved, while a removed rule is restored if its policy cannot be deleted. Phase 2 should additionally reconcile both stores on startup for external or browser-level inconsistencies.
+It returns the effective action, winning policy, diagnostic reason, and ordered resolution path. Equal scores use canonical policy IDs as a deterministic tie-breaker.
 
-## Persistent rules and resolution
+## DNR compilation and IDs
 
-Dynamic rules, `chrome.storage.local`, schema migration, and the full specificity resolver are intentionally absent. They are Phase 2 responsibilities. The persistent policy store—not generated DNR rules—will remain the source of truth.
+The compiler accepts validated logical policies and emits block or allow rules. Conditions are added only for non-wildcard policy dimensions. Temporary policies receive `tabIds` and compile to session rules; persistent policies compile to dynamic rules.
+
+`RuleIdManager` hashes canonical policy IDs into reserved persistent (`100000–499999`) and session (`900000–999999`) ranges. It sorts inputs and resolves collisions deterministically. The mapping is stored as derived diagnostic metadata, never as the policy source of truth.
+
+Compiler errors occur before browser rule replacement. Chrome removes the previous generation and adds the new generation in one atomic DNR update.
+
+DNR priorities encode the specificity band plus the same canonical-ID tie-breaker. This prevents Chrome's action-type tie rules from producing a different winner than `PolicyResolver` when two overlapping policies have equal specificity.
+
+## Storage and migration
+
+Persistent documents use `chrome.storage.local`; temporary documents use `chrome.storage.session`. Both are versioned:
+
+```json
+{ "schemaVersion": 1, "policies": [], "ruleIds": {} }
+```
+
+`migration.js` owns schema validation and future migration entry points. Unsupported versions and duplicate IDs fail explicitly. The service worker recompiles both rule generations when it starts, so generated rules remain reconstructable.
 
 ## Request observation
 
-Blocking and observation are separate systems. No request observer is implemented in Phase 1; it will be introduced only after the policy engine is stable, without changing the DNR compiler boundary.
+Blocking and observation remain separate systems. Request observation and tab-domain counts belong to Phase 3 and are intentionally absent from the Phase 2 engine.
