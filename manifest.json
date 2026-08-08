@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "OriginMatrix",
+  "version": "0.1.0",
+  "minimum_chrome_version": "102",
+  "description": "A granular request firewall for the modern web.",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "OriginMatrix",
+    "default_popup": "src/popup/popup.html"
+  }
+}

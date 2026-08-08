@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OriginMatrix</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>OriginMatrix</h1>
+        <span class="phase">Phase 1</span>
+      </header>
+      <dl>
+        <div><dt>Site</dt><dd id="site">Loading…</dd></div>
+        <div><dt>Status</dt><dd id="status" data-active="false">Inactive</dd></div>
+      </dl>
+      <p id="notice" role="status" aria-live="polite"></p>
+      <div class="actions">
+        <button id="toggle" type="button" disabled>Block third-party scripts</button>
+        <button id="reload" class="secondary" type="button" disabled>Reload page</button>
+      </div>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
