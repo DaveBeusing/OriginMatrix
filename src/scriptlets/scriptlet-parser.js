@@ -3,7 +3,9 @@ import { createScriptletFilter } from "../filters/filter-model.js";
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN = new RegExp(`^${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*$`, "i");
 const ALIASES = new Map([
+  ["rmnt", "remove-node-text"],
   ["remove-node-text.js", "remove-node-text"],
+  ["set", "set-constant"],
   ["set-constant.js", "set-constant"],
   ["abort-on-property-read.js", "abort-on-property-read"],
   ["aopr", "abort-on-property-read"],

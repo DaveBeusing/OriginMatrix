@@ -2,7 +2,7 @@
 
 ## Enabled-list demand analysis
 
-OriginMatrix 1.16.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. Run the reproducible inventory for any hostname with:
+OriginMatrix 1.17.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. Run the reproducible inventory for any hostname with:
 
 ```sh
 node tools/analyze-scriptlet-usage.mjs youtube.com
@@ -15,12 +15,12 @@ Measured against EasyList `202608081115` and EasyPrivacy `202608091151`:
 | Metric | Count |
 | --- | ---: |
 | Scriptlet references | 27 |
-| Supported | 0 |
-| Unsupported | 27 |
+| Supported | 11 |
+| Unsupported | 16 |
 | `youtube.com` relevant | 0 |
 | `www.youtube.com` relevant | 0 |
 | `m.youtube.com` relevant | 0 |
 
-The current global unsupported ranking starts with `set` (6 occurrences, score 61), `acs` and `rmnt` (4 each, score 41), followed by `aost` and `set-local-storage-item` (3 each, score 31). None is relevant to the three analyzed YouTube hostnames. These are measurements of enabled filter demand, not proof of advertising being blocked or visible.
+Phase 5 enables four `rmnt` rules through the existing bounded `remove-node-text` implementation, four valid `set` rules through the bounded `set-constant` implementation, and three `set-local-storage-item` rules through a new literal-only storage primitive. This raises measured overall coverage from 0% to 40.7%. Two additional `set` references contain entity-wildcard domain syntax that the filter model does not yet represent safely; one also requests intentionally prohibited prototype traversal.
 
-No executable primitive is added in this phase. Phase 5 must use this evidence together with safety, general usefulness, and relevant-site demand before selecting implementations. A high global count alone does not justify a broad page-API interception or unsafe compatibility alias.
+The remaining ranking starts with `acs` (4), `aost` (3), and `no-xhr-if` (2). They are deliberately deferred: their broad function, stack, or request interception semantics carry substantially more compatibility risk, and none of the current scriptlet rules applies to the analyzed YouTube hostnames. These measurements do not prove that advertising was blocked or visible.

@@ -7,13 +7,15 @@ import { readFile } from "node:fs/promises";
 
 test("registry exposes only bundled scriptlet identifiers", () => {
   const registry = new ScriptletRegistry();
-  assert.deepEqual(registry.list(), ["abort-on-property-read", "remove-node-text", "set-constant"]);
+  assert.deepEqual(registry.list(), ["abort-on-property-read", "remove-node-text", "set-constant", "set-local-storage-item"]);
   assert.equal(registry.getPhase("set-constant"), SCRIPTLET_PHASE.EARLY);
   assert.equal(registry.getPhase("abort-on-property-read"), SCRIPTLET_PHASE.EARLY);
   assert.equal(registry.getPhase("remove-node-text"), SCRIPTLET_PHASE.NORMAL);
+  assert.equal(registry.getPhase("set-local-storage-item"), SCRIPTLET_PHASE.EARLY);
   assert.throws(() => registry.createInvocation("remote-code", ["alert(1)"]), /Unknown scriptlet/);
   assert.throws(() => registry.createInvocation("set-constant", ["window.value", "alert(1)"]), /Invalid arguments/);
   assert.throws(() => registry.createInvocation("set-constant", ["__proto__.value", "true"]), /Invalid arguments/);
+  assert.throws(() => registry.createInvocation("set-local-storage-item", ["tracking", "arbitrary"]), /Invalid arguments/);
 });
 
 test("prepares deterministic early and normal phases without duplicate invocations", async () => {
@@ -59,7 +61,7 @@ test("activates only registry-supported filter-list scriptlets", () => {
   assert.equal(generation.unsupported.length, 1);
   assert.deepEqual(engine.activate(generation), { scriptletRules: 1, scriptletUnsupported: 1 });
   assert.equal(engine.prepareForHostname("video.example.com").invocations.length, 1);
-  assert.deepEqual(engine.getDiagnostics(), { bundledScriptlets: 3, scriptletRules: 1, scriptletUnsupported: 1 });
+  assert.deepEqual(engine.getDiagnostics(), { bundledScriptlets: 4, scriptletRules: 1, scriptletUnsupported: 1 });
   engine.clear();
   assert.equal(engine.prepareForHostname("example.com").invocations.length, 0);
 });

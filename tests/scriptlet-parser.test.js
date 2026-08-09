@@ -21,6 +21,8 @@ test("parses quoted and escaped arguments without evaluating them", () => {
   const escaped = parseScriptletRule("example.com##+js(remove-node-text, .advert, sponsored\\, offer)");
   assert.deepEqual(escaped.filter.args, [".advert", "sponsored, offer"]);
   assert.equal(parseScriptletRule("example.com##+js(aopr, ads.value)").filter.name, "abort-on-property-read");
+  assert.equal(parseScriptletRule("example.com##+js(set, ads.value, noopFunc)").filter.name, "set-constant");
+  assert.equal(parseScriptletRule("example.com##+js(rmnt, script, admiral)").filter.name, "remove-node-text");
 });
 
 test("reports malformed, global, exception, and oversized calls", () => {

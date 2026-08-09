@@ -65,3 +65,15 @@ test("records that the pinned EasyList snapshot contains no scriptlet demand", a
   assert.equal(result.relevantReferences, 0);
   assert.deepEqual(result.names, []);
 });
+
+test("measures supported high-value primitives in the enabled snapshots", async () => {
+  const sources = await Promise.all(["easylist", "easyprivacy"].map(async (name) => ({ name, source: await readFile(new URL(`../filters/${name}.txt`, import.meta.url), "utf8") })));
+  const result = analyzeRelevantScriptletCoverage(sources, { hostname: "youtube.com" });
+  assert.deepEqual(result.overall, { total: 27, supported: 11, unsupported: 16, percent: 40.7 });
+  assert.deepEqual(result.primitives.filter(({ supported }) => supported > 0).map(({ name, supported }) => ({ name, supported })), [
+    { name: "remove-node-text", supported: 4 },
+    { name: "set-constant", supported: 4 },
+    { name: "set-local-storage-item", supported: 3 },
+  ]);
+  assert.deepEqual(result.relevant, { total: 0, supported: 0, unsupported: 0, percent: 0 });
+});

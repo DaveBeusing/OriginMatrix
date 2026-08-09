@@ -1,12 +1,14 @@
-import { abortOnPropertyRead, removeNodeText, setConstant } from "./scriptlet-implementations.js";
+import { abortOnPropertyRead, removeNodeText, setConstant, setLocalStorageItem } from "./scriptlet-implementations.js";
 
 const SAFE_PROPERTY = /^(?!.*(?:^|\.)(?:__proto__|prototype|constructor)(?:\.|$))[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*){0,7}$/;
-const CONSTANTS = new Set(["true", "false", "null", "undefined", "0", "1", ""]);
+const CONSTANTS = new Set(["true", "false", "null", "undefined", "0", "1", "", "noopFunc", "{}"]);
+const STORAGE_VALUES = new Set(["$remove$", "true", "false", "0", "1", "null", "undefined", ""]);
 export const SCRIPTLET_PHASE = Object.freeze({ EARLY: "early", NORMAL: "normal" });
 
 const BUNDLED_DEFINITIONS = Object.freeze([
   definition("remove-node-text", SCRIPTLET_PHASE.NORMAL, removeNodeText, (args) => args.length === 2 && safeSelector(args[0]) && bounded(args[1], 256)),
   definition("set-constant", SCRIPTLET_PHASE.EARLY, setConstant, (args) => args.length === 2 && SAFE_PROPERTY.test(args[0]) && CONSTANTS.has(args[1])),
+  definition("set-local-storage-item", SCRIPTLET_PHASE.EARLY, setLocalStorageItem, (args) => args.length === 2 && safeStorageKey(args[0]) && STORAGE_VALUES.has(args[1])),
   definition("abort-on-property-read", SCRIPTLET_PHASE.EARLY, abortOnPropertyRead, (args) => args.length === 1 && SAFE_PROPERTY.test(args[0])),
 ]);
 
@@ -57,5 +59,7 @@ function validateDefinition(item) {
 function safeSelector(value) {
   return bounded(value, 512) && !/[{}\u0000-\u001f\u007f]/.test(value) && !/:has\s*\(/i.test(value);
 }
+
+function safeStorageKey(value) { return bounded(value, 128) && !/[\u0000-\u001f\u007f]/.test(value); }
 
 function bounded(value, maximum) { return typeof value === "string" && value.length > 0 && value.length <= maximum; }

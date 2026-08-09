@@ -14,7 +14,7 @@ export function removeNodeText(selector, needle) {
 }
 
 export function setConstant(propertyPath, token) {
-  const constants = { true: true, false: false, null: null, undefined: undefined, "0": 0, "1": 1, "": "" };
+  const constants = { true: true, false: false, null: null, undefined: undefined, "0": 0, "1": 1, "": "", noopFunc: () => {}, "{}": Object.freeze({}) };
   if (!Object.prototype.hasOwnProperty.call(constants, token)) return false;
   const parts = typeof propertyPath === "string" ? propertyPath.split(".") : [];
   if (parts.length === 0 || parts.length > 8 || parts.some((part) => !/^[A-Za-z_$][\w$]*$/.test(part) || ["__proto__", "prototype", "constructor"].includes(part))) return false;
@@ -28,6 +28,16 @@ export function setConstant(propertyPath, token) {
   if (descriptor && descriptor.configurable === false) return false;
   Object.defineProperty(owner, property, { configurable: true, get: () => constants[token], set: () => {} });
   return true;
+}
+
+export function setLocalStorageItem(key, token) {
+  if (typeof key !== "string" || !key || key.length > 128 || /[\u0000-\u001f\u007f]/.test(key)) return false;
+  if (!new Set(["$remove$", "true", "false", "0", "1", "null", "undefined", ""]).has(token)) return false;
+  try {
+    if (token === "$remove$") globalThis.localStorage.removeItem(key);
+    else globalThis.localStorage.setItem(key, token);
+    return true;
+  } catch { return false; }
 }
 
 export function abortOnPropertyRead(propertyPath) {
