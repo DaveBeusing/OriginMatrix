@@ -13,7 +13,7 @@ check(/^\d+\.\d+\.\d+$/.test(manifest.version), "version must contain three nume
 check(Number(manifest.minimum_chrome_version) >= 121, "minimum Chromium version must preserve the DNR quota baseline");
 check(!("update_url" in manifest), "repository builds must not declare an update_url");
 check(!("externally_connectable" in manifest), "external runtime messaging must remain disabled");
-check(!packageDocument.dependencies && !packageDocument.devDependencies, "release must remain runtime- and build-dependency free");
+check(!packageDocument.dependencies, "release must remain runtime-dependency free");
 
 const referencedFiles = [
   manifest.background?.service_worker,

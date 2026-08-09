@@ -1,10 +1,14 @@
 {
   "name": "originmatrix",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "release:check": "node --test && node tools/validate-release.mjs"
+    "release:check": "node --test && node tools/validate-release.mjs",
+    "test:browser:youtube": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2"
   }
 }

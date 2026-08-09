@@ -1,4 +1,4 @@
-# OriginMatrix 1.0.0 release candidate
+# OriginMatrix 1.1.0 release candidate
 
 This document separates reproducible repository checks from browser behavior that requires hands-on testing. A blank manual result is not evidence of compatibility.
 
@@ -10,7 +10,7 @@ Run:
 npm run release:check
 ```
 
-The gate runs the complete unit suite, validates version alignment and every manifest asset, confirms the MV3/minimum-browser baseline, rejects external messaging and update URLs, verifies the dependency-free package, and scans shipped JavaScript for dynamic-code and unsafe-HTML sinks.
+The gate runs the complete unit suite, validates version alignment and every manifest asset, confirms the MV3/minimum-browser baseline, rejects external messaging and update URLs, verifies that the shipped extension has no runtime dependencies, and scans shipped JavaScript for dynamic-code and unsafe-HTML sinks.
 
 On Windows, create a store-ready source archive after the gate passes:
 

@@ -235,7 +235,11 @@ The service worker authenticates every runtime message against its own extension
 
 ## Release validation
 
-The Phase 21 release gate combines the complete browser-independent test suite with a static package validator. It verifies version alignment, referenced manifest assets, the MV3 and minimum-Chromium baselines, absence of external messaging/update configuration and dependency trees, and shipped JavaScript sinks. Packaging uses an explicit runtime allowlist. Cross-browser and live-site behavior remains a separately evidenced manual matrix in `RELEASE-CANDIDATE.md`.
+The Phase 21 release gate combines the complete browser-independent test suite with a static package validator. It verifies version alignment, referenced manifest assets, the MV3 and minimum-Chromium baselines, absence of external messaging, update configuration and runtime dependencies, and shipped JavaScript sinks. Packaging uses an explicit runtime allowlist. Cross-browser and live-site behavior remains a separately evidenced manual matrix in `RELEASE-CANDIDATE.md`.
+
+## Browser-driven YouTube acceptance
+
+The opt-in Playwright suite launches a clean persistent Chromium context with OriginMatrix loaded unpacked. Independent scenarios cover homepage health, watch-page controls and comments, actual media pause/play/seek behavior, client-side watch-route changes, extension diagnostics, and structured ad-surface observations. Live execution is gated by `ORIGINMATRIX_YOUTUBE_LIVE=1`, serialized to one worker, and retains diagnostic artifacts. Observation classification distinguishes absent, OriginMatrix-marked hidden, visible, and unknown evidence; absence is never promoted to a successful block.
 
 ## Policy transfer and profiles
 
