@@ -11,7 +11,7 @@ const UNIFIED_LIST = Object.freeze({
 });
 
 export class UnifiedFilterListManager {
-  constructor({ lists, networkEngine, compiler, cosmeticEngine, scriptletEngine, loadText, settingsStore, generationStore = null, updater = null }) {
+  constructor({ lists, networkEngine, compiler, cosmeticEngine, scriptletEngine, loadText, settingsStore, generationStore = null, preparedGenerationStore = null, updater = null }) {
     if (!Array.isArray(lists) || lists.length === 0 || new Set(lists.map(({ id }) => id)).size !== lists.length) {
       throw new TypeError("Unique filter lists are required.");
     }
@@ -22,7 +22,7 @@ export class UnifiedFilterListManager {
     this.entries = new Map(lists.map((list) => [list.id, {
       list, enabled: list.enabled, source: null, metadata: null, status: statusFrom(list, list.enabled, "loading"),
     }]));
-    this.service = new FilterListService({ list: UNIFIED_LIST, networkEngine, compiler, cosmeticEngine, scriptletEngine, loadText });
+    this.service = new FilterListService({ list: UNIFIED_LIST, networkEngine, compiler, cosmeticEngine, scriptletEngine, preparedGenerationStore, loadText });
     this.customSource = "";
   }
 

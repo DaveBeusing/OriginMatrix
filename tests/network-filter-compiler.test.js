@@ -47,6 +47,7 @@ test("deduplicates filters and safely aggregates compatible host blocks", () => 
   assert.deepEqual(result.rules[0].condition.requestDomains, ["a.example", "b.example"]);
   assert.equal(result.diagnostics.duplicatesRemoved, 1);
   assert.equal(result.diagnostics.rulesOptimized, 1);
+  assert.equal(result.diagnostics.signatureCacheHits, result.rules.length);
 });
 
 test("keeps attribution outside Chrome DNR rules", () => {

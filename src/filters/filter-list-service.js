@@ -2,9 +2,10 @@ import { DYNAMIC_RULE_RANGES } from "../network/rule-ranges.js";
 import { parseFilterText } from "./filter-parser.js";
 import { NetworkFilterCompiler } from "./network-filter-compiler.js";
 import { AutomaticFilterResolver } from "./automatic-filter-resolver.js";
+import { createPreparedCacheIdentity } from "../storage/prepared-generation-cache-store.js";
 
 export class FilterListService {
-  constructor({ list, networkEngine, compiler = new NetworkFilterCompiler(), cosmeticEngine = null, scriptletEngine = null, automaticResolver = new AutomaticFilterResolver(), loadText, now = () => performance.now() }) {
+  constructor({ list, networkEngine, compiler = new NetworkFilterCompiler(), cosmeticEngine = null, scriptletEngine = null, automaticResolver = new AutomaticFilterResolver(), preparedGenerationStore = null, loadText, now = () => performance.now() }) {
     if (!list?.id || !list?.path) throw new TypeError("Filter list metadata is required.");
     if (!networkEngine || typeof networkEngine.replaceFilterRules !== "function") throw new TypeError("Network Engine is required.");
     if (typeof loadText !== "function") throw new TypeError("Filter list text loader is required.");
@@ -14,6 +15,7 @@ export class FilterListService {
     this.cosmeticEngine = cosmeticEngine;
     this.scriptletEngine = scriptletEngine;
     this.automaticResolver = automaticResolver;
+    this.preparedGenerationStore = preparedGenerationStore;
     this.loadText = loadText;
     this.now = now;
     this.features = Object.freeze({ network: true, cosmetic: true, scriptlets: true });
@@ -22,7 +24,7 @@ export class FilterListService {
     this.sourceMetadata = null;
     this.activeGeneration = null;
     this.preparedCache = null;
-    this.performance = { parsingTimeMs: 0, compilationTimeMs: 0, preparationTimeMs: 0, cacheHits: 0 };
+    this.performance = { parsingTimeMs: 0, compilationTimeMs: 0, preparationTimeMs: 0, cacheHits: 0, signatureCacheHits: 0, persistentCacheHit: false, persistentCacheMiss: false, persistentCacheInvalid: false, cacheReadTimeMs: 0, cacheWriteTimeMs: 0, cachedGenerationSize: 0 };
     this.state = statusFrom(list, { state: this.enabled ? "loading" : "disabled" }, this.enabled);
   }
 
@@ -67,9 +69,32 @@ export class FilterListService {
     const cosmeticGeneration = this.features.cosmetic && this.cosmeticEngine ? this.cosmeticEngine.prepare(parsed.filters) : { filters: [], unsupported: [] };
     const scriptletGeneration = this.features.scriptlets && this.scriptletEngine ? this.scriptletEngine.prepareGeneration(parsed.filters) : { filters: [], unsupported: [] };
     const automaticGeneration = this.automaticResolver.prepare(networkFilters, { source: this.list.title });
-    const compilationStarted = this.now();
-    const compiled = this.compiler.compile(networkFilters, { reservedDynamicRules });
-    this.performance.compilationTimeMs = elapsed(this.now(), compilationStarted);
+    const identity = this.preparedGenerationStore
+      ? createPreparedCacheIdentity({ sourceChecksum: await sha256(source), featureKey, reservedDynamicRules })
+      : null;
+    let compiled = null;
+    if (this.preparedGenerationStore) {
+      const readStarted = this.now();
+      const cached = await this.preparedGenerationStore.get(identity);
+      this.performance.cacheReadTimeMs = elapsed(this.now(), readStarted);
+      this.performance.cachedGenerationSize = cached.size;
+      this.performance.persistentCacheHit = cached.state === "hit";
+      this.performance.persistentCacheMiss = cached.state === "miss";
+      this.performance.persistentCacheInvalid = cached.state === "invalid";
+      if (cached.state === "hit") compiled = cached.compilation;
+    }
+    if (!compiled) {
+      const compilationStarted = this.now();
+      compiled = this.compiler.compile(networkFilters, { reservedDynamicRules });
+      this.performance.compilationTimeMs = elapsed(this.now(), compilationStarted);
+      if (this.preparedGenerationStore) {
+        const writeStarted = this.now();
+        try { const written = await this.preparedGenerationStore.set(identity, compiled); this.performance.cachedGenerationSize = written.size; }
+        catch { this.performance.persistentCacheInvalid = true; }
+        this.performance.cacheWriteTimeMs = elapsed(this.now(), writeStarted);
+      }
+    } else this.performance.compilationTimeMs = 0;
+    this.performance.signatureCacheHits = compiled.diagnostics.signatureCacheHits ?? 0;
     this.performance.preparationTimeMs = elapsed(this.now(), preparationStarted);
     const generation = Object.freeze({
       networkRules: compiled.rules,
@@ -149,6 +174,7 @@ function generationWithMetadata(generation, metadata, list) {
 }
 
 function elapsed(ended, started) { return Math.max(0, ended - started); }
+async function sha256(source) { const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(source)); return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join(""); }
 
 function statusFrom(list, state, enabled, metadata = null) {
   return Object.freeze({

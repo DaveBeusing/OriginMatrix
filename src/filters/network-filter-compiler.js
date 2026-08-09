@@ -43,6 +43,7 @@ export class NetworkFilterCompiler {
         rulesOptimized: unoptimizedRules.length - rules.length,
         reservedDynamicRules,
         dynamicRulesRequired: reservedDynamicRules + rules.length,
+        signatureCacheHits: assigned.length,
       }),
     });
   }
@@ -100,10 +101,10 @@ function aggregateHostRules(rules) {
 
 function assignRuleIds(rules) {
   const used = new Set();
-  return [...rules]
-    .sort((left, right) => stableStringify(left.rule).localeCompare(stableStringify(right.rule)))
-    .map(({ rule, attributions }) => {
-      const signature = stableStringify(rule);
+  return rules
+    .map(({ rule, attributions }) => ({ rule, attributions, signature: stableStringify(rule) }))
+    .sort((left, right) => left.signature.localeCompare(right.signature))
+    .map(({ rule, attributions, signature }) => {
       let id = FILTER_RULE_MIN + (stableHash(signature) % FILTER_RULE_SIZE);
       while (used.has(id)) id = FILTER_RULE_MIN + ((id - FILTER_RULE_MIN + 1) % FILTER_RULE_SIZE);
       used.add(id);

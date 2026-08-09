@@ -4,7 +4,7 @@
   <img src="icons/icon128.png" width="96" height="96" alt="OriginMatrix icon">
 </p>
 
-OriginMatrix 1.14.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. Dynamic DNR generations are compared deterministically so unchanged rules are retained and no-op updates never call Chrome. Runtime filtering prepares selector paths once, observes only required attributes, coalesces mutation roots, and schedules procedural work through a bounded idle callback. Page tools such as the element picker are injected only on demand. The request logger exposes the responsible EasyList, EasyPrivacy, custom, Matrix, or session rule. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
+OriginMatrix 1.15.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. Dynamic DNR generations are compared deterministically so unchanged rules are retained and no-op updates never call Chrome. Compiled network-filter generations are persisted by source checksum, feature configuration, compiler schema, and reserved DNR capacity, allowing service-worker restarts to skip unchanged network compilation. Runtime filtering prepares selector paths once, observes only required attributes, coalesces mutation roots, and schedules procedural work through a bounded idle callback. Page tools such as the element picker are injected only on demand. The request logger exposes the responsible EasyList, EasyPrivacy, custom, Matrix, or session rule. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
 
 OriginMatrix is an independent Manifest V3 project—not a port or visual copy of uMatrix. Logical policies are the source of truth and are compiled into Chrome `declarativeNetRequest` rules.
 
@@ -194,7 +194,7 @@ The reviewed trust boundaries, resource limits, and permission rationale are doc
 
 ## Release status
 
-Version 1.14.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
+Version 1.15.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
 
 ## License
 

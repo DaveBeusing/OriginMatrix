@@ -6,6 +6,8 @@ import { EASYLIST } from "../src/filters/filter-list-catalog.js";
 import { FilterListService } from "../src/filters/filter-list-service.js";
 import { CosmeticEngine } from "../src/cosmetic/cosmetic-engine.js";
 import { ScriptletEngine } from "../src/scriptlets/scriptlet-engine.js";
+import { NetworkFilterCompiler } from "../src/filters/network-filter-compiler.js";
+import { PreparedGenerationCacheStore } from "../src/storage/prepared-generation-cache-store.js";
 
 function fakeNetworkEngine() {
   let rules = [{ id: 100_001 }];
@@ -99,8 +101,40 @@ test("caches identical prepared generations and reports preparation timings", as
     compilationTimeMs: 2,
     preparationTimeMs: 10,
     cacheHits: 1,
+    signatureCacheHits: 1,
+    persistentCacheHit: false,
+    persistentCacheMiss: false,
+    persistentCacheInvalid: false,
+    cacheReadTimeMs: 0,
+    cacheWriteTimeMs: 0,
+    cachedGenerationSize: 0,
     preparedGenerationCached: true,
   });
+});
+
+test("reuses persistent network compilation across service-worker style reconstruction", async () => {
+  const data = {};
+  const storage = { async get(key) { return { [key]: structuredClone(data[key]) }; }, async set(values) { Object.assign(data, structuredClone(values)); } };
+  const store = new PreparedGenerationCacheStore(storage);
+  let compilations = 0;
+  const compiler = new NetworkFilterCompiler();
+  const countedCompiler = { compile(...args) { compilations += 1; return compiler.compile(...args); } };
+  const options = { list: EASYLIST, networkEngine: fakeNetworkEngine(), compiler: countedCompiler, preparedGenerationStore: store, loadText: async () => "||ads.example^" };
+  const cold = new FilterListService(options);
+  await cold.activate();
+  assert.equal(cold.getPerformanceDiagnostics().persistentCacheMiss, true);
+  const warm = new FilterListService({ ...options, networkEngine: fakeNetworkEngine() });
+  await warm.activate();
+  assert.equal(compilations, 1);
+  assert.equal(warm.getPerformanceDiagnostics().persistentCacheHit, true);
+  assert.equal(warm.getPerformanceDiagnostics().compilationTimeMs, 0);
+});
+
+test("continues with compilation when persistent cache storage fails", async () => {
+  const service = new FilterListService({ list: EASYLIST, networkEngine: fakeNetworkEngine(), preparedGenerationStore: { async get() { return { state: "invalid", size: 0 }; }, async set() { throw new Error("quota"); } }, loadText: async () => "||ads.example^" });
+  await service.activate();
+  assert.equal(service.getPerformanceDiagnostics().persistentCacheInvalid, true);
+  assert.equal(service.getStatus().state, "active");
 });
 
 test("bundled EasyList snapshot matches its pinned metadata", async () => {

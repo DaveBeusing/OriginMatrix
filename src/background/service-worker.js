@@ -13,6 +13,7 @@ import { ProfileStore } from "../storage/profile-store.js";
 import { FilterListSettingsStore } from "../storage/filter-list-settings-store.js";
 import { FilterListGenerationStore } from "../storage/filter-list-generation-store.js";
 import { CustomFilterStore } from "../storage/custom-filter-store.js";
+import { PreparedGenerationCacheStore } from "../storage/prepared-generation-cache-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 import { DEFAULT_FILTER_LISTS, EASYLIST } from "../filters/filter-list-catalog.js";
@@ -44,6 +45,7 @@ const ruleAttributionRegistry = new RuleAttributionRegistry();
 const dnrMatchObserver = new DnrMatchObserver({ tabStateManager, registry: ruleAttributionRegistry });
 const filterListGenerationStore = new FilterListGenerationStore({ listIds: DEFAULT_FILTER_LISTS.map(({ id }) => id) });
 const customFilterStore = new CustomFilterStore();
+const preparedGenerationStore = new PreparedGenerationCacheStore();
 const filterListManager = new UnifiedFilterListManager({
   lists: DEFAULT_FILTER_LISTS,
   networkEngine,
@@ -53,6 +55,7 @@ const filterListManager = new UnifiedFilterListManager({
   loadText: loadBundledText,
   settingsStore: new FilterListSettingsStore({ lists: DEFAULT_FILTER_LISTS }),
   generationStore: filterListGenerationStore,
+  preparedGenerationStore,
   updater: new FilterListUpdater({ generationStore: filterListGenerationStore }),
 });
 const policyEngine = new PolicyEngine({
