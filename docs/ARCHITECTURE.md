@@ -89,6 +89,8 @@ The engine accepts at most 500 applicable rules per document, queues at most 50 
 
 `breakage-diagnostics.js` evaluates bounded, session-only tab signals for media that never becomes playable, repeated player errors, navigation loops, exception bursts, and failed SPA delivery. It correlates warnings with recent attributable network matches, cosmetic plans, executed scriptlets, and applicable Matrix overrides. The dashboard presents evidence for manual review; diagnostics never change or disable a rule.
 
+Filter attribution metadata follows supported filter models from the combined-list parser into a compiler-owned index. Only valid DNR rule fields are installed in Chromium. Debug matches resolve their rule ID against the separate index and retain the bounded original rule text and source-list name in the tab-session request log. Cosmetic plans and bundled scriptlet invocations expose the same source metadata to diagnostics; persistent Matrix policies and temporary session overrides are labelled separately.
+
 The existing content script then requests a fresh effective cosmetic plan and runs the EARLY and NORMAL scriptlet phases for that route. A generation counter prevents an older asynchronous cosmetic response from replacing a newer route's plan. Scriptlet execution remains deduplicated within each document, route, and phase while allowing the same applicable bundled scriptlet to be evaluated again after a genuine SPA transition.
 
 ## YouTube compatibility diagnostics

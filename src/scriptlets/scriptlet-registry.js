@@ -29,13 +29,13 @@ export class ScriptletRegistry {
     return item.phase;
   }
 
-  createInvocation(name, args) {
+  createInvocation(name, args, attribution = {}) {
     const item = this.definitions.get(name);
     if (!item) throw new TypeError(`Unknown scriptlet: ${name}`);
     if (!Array.isArray(args) || args.some((arg) => typeof arg !== "string") || !item.validateArgs(args)) {
       throw new TypeError(`Invalid arguments for scriptlet: ${name}`);
     }
-    const invocation = Object.freeze({ name, phase: item.phase, args: Object.freeze([...args]), implementation: item.implementation });
+    const invocation = Object.freeze({ name, phase: item.phase, args: Object.freeze([...args]), implementation: item.implementation, source: attribution.sourceList ?? "Scriptlet", rule: attribution.sourceRule ?? `##+js(${name})` });
     this.invocations.add(invocation);
     return invocation;
   }

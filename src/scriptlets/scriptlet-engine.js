@@ -59,7 +59,7 @@ export class ScriptletEngine {
         const key = `${filter.name}\u0000${filter.args.join("\u0000")}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        invocations.push(this.registry.createInvocation(filter.name, filter.args));
+        invocations.push(this.registry.createInvocation(filter.name, filter.args, filter));
       } catch (error) {
         unsupported.push(Object.freeze({ filter, reason: error.message }));
       }

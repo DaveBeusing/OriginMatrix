@@ -13,7 +13,7 @@ export function analyzeBreakage({ state, matrixOverrides = [], now = Date.now() 
   if (recent("spa-delivery-failed", 60_000).length) issues.push(issue("failed-spa-navigation", "A same-document navigation update could not reach the page.", recent("spa-delivery-failed", 60_000).length));
 
   const network = (state?.requestLog ?? []).filter((item) => item.decision !== "unknown").map((item) => ({
-    type: "network", timestamp: item.timestamp, source: item.reason, details: `${item.decision} ${item.resourceType} ${item.domain}`,
+    type: "network", timestamp: item.timestamp, source: item.attributionSource ?? item.reason, details: item.filterRule ?? `${item.decision} ${item.resourceType} ${item.domain}`,
   }));
   const matrix = matrixOverrides.map((policy) => ({
     type: "matrix", timestamp: state?.updatedAt ?? now, source: policy.temporary ? "temporary Matrix override" : "persistent Matrix override",

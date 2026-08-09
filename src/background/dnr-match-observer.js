@@ -18,7 +18,7 @@ export class DnrMatchObserver {
     const rule = info?.rule;
     if (!Number.isInteger(request?.tabId) || request.tabId < 0 || typeof request.requestId !== "string" || !Number.isInteger(rule?.ruleId)) return;
     try {
-      const attribution = this.registry.resolve({ rulesetId: rule.rulesetId, ruleId: rule.ruleId });
+      const attribution = this.registry.resolve({ rulesetId: rule.rulesetId, ruleId: rule.ruleId, url: request.url });
       const matched = await this.tabStateManager.recordRuleMatch({
         tabId: request.tabId,
         requestId: request.requestId,

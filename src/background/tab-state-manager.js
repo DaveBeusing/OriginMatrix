@@ -68,6 +68,8 @@ export class TabStateManager {
         reason: "No attributable OriginMatrix DNR match.",
         ruleId: null,
         rulesetId: null,
+        attributionSource: null,
+        filterRule: null,
       });
       if (state.requestLog.length > MAX_LOG_ENTRIES) state.requestLog.splice(0, state.requestLog.length - MAX_LOG_ENTRIES);
       state.updatedAt = timestamp;
@@ -90,7 +92,7 @@ export class TabStateManager {
     });
   }
 
-  recordRuleMatch({ tabId, requestId, ruleId, rulesetId, decision, engine, source, category = null }) {
+  recordRuleMatch({ tabId, requestId, ruleId, rulesetId, decision, engine, source, rule = null, category = null }) {
     if (!["allowed", "blocked", "modified", "unknown"].includes(decision)) throw new TypeError(`Unsupported request decision: ${decision}`);
     if (![null, "ads", "trackers"].includes(category)) throw new TypeError(`Unsupported blocking category: ${category}`);
     return this.#mutate((document) => {
@@ -103,8 +105,10 @@ export class TabStateManager {
       entry.decision = decision;
       entry.engine = engine;
       entry.reason = `${source} matched ${rulesetId}:${ruleId}.`;
+      entry.attributionSource = source;
       entry.ruleId = ruleId;
       entry.rulesetId = rulesetId;
+      entry.filterRule = rule;
       entry.category = category;
       if (newlyBlocked) {
         state.blockedRequests += 1;
@@ -225,6 +229,8 @@ export class TabStateManager {
         if (!("ruleId" in entry)) entry.ruleId = null;
         if (!("rulesetId" in entry)) entry.rulesetId = null;
         if (!("category" in entry)) entry.category = null;
+        if (!("filterRule" in entry)) entry.filterRule = null;
+        if (!("attributionSource" in entry)) entry.attributionSource = null;
       }
       if (typeof state.reloadRequired !== "boolean") state.reloadRequired = false;
       if (!Number.isInteger(state.blockedRequests)) state.blockedRequests = 0;

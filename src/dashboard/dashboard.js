@@ -154,7 +154,7 @@ function renderLog() {
     && (typeFilter.value === "all" || entry.resourceType === typeFilter.value)
     && (!domainQuery || entry.domain.includes(domainQuery)));
   logBody.replaceChildren(...entries.slice().reverse().map(logRow));
-  if (entries.length === 0) logBody.append(emptyRow(8, "No matching requests."));
+  if (entries.length === 0) logBody.append(emptyRow(9, "No matching requests."));
 }
 
 async function toggleFilterList(event) {
@@ -201,7 +201,7 @@ function filterListRow(list) {
   row.append(action);
   return row;
 }
-function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.sourceSite, entry.domain, entry.resourceType, entry.decision, entry.outcome, entry.engine ?? "—", `${entry.reason} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
+function logRow(entry) { const row = document.createElement("tr"); const attribution = entry.attributionSource ? `${entry.engine ?? "rule"}: ${entry.attributionSource}` : entry.engine ?? "—"; const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.sourceSite, entry.domain, entry.resourceType, entry.decision, entry.outcome, attribution, entry.filterRule ?? "—", entry.url]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
 function coverageDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.type, sample.reason, sample.sourceFilterList, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
 function coverageLabel(value) { return `${value.supported}/${value.total} (${value.percent}%)`; }
 function tableRow(values) { const row = document.createElement("tr"); for (const value of values) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }

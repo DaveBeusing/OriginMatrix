@@ -26,11 +26,13 @@ export class NetworkFilterCompiler {
     const uniqueFilters = deduplicate(networkFilters);
     const unoptimizedRules = uniqueFilters.map(compileCondition);
     const aggregatedRules = aggregateHostRules(unoptimizedRules);
-    const rules = assignRuleIds(aggregatedRules);
+    const assigned = assignRuleIds(aggregatedRules);
+    const rules = assigned.map(({ rule }) => rule);
     this.budget.assertWithin("dynamic", reservedDynamicRules + rules.length);
 
     return Object.freeze({
       rules: Object.freeze(rules),
+      attributions: Object.freeze(Object.fromEntries(assigned.map(({ rule, attributions }) => [rule.id, Object.freeze(attributions)]))),
       diagnostics: Object.freeze({
         filtersReceived: normalized.length,
         networkFilters: networkFilters.length,
@@ -55,11 +57,11 @@ function compileCondition(filter) {
   if (filter.excludedDomains.length > 0) condition.excludedInitiatorDomains = filter.excludedDomains;
   if (filter.resourceTypes.length > 0) condition.resourceTypes = filter.resourceTypes;
   if (filter.thirdParty !== null) condition.domainType = filter.thirdParty ? "thirdParty" : "firstParty";
-  return {
+  return { rule: {
     priority: filter.type === FILTER_TYPE.EXCEPTION ? EXCEPTION_PRIORITY : BLOCK_PRIORITY,
     action: { type: filter.type === FILTER_TYPE.EXCEPTION ? "allow" : "block" },
     condition,
-  };
+  }, attributions: [Object.freeze({ source: filter.sourceList ?? "Filter list", rule: filter.sourceRule ?? formatFilter(filter) })] };
 }
 
 function deduplicate(filters) {
@@ -71,22 +73,25 @@ function deduplicate(filters) {
 function aggregateHostRules(rules) {
   const groups = new Map();
   const standalone = [];
-  for (const rule of rules) {
+  for (const entry of rules) {
+    const rule = entry.rule;
     if (!rule.condition.requestDomains) {
-      standalone.push(rule);
+      standalone.push(entry);
       continue;
     }
     const { requestDomains, ...rest } = rule.condition;
     const key = stableStringify({ priority: rule.priority, action: rule.action, condition: rest });
-    const group = groups.get(key) ?? { ...rule, condition: { ...rest, requestDomains: [] } };
-    group.condition.requestDomains.push(...requestDomains);
+    const group = groups.get(key) ?? { rule: { ...rule, condition: { ...rest, requestDomains: [] } }, attributions: [] };
+    group.rule.condition.requestDomains.push(...requestDomains);
+    group.attributions.push(...entry.attributions);
     groups.set(key, group);
   }
-  const aggregated = [...groups.values()].flatMap((rule) => {
-    const domains = [...new Set(rule.condition.requestDomains)].sort();
+  const aggregated = [...groups.values()].flatMap((entry) => {
+    const domains = [...new Set(entry.rule.condition.requestDomains)].sort();
     const chunks = [];
     for (let index = 0; index < domains.length; index += MAX_AGGREGATED_DOMAINS) {
-      chunks.push({ ...rule, condition: { ...rule.condition, requestDomains: domains.slice(index, index + MAX_AGGREGATED_DOMAINS) } });
+      const chunkDomains = new Set(domains.slice(index, index + MAX_AGGREGATED_DOMAINS));
+      chunks.push({ rule: { ...entry.rule, condition: { ...entry.rule.condition, requestDomains: [...chunkDomains] } }, attributions: entry.attributions.filter(({ rule }) => { const match = rule.match(/^@@?\|\|([^\^]+)\^|^\|\|([^\^]+)\^/); return !match || chunkDomains.has(match[1] ?? match[2]); }) });
     }
     return chunks;
   });
@@ -96,15 +101,17 @@ function aggregateHostRules(rules) {
 function assignRuleIds(rules) {
   const used = new Set();
   return [...rules]
-    .sort((left, right) => stableStringify(left).localeCompare(stableStringify(right)))
-    .map((rule) => {
+    .sort((left, right) => stableStringify(left.rule).localeCompare(stableStringify(right.rule)))
+    .map(({ rule, attributions }) => {
       const signature = stableStringify(rule);
       let id = FILTER_RULE_MIN + (stableHash(signature) % FILTER_RULE_SIZE);
       while (used.has(id)) id = FILTER_RULE_MIN + ((id - FILTER_RULE_MIN + 1) % FILTER_RULE_SIZE);
       used.add(id);
-      return Object.freeze({ id, ...rule, action: Object.freeze(rule.action), condition: Object.freeze(rule.condition) });
+      return Object.freeze({ rule: Object.freeze({ id, ...rule, action: Object.freeze(rule.action), condition: Object.freeze(rule.condition) }), attributions });
     });
 }
+
+function formatFilter(filter) { return `${filter.type === FILTER_TYPE.EXCEPTION ? "@@" : ""}${filter.pattern}`; }
 
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;

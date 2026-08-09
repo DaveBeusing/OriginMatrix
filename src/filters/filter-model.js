@@ -32,6 +32,7 @@ export function createCosmeticFilter(input) {
     domains: normalizeDomains(input.domains),
     excludedDomains: normalizeDomains(input.excludedDomains),
     ...(input.exception === true ? { exception: true } : {}),
+    ...attribution(input),
   });
 }
 
@@ -39,7 +40,7 @@ export function createCosmeticControlFilter(input) {
   if (input?.mode !== "generichide") throw new TypeError("Unsupported cosmetic control mode.");
   const domains = normalizeDomains(input.domains);
   if (domains.length === 0) throw new TypeError("Cosmetic controls require a hostname.");
-  return freezeFilter({ type: FILTER_TYPE.COSMETIC_CONTROL, mode: input.mode, domains, excludedDomains: normalizeDomains(input.excludedDomains) });
+  return freezeFilter({ type: FILTER_TYPE.COSMETIC_CONTROL, mode: input.mode, domains, excludedDomains: normalizeDomains(input.excludedDomains), ...attribution(input) });
 }
 
 export function createScriptletFilter(input) {
@@ -55,6 +56,7 @@ export function createScriptletFilter(input) {
     args: [...args],
     domains: normalizeDomains(input.domains),
     excludedDomains: normalizeDomains(input.excludedDomains),
+    ...attribution(input),
   });
 }
 
@@ -85,7 +87,15 @@ function createNetworkLikeFilter(input, type, action) {
     resourceTypes,
     thirdParty,
     action,
+    ...attribution(input),
   });
+}
+
+function attribution(input) {
+  const result = {};
+  if (input?.sourceList !== undefined) result.sourceList = requiredText(input.sourceList, "Filter source list").slice(0, 100);
+  if (input?.sourceRule !== undefined) result.sourceRule = requiredText(input.sourceRule, "Filter source rule").slice(0, 8_192);
+  return result;
 }
 
 function normalizeDomains(values = []) {

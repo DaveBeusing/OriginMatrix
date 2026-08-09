@@ -49,6 +49,13 @@ test("deduplicates filters and safely aggregates compatible host blocks", () => 
   assert.equal(result.diagnostics.rulesOptimized, 1);
 });
 
+test("keeps attribution outside Chrome DNR rules", () => {
+  const filters = [createNetworkFilter({ pattern: "||ads.example^", sourceList: "EasyList", sourceRule: "||ads.example^" }), createNetworkFilter({ pattern: "||tracker.example^", sourceList: "EasyPrivacy", sourceRule: "||tracker.example^" })];
+  const result = new NetworkFilterCompiler().compile(filters);
+  assert.equal("attributions" in result.rules[0], false);
+  assert.deepEqual(result.attributions[result.rules[0].id], [{ source: "EasyList", rule: "||ads.example^" }, { source: "EasyPrivacy", rule: "||tracker.example^" }]);
+});
+
 test("chunks large host aggregations into bounded DNR conditions", () => {
   const filters = Array.from({ length: 1_001 }, (_, index) => createNetworkFilter({ pattern: `||ads-${index}.example^` }));
   const result = new NetworkFilterCompiler().compile(filters);

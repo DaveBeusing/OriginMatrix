@@ -4,7 +4,7 @@
   <img src="icons/icon128.png" width="96" height="96" alt="OriginMatrix icon">
 </p>
 
-OriginMatrix 1.10.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. Session-only breakage diagnostics correlate media and SPA failures with recent filters and overrides without changing rules automatically. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
+OriginMatrix 1.11.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The request logger exposes the responsible EasyList, EasyPrivacy, Matrix, or session rule, while session-only breakage diagnostics correlate media and SPA failures with recent filters and overrides without changing rules automatically. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
 
 OriginMatrix is an independent Manifest V3 project—not a port or visual copy of uMatrix. Logical policies are the source of truth and are compiled into Chrome `declarativeNetRequest` rules.
 
@@ -194,7 +194,7 @@ The reviewed trust boundaries, resource limits, and permission rationale are doc
 
 ## Release status
 
-Version 1.10.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
+Version 1.11.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
 
 ## License
 

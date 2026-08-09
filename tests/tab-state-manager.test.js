@@ -94,6 +94,7 @@ test("stores attributable DNR decisions separately from request outcomes", async
   assert.equal(entry.engine, "network");
   assert.equal(entry.category, "ads");
   assert.match(entry.reason, /EasyList.*_dynamic:500001/);
+  assert.equal(entry.attributionSource, "EasyList");
   assert.equal(await manager.recordRuleMatch({ tabId: 13, requestId: "missing", ruleId: 1, rulesetId: "base-network", decision: "blocked", engine: "network", source: "Base" }), false);
 });
 

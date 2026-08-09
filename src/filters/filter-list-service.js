@@ -73,6 +73,7 @@ export class FilterListService {
     this.performance.preparationTimeMs = elapsed(this.now(), preparationStarted);
     const generation = Object.freeze({
       networkRules: compiled.rules,
+      networkAttributions: compiled.attributions,
       cosmeticGeneration,
       scriptletGeneration,
       automaticGeneration,

@@ -76,7 +76,14 @@ export function parseFilterText(source) {
   if (new TextEncoder().encode(source).length > FILTER_TEXT_LIMITS.sourceBytes) throw new RangeError("Filter text exceeds the source size limit.");
   const lines = source.split(/\r?\n/);
   if (lines.length > FILTER_TEXT_LIMITS.lines) throw new RangeError("Filter text exceeds the line count limit.");
-  const results = lines.map((line, index) => Object.freeze({ ...parseFilterRule(line), line: index + 1 }));
+  let sourceList = null;
+  const results = lines.map((line, index) => {
+    const marker = line.match(/^! OriginMatrix source:\s*(.+)$/);
+    if (marker) sourceList = marker[1].trim().slice(0, 100);
+    const result = parseFilterRule(line);
+    const filter = result.status === "supported" ? validateWithAttribution(result.filter, result.source, sourceList) : result.filter;
+    return Object.freeze({ ...result, ...(filter ? { filter } : {}), line: index + 1 });
+  });
   const filters = results.filter(({ status }) => status === "supported").map(({ filter }) => filter);
   const ignored = results.filter(({ status }) => status === "ignored");
   const unsupportedRules = results.filter(({ status }) => status === "unsupported");
@@ -94,6 +101,15 @@ export function parseFilterText(source) {
       rulesOptimized: 0,
     }),
   });
+}
+
+function validateWithAttribution(filter, sourceRule, sourceList) {
+  const input = { ...filter, sourceRule, ...(sourceList ? { sourceList } : {}) };
+  if (filter.type === "network") return createNetworkFilter(input);
+  if (filter.type === "exception") return createExceptionFilter(input);
+  if (filter.type === "cosmetic") return createCosmeticFilter(input);
+  if (filter.type === "cosmetic-control") return createCosmeticControlFilter(input);
+  return filter.type === "scriptlet" ? Object.freeze({ ...filter, sourceRule, ...(sourceList ? { sourceList } : {}) }) : filter;
 }
 
 function parseOptions(source) {

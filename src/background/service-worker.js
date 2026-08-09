@@ -312,8 +312,8 @@ async function getCosmeticSelectors(hostname, sender) {
   const plan = cosmeticEngine.getSelectorPlan(hostname);
   const proceduralFilters = cosmeticEngine.getProceduralFilters(hostname);
   if (Number.isInteger(sender?.tab?.id) && Number.isInteger(sender?.frameId)) {
-    const samples = [...plan.nativeSelectors, ...plan.dynamicSelectors, ...proceduralFilters.map((item) => item.targetSelector)].slice(0, 5);
-    if (samples.length) await tabStateManager.recordProtectionAction({ tabId: sender.tab.id, frameId: sender.frameId, type: "cosmetic", source: "active cosmetic filter plan", details: samples.join(", ") });
+    const samples = plan.attributions.slice(0, 5);
+    for (const sample of samples) await tabStateManager.recordProtectionAction({ tabId: sender.tab.id, frameId: sender.frameId, type: "cosmetic", source: `${sample.source} Cosmetic`, details: sample.rule });
   }
   return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors, proceduralFilters };
 }
@@ -335,7 +335,7 @@ async function runScriptletsForSender(sender, phase, navigationId = "initial") {
   executedScriptletPhases.add(executionKey);
   if (generation.invocations.length) await tabStateManager.recordProtectionAction({
     tabId: sender.tab.id, frameId: sender.frameId, type: "scriptlet", source: `${phase} scriptlet phase`,
-    details: generation.invocations.map((item) => item.name).join(", "),
+    details: generation.invocations.map((item) => `${item.source}: ${item.rule}`).join(", "),
   });
   return { ok: true, executed: result.executed, duplicate: false, phase };
 }
@@ -433,7 +433,8 @@ async function refreshRuleAttribution() {
     networkEngine.getDynamicRules(),
     networkEngine.getSessionRules(),
   ]);
-  ruleAttributionRegistry.replace({ dynamicRules, sessionRules });
+  const filterAttributions = filterListManager.getSourceState(DEFAULT_FILTER_LISTS[0].id).generation?.networkAttributions ?? {};
+  ruleAttributionRegistry.replace({ dynamicRules, sessionRules, filterAttributions });
 }
 
 function validateMatrixCoordinates({ site, scope, target, party }) {

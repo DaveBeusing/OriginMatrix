@@ -55,6 +55,7 @@ export class SelectorStore {
     const plan = Object.freeze({
       nativeSelectors: Object.freeze(effective(applicable, MAX_NATIVE_SELECTORS_PER_DOCUMENT)),
       dynamicSelectors: Object.freeze(effective(applicableSite, MAX_DYNAMIC_SELECTORS_PER_DOCUMENT)),
+      attributions: Object.freeze([...new Map(applicable.filter(({ exception }) => exception !== true).map((filter) => [filter.selector, Object.freeze({ source: filter.sourceList ?? "Cosmetic Rule", rule: filter.sourceRule ?? filter.selector, selector: filter.selector })])).values()].slice(0, MAX_NATIVE_SELECTORS_PER_DOCUMENT)),
     });
     if (this.cache.size >= MAX_CACHED_HOSTNAMES) this.cache.delete(this.cache.keys().next().value);
     this.cache.set(cacheKey, plan);

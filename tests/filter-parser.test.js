@@ -81,6 +81,13 @@ test("returns line-aware parser diagnostics", () => {
   });
 });
 
+test("retains source-list and original-rule attribution metadata", () => {
+  const parsed = parseFilterText("! OriginMatrix source: EasyPrivacy\n||tracker.example^\nexample.com##.sponsor");
+  assert.equal(parsed.filters[0].sourceList, "EasyPrivacy");
+  assert.equal(parsed.filters[0].sourceRule, "||tracker.example^");
+  assert.equal(parsed.filters[1].sourceRule, "example.com##.sponsor");
+});
+
 test("bounds filter source, line count, and individual rule work", () => {
   assert.equal(parseFilterRule(`||example.com/${"x".repeat(8_192)}`).reason, "rule-too-long");
   assert.throws(() => parseFilterText("\n".repeat(250_000)), /line count limit/);
