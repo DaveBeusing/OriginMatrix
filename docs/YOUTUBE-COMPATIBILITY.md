@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.6.0`, EasyList snapshot `202608081115`.
+Version baseline: OriginMatrix `1.7.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -45,6 +45,7 @@ The Phase 4 inventory finds no scriptlet references in the pinned EasyList snaps
 
 - OriginMatrix can identify YouTube-, Googlevideo-, ytimg-, and related ad-endpoint rules in the bundled snapshot.
 - Supported network rules compile through the normal Filter-to-DNR pipeline.
+- EasyList and EasyPrivacy compile into one deduplicated, budget-checked default generation.
 - Supported site-scoped cosmetic selectors use the normal Cosmetic Engine.
 - Selected domain-scoped scriptlet rules can activate only bundled, argument-validated implementations.
 - Property-protection scriptlets run in the EARLY phase requested at `document_start`; DOM text removal waits for the NORMAL phase after DOM readiness.

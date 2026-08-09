@@ -7,13 +7,13 @@ function memoryStorage(initial = {}) {
   return { async get(key) { return { [key]: data[key] }; }, async set(values) { Object.assign(data, structuredClone(values)); } };
 }
 
-const lists = [{ id: "easylist", enabled: true }];
+const lists = [{ id: "easylist", enabled: true }, { id: "easyprivacy", enabled: true }];
 
 test("uses catalog defaults and persists enabled state", async () => {
   const store = new FilterListSettingsStore({ lists, localArea: memoryStorage() });
-  assert.deepEqual(await store.getAll(), { easylist: { enabled: true } });
+  assert.deepEqual(await store.getAll(), { easylist: { enabled: true }, easyprivacy: { enabled: true } });
   await store.setEnabled("easylist", false);
-  assert.deepEqual(await store.getAll(), { easylist: { enabled: false } });
+  assert.deepEqual(await store.getAll(), { easylist: { enabled: false }, easyprivacy: { enabled: true } });
   await assert.rejects(() => store.setEnabled("unknown", true), /Unknown filter list/);
 });
 

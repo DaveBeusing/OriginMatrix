@@ -4,15 +4,15 @@ export const PROFILE_NAMES = Object.freeze(["balanced", "strict", "relaxed"]);
 
 const DEFINITIONS = Object.freeze({
   balanced: Object.freeze({
-    name: "balanced", title: "Balanced", matrixMode: "normal", trackingLevel: "basic",
+    name: "balanced", title: "Balanced", matrixMode: "normal", trackingLevel: "enhanced",
     features: Object.freeze({ network: true, cosmetic: true, scriptlets: true }),
   }),
   strict: Object.freeze({
-    name: "strict", title: "Strict", matrixMode: "strict", trackingLevel: "basic",
+    name: "strict", title: "Strict", matrixMode: "strict", trackingLevel: "enhanced",
     features: Object.freeze({ network: true, cosmetic: true, scriptlets: true }),
   }),
   relaxed: Object.freeze({
-    name: "relaxed", title: "Relaxed", matrixMode: "minimal", trackingLevel: "basic",
+    name: "relaxed", title: "Relaxed", matrixMode: "minimal", trackingLevel: "enhanced",
     features: Object.freeze({ network: true, cosmetic: true, scriptlets: false }),
   }),
 });

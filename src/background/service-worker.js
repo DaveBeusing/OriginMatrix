@@ -14,9 +14,8 @@ import { FilterListSettingsStore } from "../storage/filter-list-settings-store.j
 import { FilterListGenerationStore } from "../storage/filter-list-generation-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
-import { EASYLIST } from "../filters/filter-list-catalog.js";
-import { FilterListService } from "../filters/filter-list-service.js";
-import { FilterListManager } from "../filters/filter-list-manager.js";
+import { DEFAULT_FILTER_LISTS, EASYLIST } from "../filters/filter-list-catalog.js";
+import { UnifiedFilterListManager } from "../filters/unified-filter-list-manager.js";
 import { FilterListUpdater } from "../filters/filter-list-updater.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
@@ -39,18 +38,15 @@ const cosmeticEngine = new CosmeticEngine();
 const scriptletEngine = new ScriptletEngine();
 const ruleAttributionRegistry = new RuleAttributionRegistry();
 const dnrMatchObserver = new DnrMatchObserver({ tabStateManager, registry: ruleAttributionRegistry });
-const filterListService = new FilterListService({
-  list: EASYLIST,
+const filterListGenerationStore = new FilterListGenerationStore({ listIds: DEFAULT_FILTER_LISTS.map(({ id }) => id) });
+const filterListManager = new UnifiedFilterListManager({
+  lists: DEFAULT_FILTER_LISTS,
   networkEngine,
   compiler: new NetworkFilterCompiler({ budget: networkEngine.budget }),
   cosmeticEngine,
   scriptletEngine,
   loadText: loadBundledText,
-});
-const filterListGenerationStore = new FilterListGenerationStore({ listIds: [EASYLIST.id] });
-const filterListManager = new FilterListManager({
-  services: [filterListService],
-  settingsStore: new FilterListSettingsStore({ lists: [EASYLIST] }),
+  settingsStore: new FilterListSettingsStore({ lists: DEFAULT_FILTER_LISTS }),
   generationStore: filterListGenerationStore,
   updater: new FilterListUpdater({ generationStore: filterListGenerationStore }),
 });
@@ -161,7 +157,7 @@ async function getTabState(tabId, url) {
     policies,
     temporaryPolicies: temporary,
     resolver: policyEngine.resolver,
-    automaticResolver: { resolve: (context) => filterListService.resolveAutomatic(context) },
+    automaticResolver: { resolve: (context) => filterListManager.resolveAutomatic(context) },
   });
   const pendingChanges = temporary.filter((policy) => policy.tabId === tabId && [topDomain, "*"].includes(policy.scope)).length;
   return { ok: true, observation, matrix, protection, pendingChanges, reloadRequired: observation?.reloadRequired === true };
@@ -202,7 +198,7 @@ async function revertMatrix({ tabId, url }) {
 }
 
 async function reconcileRules() {
-  filterListService.configure(profileDefinition(await profileStore.get()).features);
+  filterListManager.configure(profileDefinition(await profileStore.get()).features);
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
   await filterListManager.initialize();
@@ -236,7 +232,7 @@ async function getDashboardState() {
       memoryUsage: performance.memory?.usedJSHeapSize ?? "unavailable",
       youtubePlaybackBehavior: "manual baseline required",
       pageLoadImpact: "browser profiling required",
-      ...filterListService.getPerformanceDiagnostics(),
+      ...filterListManager.getPerformanceDiagnostics(),
       ...contentPerformance,
     },
     diagnostics: {
@@ -276,7 +272,7 @@ async function applyProfile({ profile }) {
 }
 
 async function applyProtectionFeatures(features) {
-  filterListService.configure(features);
+  filterListManager.configure(features);
   await filterListManager.activateAll();
 }
 
@@ -348,7 +344,7 @@ async function getYouTubeDiagnostics() {
 }
 
 async function getSiteFilterCoverage(hostname) {
-  const sourceState = filterListService.getSourceState();
+  const sourceState = filterListManager.getSourceState(EASYLIST.id);
   const source = sourceState.source ?? await loadBundledText(EASYLIST.path);
   if (siteCoverageCache.source !== source) siteCoverageCache = { source, values: new Map() };
   if (!siteCoverageCache.values.has(hostname)) {

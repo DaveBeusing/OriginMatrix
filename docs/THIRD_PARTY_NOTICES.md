@@ -12,3 +12,16 @@ OriginMatrix includes an unmodified snapshot of **EasyList**, maintained by the 
 - License terms: <https://easylist.to/pages/licence.html>
 
 The EasyList repository is offered under the GNU General Public License version 3 or later, or Creative Commons Attribution-ShareAlike 3.0 Unported or later. The bundled list remains subject to those upstream terms. OriginMatrix application code remains licensed separately under MIT.
+
+## EasyPrivacy
+
+OriginMatrix includes an unmodified snapshot of **EasyPrivacy**, maintained by the EasyList authors.
+
+- Source: <https://easylist.to/easylist/easyprivacy.txt>
+- Project: <https://github.com/easylist/easylist>
+- Snapshot version: `202608091151`
+- Upstream commit: `2cd2746c456dc48ed99e7d6a3b2726eb223934a1`
+- Snapshot SHA-256: `6efd5de59b38243f2196075824c78d4ab2f26175ca2a2b73f8557c1110501b08`
+- License terms: <https://easylist.to/pages/licence.html>
+
+EasyPrivacy is distributed under the same upstream EasyList licensing terms. The bundled list remains subject to those terms; OriginMatrix application code remains licensed separately under MIT.
