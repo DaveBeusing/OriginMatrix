@@ -21,6 +21,7 @@ import { FilterListUpdater } from "../filters/filter-list-updater.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
+import { analyzeSiteFilterCoverage } from "../diagnostics/site-filter-coverage.js";
 import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
 import { profileDefinition } from "../engine/profiles.js";
 import { RuleAttributionRegistry } from "./rule-attribution-registry.js";
@@ -70,6 +71,7 @@ let workerMessagesHandled = 0;
 let startupTimeMs = null;
 let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
+let siteCoverageCache = { source: null, values: new Map() };
 const requestObserver = new RequestObserver({
   tabStateManager,
   getTab: (tabId) => chrome.tabs.get(tabId),
@@ -125,6 +127,7 @@ async function handleMessage(message, sender) {
     case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender));
     case "REPORT_COSMETIC_METRICS": return reportCosmeticMetrics(message, sender);
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
+    case "GET_SITE_FILTER_COVERAGE": return startupReconciliation.then(() => getSiteFilterCoverage(message.hostname));
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
@@ -318,6 +321,20 @@ async function getYouTubeDiagnostics() {
   youtubeDiagnosticsPromise ??= loadBundledText(EASYLIST.path)
     .then((source) => analyzeYouTubeCompatibility(source, { listVersion: EASYLIST.snapshotVersion }));
   return { ok: true, diagnostics: await youtubeDiagnosticsPromise };
+}
+
+async function getSiteFilterCoverage(hostname) {
+  const sourceState = filterListService.getSourceState();
+  const source = sourceState.source ?? await loadBundledText(EASYLIST.path);
+  if (siteCoverageCache.source !== source) siteCoverageCache = { source, values: new Map() };
+  if (!siteCoverageCache.values.has(hostname)) {
+    siteCoverageCache.values.set(hostname, analyzeSiteFilterCoverage(source, {
+      hostname,
+      filterList: EASYLIST.title,
+      listVersion: sourceState.metadata?.version ?? EASYLIST.snapshotVersion,
+    }));
+  }
+  return { ok: true, diagnostics: siteCoverageCache.values.get(hostname) };
 }
 
 async function exportDebugReport() {

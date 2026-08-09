@@ -12,8 +12,9 @@ const outcomeFilter = document.querySelector("#log-outcome");
 const decisionFilter = document.querySelector("#log-decision");
 const typeFilter = document.querySelector("#log-type");
 const domainFilter = document.querySelector("#log-domain");
-const youtubeValues = document.querySelector("#youtube-values");
-const youtubeBody = document.querySelector("#youtube-body");
+const coverageValues = document.querySelector("#coverage-values");
+const coverageBody = document.querySelector("#coverage-body");
+const coverageHostname = document.querySelector("#coverage-hostname");
 const profileState = document.querySelector("#profile-state");
 let logEntries = [];
 
@@ -27,7 +28,7 @@ document.querySelector("#import-replace").addEventListener("click", () => import
 document.querySelector("#export").addEventListener("click", exportDocument);
 document.querySelector("#debug-report").addEventListener("click", exportDebugReport);
 document.querySelector("#refresh-log").addEventListener("click", refreshLog);
-document.querySelector("#youtube-diagnostics").addEventListener("click", runYouTubeDiagnostics);
+document.querySelector("#coverage-diagnostics").addEventListener("click", runSiteCoverage);
 filterListsBody.addEventListener("click", toggleFilterList);
 outcomeFilter.addEventListener("change", renderLog);
 decisionFilter.addEventListener("change", renderLog);
@@ -110,15 +111,23 @@ async function refreshLog() {
   } catch (error) { showError(error); }
 }
 
-async function runYouTubeDiagnostics() {
+async function runSiteCoverage() {
   try {
-    statusElement.textContent = "Analyzing bundled YouTube-related rules…";
-    const { diagnostics } = await send({ type: "GET_YOUTUBE_DIAGNOSTICS" });
-    const values = Object.fromEntries(Object.entries(diagnostics).filter(([, value]) => typeof value !== "object"));
-    youtubeValues.replaceChildren(...Object.entries(values).map(([name, value]) => metric(name, value)));
-    youtubeBody.replaceChildren(...diagnostics.samples.map(youtubeDiagnosticRow));
-    if (diagnostics.samples.length === 0) youtubeBody.append(emptyRow(4, "No unsupported targeted samples."));
-    statusElement.textContent = `YouTube baseline: ${diagnostics.supportedRules}/${diagnostics.relevantRules} targeted rules supported. Runtime behavior remains unverified.`;
+    const hostname = coverageHostname.value.trim().toLowerCase();
+    statusElement.textContent = `Analyzing rules relevant to ${hostname}…`;
+    const { diagnostics } = await send({ type: "GET_SITE_FILTER_COVERAGE", hostname });
+    const values = {
+      hostname: diagnostics.hostname,
+      filterList: `${diagnostics.filterList} ${diagnostics.listVersion}`,
+      network: coverageLabel(diagnostics.coverage.network),
+      cosmetic: coverageLabel(diagnostics.coverage.cosmetic),
+      scriptlets: coverageLabel(diagnostics.coverage.scriptlet),
+      totalRelevantCoverage: coverageLabel(diagnostics.coverage.total),
+    };
+    coverageValues.replaceChildren(...Object.entries(values).map(([name, value]) => metric(name, value)));
+    coverageBody.replaceChildren(...diagnostics.unsupportedRelevantRules.map(coverageDiagnosticRow));
+    if (diagnostics.unsupportedRelevantRules.length === 0) coverageBody.append(emptyRow(5, "No unsupported relevant rules."));
+    statusElement.textContent = `${diagnostics.hostname}: ${diagnostics.coverage.total.supported}/${diagnostics.coverage.total.total} relevant rules supported (${diagnostics.coverage.total.percent}%).`;
   } catch (error) { showError(error); }
 }
 
@@ -177,7 +186,8 @@ function filterListRow(list) {
   return row;
 }
 function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.sourceSite, entry.domain, entry.resourceType, entry.decision, entry.outcome, entry.engine ?? "—", `${entry.reason} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
-function youtubeDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.category, sample.reason, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
+function coverageDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.type, sample.reason, sample.sourceFilterList, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
+function coverageLabel(value) { return `${value.supported}/${value.total} (${value.percent}%)`; }
 function emptyRow(span, text) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = span; cell.className = "empty"; cell.textContent = text; row.append(cell); return row; }
 function option(value, label) { const item = document.createElement("option"); item.value = value; item.textContent = label; return item; }
 function downloadJson(value, filename) { const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); URL.revokeObjectURL(url); }

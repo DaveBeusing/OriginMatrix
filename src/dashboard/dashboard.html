@@ -10,7 +10,7 @@
     <header><div><h1>OriginMatrix</h1><p>Policy and diagnostics dashboard</p></div><span id="version">…</span></header>
     <main>
       <nav aria-label="Dashboard sections">
-        <a href="#diagnostics">Diagnostics</a><a href="#performance">Performance</a><a href="#statistics">Statistics</a><a href="#filter-lists">Filter Lists</a><a href="#youtube">YouTube</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
+        <a href="#diagnostics">Diagnostics</a><a href="#performance">Performance</a><a href="#statistics">Statistics</a><a href="#filter-lists">Filter Lists</a><a href="#coverage">Coverage</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
       </nav>
       <section id="diagnostics">
         <h2>Diagnostics</h2>
@@ -32,12 +32,12 @@
         <p>Bundled snapshots can be enabled, disabled, and securely updated from their catalogued HTTPS source. Custom sources are not accepted.</p>
         <div class="table-scroll"><table><thead><tr><th>Filter List</th><th>Enabled</th><th>State</th><th>Version</th><th>Last update</th><th>Network rules</th><th>Cosmetic rules</th><th>Scriptlet rules</th><th>Unsupported</th><th>Action</th></tr></thead><tbody id="filter-lists-body"></tbody></table></div>
       </section>
-      <section id="youtube">
-        <h2>YouTube compatibility baseline</h2>
-        <p>Analyzes targeted EasyList coverage without claiming that playback or advertisements were tested.</p>
-        <div class="buttons"><button id="youtube-diagnostics">Analyze bundled rules</button></div>
-        <dl id="youtube-values"></dl>
-        <div class="table-scroll"><table><thead><tr><th>Line</th><th>Category</th><th>Reason</th><th>Unsupported rule sample</th></tr></thead><tbody id="youtube-body"><tr><td colspan="4" class="empty">Run the baseline analysis.</td></tr></tbody></table></div>
+      <section id="coverage">
+        <h2>Site filter coverage</h2>
+        <p>Measures rules explicitly relevant to a hostname through the complete parser and engine validation path. It reports syntax support, not observed blocking success.</p>
+        <div class="buttons"><input id="coverage-hostname" type="text" value="youtube.com" aria-label="Coverage hostname" spellcheck="false"><button id="coverage-diagnostics">Analyze relevant rules</button></div>
+        <dl id="coverage-values"></dl>
+        <div class="table-scroll"><table><thead><tr><th>Line</th><th>Type</th><th>Reason</th><th>Filter list</th><th>Unsupported rule sample</th></tr></thead><tbody id="coverage-body"><tr><td colspan="5" class="empty">Analyze a hostname to inspect relevant coverage.</td></tr></tbody></table></div>
       </section>
       <section id="profiles">
         <h2>Protection profiles</h2>

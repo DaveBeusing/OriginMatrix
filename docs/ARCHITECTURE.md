@@ -241,6 +241,10 @@ The Phase 21 release gate combines the complete browser-independent test suite w
 
 The opt-in Playwright suite launches a clean persistent Chromium context with OriginMatrix loaded unpacked. Independent scenarios cover homepage health, watch-page controls and comments, actual media pause/play/seek behavior, client-side watch-route changes, extension diagnostics, and structured ad-surface observations. Live execution is gated by `ORIGINMATRIX_YOUTUBE_LIVE=1`, serialized to one worker, and retains diagnostic artifacts. Observation classification distinguishes absent, OriginMatrix-marked hidden, visible, and unknown evidence; absence is never promoted to a successful block.
 
+## Site-specific filter coverage
+
+`SiteFilterCoverage` reuses the common filter parser plus the existing cosmetic and scriptlet validators to calculate relevant support for an arbitrary hostname. Relevance requires an explicit matching hostname, parent, or subdomain in the normalized model or raw unsupported line; unrelated suffix lookalikes are excluded. The result separates Network, Cosmetic, and Scriptlet totals and retains line number, unsupported reason, source list, and a bounded source sample. The service worker evaluates the active EasyList source and caches results only while that exact source remains active. This diagnostic is an implementation-coverage metric, not evidence that a request or visible advertisement was blocked.
+
 ## Policy transfer and profiles
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.
