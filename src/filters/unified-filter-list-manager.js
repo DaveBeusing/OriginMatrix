@@ -23,6 +23,7 @@ export class UnifiedFilterListManager {
       list, enabled: list.enabled, source: null, metadata: null, status: statusFrom(list, list.enabled, "loading"),
     }]));
     this.service = new FilterListService({ list: UNIFIED_LIST, networkEngine, compiler, cosmeticEngine, scriptletEngine, loadText });
+    this.customSource = "";
   }
 
   async initialize() {
@@ -42,6 +43,13 @@ export class UnifiedFilterListManager {
   configure(features) { return this.service.configure(features); }
   resolveAutomatic(context) { return this.service.resolveAutomatic(context); }
   getPerformanceDiagnostics() { return this.service.getPerformanceDiagnostics(); }
+  configureCustomSource(source) { this.customSource = String(source ?? ""); }
+  async setCustomSource(source) {
+    const previous = this.customSource;
+    this.customSource = source;
+    try { await this.#rebuild(); }
+    catch (error) { this.customSource = previous; await this.#rebuild(); throw error; }
+  }
 
   getSourceState(id) {
     const entry = this.#entry(id);
@@ -86,12 +94,12 @@ export class UnifiedFilterListManager {
 
   async #rebuild() {
     const sources = await this.#sources();
-    if (sources.length === 0) {
+    if (sources.length === 0 && !this.customSource.trim()) {
       this.service.setEnabled(false);
       await this.service.activate();
     } else {
       this.service.setEnabled(true);
-      const source = sources.map(({ entry, source: text }) => `! OriginMatrix source: ${entry.list.title}\n${text}`).join("\n");
+      const source = this.#combinedSource(sources);
       this.service.setSource(source, { version: sources.map(({ entry }) => entry.metadata?.version ?? entry.list.snapshotVersion).join("+") });
       await this.service.activate();
     }
@@ -100,8 +108,14 @@ export class UnifiedFilterListManager {
 
   async #prepareCandidate(id, source, metadata) {
     const sources = await this.#sources({ id, source });
-    const combined = sources.map(({ entry, source: text }) => `! OriginMatrix source: ${entry.list.title}\n${text}`).join("\n");
+    const combined = this.#combinedSource(sources);
     return this.service.prepareSource(combined, metadata);
+  }
+
+  #combinedSource(sources) {
+    const bundled = sources.map(({ entry, source: text }) => `! OriginMatrix source: ${entry.list.title}\n${text}`);
+    if (this.customSource.trim()) bundled.push(`! OriginMatrix source: My Filters\n${this.customSource}`);
+    return bundled.join("\n");
   }
 
   async #sources(override = null) {

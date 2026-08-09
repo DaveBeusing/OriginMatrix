@@ -10,7 +10,7 @@
     <header><div><h1>OriginMatrix</h1><p>Policy and diagnostics dashboard</p></div><span id="version">…</span></header>
     <main>
       <nav aria-label="Dashboard sections">
-        <a href="#diagnostics">Diagnostics</a><a href="#breakage">Breakage</a><a href="#performance">Performance</a><a href="#statistics">Statistics</a><a href="#filter-lists">Filter Lists</a><a href="#coverage">Coverage</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
+        <a href="#diagnostics">Diagnostics</a><a href="#breakage">Breakage</a><a href="#performance">Performance</a><a href="#statistics">Statistics</a><a href="#filter-lists">Filter Lists</a><a href="#my-filters">My Filters</a><a href="#coverage">Coverage</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
       </nav>
       <section id="diagnostics">
         <h2>Diagnostics</h2>
@@ -39,8 +39,16 @@
       </section>
       <section id="filter-lists">
         <h2>Filter Lists</h2>
-        <p>Bundled snapshots can be enabled, disabled, and securely updated from their catalogued HTTPS source. Custom sources are not accepted.</p>
+        <p>Bundled snapshots can be enabled, disabled, and securely updated from their catalogued HTTPS source. Remote custom sources are not accepted.</p>
         <div class="table-scroll"><table><thead><tr><th>Filter List</th><th>Enabled</th><th>State</th><th>Version</th><th>Last update</th><th>Network rules</th><th>Cosmetic rules</th><th>Scriptlet rules</th><th>Unsupported</th><th>Action</th></tr></thead><tbody id="filter-lists-body"></tbody></table></div>
+      </section>
+      <section id="my-filters">
+        <h2>My Filters</h2>
+        <p>One rule per line. Supported network blocks, <code>@@</code> exceptions, cosmetic selectors, cosmetic exceptions, and bundled scriptlet syntax are validated before activation.</p>
+        <textarea id="custom-filter-source" rows="12" spellcheck="false" placeholder="example.com##.sponsored\n||ads.example^\n@@||cdn.example^$domain=example.com"></textarea>
+        <div class="buttons"><button id="save-custom-filters">Validate and save</button></div>
+        <p id="custom-filter-summary">Loading My Filters…</p>
+        <div class="table-scroll"><table><thead><tr><th>Line</th><th>Reason</th><th>Details</th><th>Rule</th></tr></thead><tbody id="custom-filter-errors"></tbody></table></div>
       </section>
       <section id="coverage">
         <h2>Site filter coverage</h2>

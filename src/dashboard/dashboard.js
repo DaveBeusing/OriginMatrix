@@ -20,6 +20,9 @@ let logEntries = [];
 const breakageSummary = document.querySelector("#breakage-summary");
 const breakageIssues = document.querySelector("#breakage-issues");
 const breakageActions = document.querySelector("#breakage-actions");
+const customFilterSource = document.querySelector("#custom-filter-source");
+const customFilterSummary = document.querySelector("#custom-filter-summary");
+const customFilterErrors = document.querySelector("#custom-filter-errors");
 
 initialize().catch(showError);
 
@@ -33,13 +36,18 @@ document.querySelector("#debug-report").addEventListener("click", exportDebugRep
 document.querySelector("#refresh-log").addEventListener("click", refreshLog);
 document.querySelector("#refresh-breakage").addEventListener("click", refreshBreakage);
 document.querySelector("#coverage-diagnostics").addEventListener("click", runSiteCoverage);
+document.querySelector("#save-custom-filters").addEventListener("click", saveCustomFilters);
 filterListsBody.addEventListener("click", toggleFilterList);
 outcomeFilter.addEventListener("change", renderLog);
 decisionFilter.addEventListener("change", renderLog);
 typeFilter.addEventListener("change", renderLog);
 domainFilter.addEventListener("input", renderLog);
 
-async function initialize() { await Promise.all([refreshDashboard(), refreshLog(), refreshBreakage()]); }
+async function initialize() { await Promise.all([refreshDashboard(), refreshLog(), refreshBreakage(), refreshCustomFilters()]); }
+
+async function refreshCustomFilters() { const result = await send({ type: "GET_CUSTOM_FILTERS" }); customFilterSource.value = result.source; renderCustomFilterValidation(result); }
+async function saveCustomFilters() { try { statusElement.textContent = "Validating My Filters…"; const result = await send({ type: "SAVE_CUSTOM_FILTERS", source: customFilterSource.value }); renderCustomFilterValidation(result); statusElement.textContent = result.saved ? "My Filters activated." : "My Filters contains unsupported rules and was not changed."; if (result.saved) await refreshDashboard(); } catch (error) { showError(error); } }
+function renderCustomFilterValidation(result) { customFilterSummary.textContent = `${result.supported} supported rule(s), ${result.ignored} comment/empty line(s), ${result.errors.length} error(s).`; customFilterErrors.replaceChildren(...result.errors.map((item) => tableRow([item.line, item.reason, item.details ?? "—", item.rule]))); if (!result.errors.length) customFilterErrors.append(emptyRow(4, "All rules are supported.")); }
 
 async function refreshBreakage() {
   try {

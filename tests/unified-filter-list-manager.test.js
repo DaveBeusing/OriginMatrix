@@ -43,3 +43,21 @@ test("bundled EasyPrivacy snapshot matches pinned metadata", async () => {
   assert.match(text, new RegExp(`! Commit: ${EASYPRIVACY.snapshotCommit}`));
   assert.equal(createHash("sha256").update(bytes).digest("hex"), EASYPRIVACY.sha256);
 });
+
+test("activates My Filters through the shared network and cosmetic generation", async () => {
+  let installed = [];
+  const cosmeticEngine = new CosmeticEngine();
+  const manager = new UnifiedFilterListManager({
+    lists: [{ id: "base", title: "Base", enabled: true, path: "base.txt", snapshotVersion: "1" }],
+    networkEngine: { async getDynamicRules() { return installed; }, async replaceFilterRules(rules) { installed = rules; } },
+    compiler: new NetworkFilterCompiler(), cosmeticEngine,
+    scriptletEngine: new ScriptletEngine({ api: { executeScript: async () => [] } }),
+    loadText: async () => "[Adblock Plus 2.0]", settingsStore: { async getAll() { return {}; }, async setEnabled() {} },
+  });
+  manager.configureCustomSource("||custom-ads.example^\nexample.com##.picked-ad");
+  await manager.initialize();
+  assert.equal(installed.length, 1);
+  assert.deepEqual(cosmeticEngine.getSelectors("example.com"), [".picked-ad"]);
+  const attribution = manager.getSourceState("base").generation.networkAttributions[installed[0].id];
+  assert.deepEqual(attribution, [{ source: "My Filters", rule: "||custom-ads.example^" }]);
+});

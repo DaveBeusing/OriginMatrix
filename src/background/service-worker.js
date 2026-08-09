@@ -12,9 +12,11 @@ import { PolicyStore } from "../storage/policy-store.js";
 import { ProfileStore } from "../storage/profile-store.js";
 import { FilterListSettingsStore } from "../storage/filter-list-settings-store.js";
 import { FilterListGenerationStore } from "../storage/filter-list-generation-store.js";
+import { CustomFilterStore } from "../storage/custom-filter-store.js";
 import { exportPolicies } from "../storage/policy-transfer.js";
 import { PARTY, POLICY_ACTION, createPolicy } from "../shared/models.js";
 import { DEFAULT_FILTER_LISTS, EASYLIST } from "../filters/filter-list-catalog.js";
+import { validateCustomFilters } from "../filters/custom-filter-validator.js";
 import { UnifiedFilterListManager } from "../filters/unified-filter-list-manager.js";
 import { FilterListUpdater } from "../filters/filter-list-updater.js";
 import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
@@ -40,6 +42,7 @@ const scriptletEngine = new ScriptletEngine();
 const ruleAttributionRegistry = new RuleAttributionRegistry();
 const dnrMatchObserver = new DnrMatchObserver({ tabStateManager, registry: ruleAttributionRegistry });
 const filterListGenerationStore = new FilterListGenerationStore({ listIds: DEFAULT_FILTER_LISTS.map(({ id }) => id) });
+const customFilterStore = new CustomFilterStore();
 const filterListManager = new UnifiedFilterListManager({
   lists: DEFAULT_FILTER_LISTS,
   networkEngine,
@@ -145,6 +148,10 @@ async function handleMessage(message, sender) {
     case "GET_BREAKAGE_DIAGNOSTICS": return Promise.all([policyOperations, startupReconciliation]).then(() => getBreakageDiagnostics(message.tabId));
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "GET_SITE_FILTER_COVERAGE": return startupReconciliation.then(() => getSiteFilterCoverage(message.hostname));
+    case "GET_CUSTOM_FILTERS": return getCustomFilters();
+    case "SAVE_CUSTOM_FILTERS": return enqueuePolicyOperation(() => saveCustomFilters(message.source));
+    case "ADD_CUSTOM_FILTER": return enqueuePolicyOperation(() => addCustomFilter(message.rule));
+    case "START_ELEMENT_PICKER": return startElementPicker(message.tabId);
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
     default: throw new TypeError(`Unknown message type: ${message.type}`);
   }
@@ -206,11 +213,40 @@ async function revertMatrix({ tabId, url }) {
 }
 
 async function reconcileRules() {
+  filterListManager.configureCustomSource((await customFilterStore.get()).source);
   filterListManager.configure(profileDefinition(await profileStore.get()).features);
   await policyEngine.recompile({ temporary: false });
   await policyEngine.recompile({ temporary: true });
   await filterListManager.initialize();
   await refreshRuleAttribution();
+}
+
+async function getCustomFilters() {
+  const { source } = await customFilterStore.get();
+  return { ok: true, ...validateCustomFilters(source) };
+}
+
+async function saveCustomFilters(source) {
+  const validation = validateCustomFilters(source);
+  if (!validation.valid) return { ok: true, saved: false, ...validation };
+  const previous = (await customFilterStore.get()).source;
+  await filterListManager.setCustomSource(source);
+  try { await customFilterStore.set(source); }
+  catch (error) { await filterListManager.setCustomSource(previous); throw error; }
+  return { ok: true, saved: true, ...validation };
+}
+
+async function addCustomFilter(rule) {
+  if (typeof rule !== "string" || !rule.trim()) throw new TypeError("A custom filter rule is required.");
+  const previous = (await customFilterStore.get()).source;
+  const source = `${previous}${previous && !previous.endsWith("\n") ? "\n" : ""}${rule.trim()}\n`;
+  return saveCustomFilters(source);
+}
+
+async function startElementPicker(tabId) {
+  if (!Number.isInteger(tabId) || tabId < 0) throw new TypeError("Element picker requires a tab ID.");
+  await chrome.tabs.sendMessage(tabId, { type: "ORIGINMATRIX_START_ELEMENT_PICKER" }, { frameId: 0 });
+  return { ok: true };
 }
 
 async function getDashboardState() {

@@ -123,7 +123,7 @@ test("supports the pinned procedural has-text baseline", async () => {
 test("manifest loads the cosmetic injector before its content-script bootstrap", async () => {
   const manifest = JSON.parse(await readFile(new URL("../manifest.json", import.meta.url), "utf8"));
   assert.deepEqual(manifest.content_scripts[0].js, [
-    "src/cosmetic/cosmetic-injector.js", "src/cosmetic/dynamic-cosmetic-filter.js", "src/cosmetic/procedural-cosmetic-filter.js", "src/cosmetic/content-script.js",
+    "src/picker/selector-generator.js", "src/picker/element-picker.js", "src/cosmetic/cosmetic-injector.js", "src/cosmetic/dynamic-cosmetic-filter.js", "src/cosmetic/procedural-cosmetic-filter.js", "src/cosmetic/content-script.js",
   ]);
   assert.equal(manifest.content_scripts[0].run_at, "document_start");
   assert.equal(manifest.content_scripts[0].all_frames, true);

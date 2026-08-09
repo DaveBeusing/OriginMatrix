@@ -9,6 +9,7 @@ const protectionElement = document.querySelector("#protection");
 const noticeElement = document.querySelector("#notice");
 const reloadButton = document.querySelector("#reload");
 const settingsButton = document.querySelector("#settings");
+const pickerButton = document.querySelector("#picker");
 const commitButton = document.querySelector("#commit");
 const revertButton = document.querySelector("#revert");
 const pendingCountElement = document.querySelector("#pending-count");
@@ -54,6 +55,7 @@ reloadButton.addEventListener("click", async () => {
 });
 
 settingsButton.addEventListener("click", () => chrome.runtime.openOptionsPage());
+pickerButton.addEventListener("click", async () => { try { await send({ type: "START_ELEMENT_PICKER", tabId: currentTab.id }); window.close(); } catch (error) { showError(error); } });
 
 commitButton.addEventListener("click", () => runWorkflow("COMMIT_MATRIX", "Committed"));
 revertButton.addEventListener("click", () => runWorkflow("REVERT_MATRIX", "Reverted"));

@@ -91,6 +91,10 @@ The engine accepts at most 500 applicable rules per document, queues at most 50 
 
 Filter attribution metadata follows supported filter models from the combined-list parser into a compiler-owned index. Only valid DNR rule fields are installed in Chromium. Debug matches resolve their rule ID against the separate index and retain the bounded original rule text and source-list name in the tab-session request log. Cosmetic plans and bundled scriptlet invocations expose the same source metadata to diagnostics; persistent Matrix policies and temporary session overrides are labelled separately.
 
+`CustomFilterStore` persists one versioned local My Filters document. `custom-filter-validator.js` applies source-size, parser, cosmetic-engine, and scriptlet-registry validation before `UnifiedFilterListManager` stages the text as a labelled `My Filters` source. The complete combined generation activates before storage changes; activation or persistence failure restores the previous generation. Unsupported lines remain visible in the editor and are never silently accepted.
+
+The element picker runs as a bundled content script. It uses a closed Shadow DOM control surface, bounded selector depth, stable IDs or data attributes where available, and an explicit preview/save step. It creates only site-scoped cosmetic candidates and never executes page-provided code.
+
 The existing content script then requests a fresh effective cosmetic plan and runs the EARLY and NORMAL scriptlet phases for that route. A generation counter prevents an older asynchronous cosmetic response from replacing a newer route's plan. Scriptlet execution remains deduplicated within each document, route, and phase while allowing the same applicable bundled scriptlet to be evaluated again after a genuine SPA transition.
 
 ## YouTube compatibility diagnostics
