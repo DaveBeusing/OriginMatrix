@@ -4,7 +4,7 @@ import { parseScriptletRule } from "../scriptlets/scriptlet-parser.js";
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN_PATTERN = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*`;
 const HOST_ANCHORED_PATTERN = new RegExp(`^\\|\\|(${DOMAIN_PATTERN})\\^$`, "i");
-const COSMETIC_RULE = /^([^#]*)(##|#@#)(.+)$/;
+const COSMETIC_RULE = /^([^#]*)(#@\?#|#\?#|##|#@#)(.+)$/;
 export const FILTER_TEXT_LIMITS = Object.freeze({ sourceBytes: 5_000_000, lines: 250_000, lineCharacters: 8_192 });
 const RESOURCE_OPTIONS = new Map([
   ["stylesheet", "stylesheet"], ["image", "image"], ["font", "font"],
@@ -57,7 +57,7 @@ function parseCosmeticRule(source, match) {
   }
   try {
     return supported(source, createCosmeticFilter({
-      domains, excludedDomains, selector: match[3], exception: match[2] === "#@#",
+      domains, excludedDomains, selector: match[3], exception: match[2] === "#@#" || match[2] === "#@?#",
     }));
   } catch (error) {
     return unsupported(source, "invalid-cosmetic-filter", error.message);

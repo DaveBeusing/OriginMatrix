@@ -2,12 +2,13 @@
 
 ## Architecture review baseline
 
-OriginMatrix 1.7.0 was reviewed against remote-code execution, injection and XSS, unsafe HTML, parser and selector denial of service, scriptlet argument abuse, corrupted storage, malformed lists, DNR rule exhaustion, and extension permissions.
+OriginMatrix 1.8.0 was reviewed against remote-code execution, injection and XSS, unsafe HTML, parser and selector denial of service, scriptlet argument abuse, corrupted storage, malformed lists, DNR rule exhaustion, and extension permissions.
 
 - All executable JavaScript is bundled. Filter downloads are data only, require catalogued HTTPS URLs, reject redirects, and never become executable code.
 - UI values are assigned with DOM text properties. The extension does not use `innerHTML`, `eval`, dynamic functions, or remote assets.
 - Runtime messages are accepted only from OriginMatrix itself and have a serialized size ceiling.
 - Filter sources, lines, scriptlet arguments, policy imports, per-document selectors, stored generations, and DNR generations have explicit limits.
+- Procedural cosmetic evaluation has independent limits for rules, mutation roots, ancestor depth, candidate nodes, text length, debounce timing, and regular-expression syntax.
 - Scriptlets must resolve through the bundled registry, pass scriptlet-specific argument validation, and execute the registered function object in an explicitly targeted tab frame.
 - Stored policy, profile, list-setting, and generation documents are schema-validated before use. Update activation and imports preserve rollback behavior.
 

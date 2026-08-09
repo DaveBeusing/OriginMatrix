@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.7.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
+Version baseline: OriginMatrix `1.8.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -53,6 +53,7 @@ The Phase 4 inventory finds no scriptlet references in the pinned EasyList snaps
 - Rapid route changes are debounced, and stale cosmetic responses cannot overwrite the newest route evaluation.
 - Native CSS `:has()` rules cover the pinned list's promoted feed, Shorts, and ad-slot structures without YouTube-specific code.
 - Global cosmetic rules are merged with site selectors and injected as one native CSS batch; the mutation observer scans only site-specific selectors.
+- Supported `:has-text(...)` rules use a separate bounded evaluator and are re-evaluated after SPA navigation.
 - Domain-scoped `#@#` exceptions prevent matching hiding rules on excluded YouTube surfaces.
 - Diagnostics report unsupported rules instead of treating them as successful.
 - The pinned offline sample supports 38 of 42 targeted rules (90.5% syntax coverage).
@@ -66,7 +67,7 @@ The Phase 4 inventory finds no scriptlet references in the pinned EasyList snaps
 
 ## Unsupported
 
-- `$rewrite`, `generichide`, wider scriptlet dialects, global/exception scriptlet rules, and procedural cosmetic selectors.
+- `$rewrite`, `generichide`, wider scriptlet dialects, global/exception scriptlet rules, and procedural operators beyond the supported `:has-text(...)` subset.
 - Guaranteed classification of video-ad requests.
 - YouTube-specific hard-coded workarounds.
 - Automated signed-in, playlist, Shorts, and guaranteed ad-delivery scenarios.

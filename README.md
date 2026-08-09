@@ -4,7 +4,7 @@
   <img src="icons/icon128.png" width="96" height="96" alt="OriginMatrix icon">
 </p>
 
-OriginMatrix 1.7.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
+OriginMatrix 1.8.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
 
 OriginMatrix is an independent Manifest V3 project—not a port or visual copy of uMatrix. Logical policies are the source of truth and are compiled into Chrome `declarativeNetRequest` rules.
 
@@ -24,6 +24,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Validated HTTPS filter-list updates with staged activation and rollback
 - Site-aware EasyList cosmetic filtering for simple CSS selectors
 - Batched dynamic cosmetic filtering with bounded DOM observation
+- Bounded procedural `:has-text(...)` filtering for evidence-backed EasyList rules
 - YouTube filter-coverage baseline with explicit compatibility diagnostics
 - Site-specific relevant filter coverage by network, cosmetic, and scriptlet support
 - Native relational cosmetic selectors and scoped hiding exceptions for modern sites
@@ -49,7 +50,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 - Opt-in Playwright acceptance tests for YouTube loading, playback, SPA navigation, page controls, diagnostics, and conservative ad-surface observations
 
-Automatic protection combines the small static proof ruleset with pinned EasyList and EasyPrivacy snapshots. Their network, cosmetic, and selected domain-scoped `##+js(...)` rules are parsed locally as data, merged before compilation, and deduplicated into one shared generation; unsupported syntax is reported and never guessed. Global and site-specific cosmetic selectors are merged into cached effective plans and injected as one native CSS batch, while the dynamic observer scans only the bounded site-specific subset. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Debounced native same-document navigation events re-evaluate the active cosmetic and scriptlet generations and reset top-frame session diagnostics without requiring a reload. Scriptlet names map exclusively to three bundled, argument-validated implementations. Balanced enables all engines without overriding automatic decisions, Strict adds targeted third-party Matrix blocks, and Relaxed disables scriptlets while retaining network and cosmetic protection. Updates are fetched only from catalogued HTTPS URLs, validated and compiled as inactive combined candidates, then swapped with rollback. Custom filter URLs, procedural cosmetic filters, broader scriptlet syntax, uMatrix text-rule conversion, and Public-Suffix-List-based domain grouping are not currently included.
+Automatic protection combines the small static proof ruleset with pinned EasyList and EasyPrivacy snapshots. Their network, cosmetic, and selected domain-scoped `##+js(...)` rules are parsed locally as data, merged before compilation, and deduplicated into one shared generation; unsupported syntax is reported and never guessed. Global and site-specific native selectors are injected as one CSS batch. A separate bounded evaluator handles supported literal and safe-regexp `:has-text(...)` rules, including one nested descendant form, without sending native selectors through JavaScript. Batched DOM observation handles inserted elements and text changes without rescanning every mutation individually. Debounced native same-document navigation events re-evaluate the active cosmetic and scriptlet generations and reset top-frame session diagnostics without requiring a reload. Scriptlet names map exclusively to three bundled, argument-validated implementations. Balanced enables all engines without overriding automatic decisions, Strict adds targeted third-party Matrix blocks, and Relaxed disables scriptlets while retaining network and cosmetic protection. Updates are fetched only from catalogued HTTPS URLs, validated and compiled as inactive combined candidates, then swapped with rollback. Custom filter URLs, additional procedural operators, broader scriptlet syntax, uMatrix text-rule conversion, and Public-Suffix-List-based domain grouping are not currently included.
 
 YouTube is tracked as a compatibility baseline, not as a guaranteed blocking claim. Generic native `:has()` filtering now covers promoted feed, Shorts, and ad-slot structures present in the pinned EasyList snapshot, while scoped `#@#` rules prevent incompatible hiding on excluded surfaces. The dashboard can analyze targeted bundled rules and report unsupported network, cosmetic, and scriptlet syntax. See [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md) for verified scope and the manual acceptance checklist.
 
@@ -191,7 +192,7 @@ The reviewed trust boundaries, resource limits, and permission rationale are doc
 
 ## Release status
 
-Version 1.7.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
+Version 1.8.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
 
 ## License
 

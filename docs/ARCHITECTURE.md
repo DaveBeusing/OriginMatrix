@@ -67,15 +67,21 @@ The minimum supported Chromium version is 121. Earlier versions shared a 5,000-r
 
 ## Cosmetic filtering foundation
 
-`CosmeticParser` accepts normalized EasyList cosmetic models only when their selectors are bounded, free of rule-breaking syntax, and do not use procedural constructs. `SelectorStore` keeps separate global and site indexes, applies hostname-specific exclusions, and caches deduplicated effective selector plans for up to 128 hostnames. Native plans are capped at 20,000 selectors and dynamic site subsets at 5,000 selectors.
+`CosmeticParser` separates bounded native selectors from supported procedural plans. `SelectorStore` keeps separate global and site indexes, applies hostname-specific exclusions, and caches deduplicated effective native plans for up to 128 hostnames. Native plans are capped at 20,000 selectors and dynamic site subsets at 5,000 selectors.
 
-The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests the effective selector plan for its frame hostname at `document_start`; `CosmeticInjector` writes the global and site-specific native selectors into one reusable style element using `textContent`. No filter-provided JavaScript is executed. Procedural selectors remain unsupported.
+The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests the effective selector plan for its frame hostname at `document_start`; `CosmeticInjector` writes the global and site-specific native selectors into one reusable style element using `textContent`. No filter-provided JavaScript is executed.
 
 ## Dynamic cosmetic filtering
 
 `DynamicCosmeticFilter` observes only child-list changes and class/ID attribute changes. Added or changed element roots are deduplicated, nested roots collapse to their ancestor, mutation storms collapse to the document root, and work is debounced into 50 ms batches. Each batch scans only the bounded site-specific selector subset; global selectors rely on the browser's native CSS engine and are never continuously queried from JavaScript.
 
 Validated selectors are cached in bounded groups, and matching elements receive a dedicated hide attribute covered by the injected stylesheet. Metrics track mutation records, batches, scanned roots, hidden elements, cumulative scan time, and worst-batch time. The observer does not evaluate remote code, parse new filters, or perform an unconditional full-DOM scan for every mutation.
+
+## Procedural cosmetic filtering
+
+`ProceduralCosmeticFilter` is a separate evaluator for the high-value `:has-text(...)` syntax present in the pinned lists. It supports bounded literal matching, restricted regular expressions, and one nested descendant form such as `.card:has(.label:has-text(Sponsored))`. It rejects backreferences, lookarounds, nested quantified groups, unsafe selectors, oversized text arguments, additional procedural operators, and complex trailing expressions.
+
+The engine accepts at most 500 applicable rules per document, queues at most 50 mutation roots, walks at most eight ancestors for inserted text, evaluates at most 2,000 candidate elements per 100 ms batch, and reads at most 10,000 text characters per candidate. Native selectors never enter this evaluator. Hostname scoping and procedural exceptions are resolved before plans reach the content script.
 
 ## SPA navigation lifecycle
 
@@ -89,7 +95,7 @@ The existing content script then requests a fresh effective cosmetic plan and ru
 
 This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
 
-Phase 12 improves YouTube coverage through generic Cosmetic Engine behavior rather than site-specific code. Domain lists and `#@#` hiding exceptions share the normalized cosmetic model, and `SelectorStore` subtracts applicable exceptions before selectors reach a document. Native CSS `:has()` is supported on the Chromium 121 baseline, enabling EasyList's relational ad-slot selectors for feeds, Shorts, and watch pages. Procedural lookalikes such as `:has-text()` remain rejected. The pinned offline diagnostic reaches 90.5% syntax coverage; `$rewrite` and `generichide` remain explicit unsupported cases, and runtime behavior still requires the documented browser checklist.
+Phase 12 improves YouTube coverage through generic Cosmetic Engine behavior rather than site-specific code. Domain lists and `#@#` hiding exceptions share the normalized cosmetic model, and `SelectorStore` subtracts applicable exceptions before selectors reach a document. Native CSS `:has()` is supported on the Chromium 121 baseline, enabling EasyList's relational ad-slot selectors for feeds, Shorts, and watch pages. Supported `:has-text()` rules now use the separate bounded procedural evaluator; runtime behavior still requires the documented browser checklist.
 
 ## Scriptlet Engine foundation
 

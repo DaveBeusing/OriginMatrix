@@ -31,6 +31,9 @@ test("parses inclusive and excluded domain restrictions", () => {
 });
 
 test("parses simple cosmetic and selected scriptlet rules", () => {
+  assert.deepEqual(parseFilterRule("example.com#?#.card:has-text(Sponsored)").filter, {
+    type: "cosmetic", selector: ".card:has-text(Sponsored)", domains: ["example.com"], excludedDomains: [],
+  });
   assert.deepEqual(parseFilterRule("##.ad-container").filter, {
     type: "cosmetic", selector: ".ad-container", domains: [], excludedDomains: [],
   });

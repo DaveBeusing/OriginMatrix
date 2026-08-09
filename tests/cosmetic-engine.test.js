@@ -17,7 +17,35 @@ test("accepts native relational CSS and rejects procedural or unsafe syntax", ()
     createNetworkFilter({ pattern: "||ads.example^" }),
   ]);
   assert.equal(result.filters.length, 2);
-  assert.deepEqual(result.unsupported.map(({ reason }) => reason), ["procedural-selector-not-supported", "unsafe-selector-syntax"]);
+  assert.equal(result.proceduralFilters.length, 1);
+  assert.deepEqual(result.unsupported.map(({ reason }) => reason), ["unsafe-selector-syntax"]);
+});
+
+test("compiles bounded literal, regexp, and nested has-text plans", () => {
+  const parser = new CosmeticParser();
+  const result = parser.parseModels([
+    createCosmeticFilter({ domains: ["example.com"], selector: ".card:has-text(Sponsored)" }),
+    createCosmeticFilter({ domains: ["example.com"], selector: ".card:has(.label:has-text(/^(?:AD|Anzeige)$/i))" }),
+    createCosmeticFilter({ domains: ["example.com"], selector: ".card:style(display:none)" }),
+    createCosmeticFilter({ domains: ["example.com"], selector: ".card:has-text(/(a+)+$/)" }),
+  ]);
+  assert.deepEqual(result.proceduralFilters.map(({ plan }) => plan), [
+    { targetSelector: ".card", descendantSelector: null, matcher: { type: "text", value: "Sponsored" } },
+    { targetSelector: ".card", descendantSelector: ".label", matcher: { type: "regexp", value: "^(?:AD|Anzeige)$", flags: "i" } },
+  ]);
+  assert.deepEqual(result.unsupported.map(({ reason }) => reason), ["procedural-selector-not-supported", "unsafe-procedural-regexp"]);
+});
+
+test("scopes procedural plans by hostname and applies exceptions", () => {
+  const engine = new CosmeticEngine();
+  const generation = engine.prepare([
+    createCosmeticFilter({ domains: ["example.com"], selector: ".card:has-text(Sponsored)" }),
+    createCosmeticFilter({ domains: ["shop.example.com"], selector: ".card:has-text(Sponsored)", exception: true }),
+  ]);
+  assert.equal(engine.activate(generation).proceduralCosmeticRules, 2);
+  assert.equal(engine.getProceduralFilters("news.example.com").length, 1);
+  assert.equal(engine.getProceduralFilters("shop.example.com").length, 0);
+  assert.equal(engine.getProceduralFilters("other.test").length, 0);
 });
 
 test("selects only matching site filters and honors exclusions", () => {
@@ -42,7 +70,7 @@ test("prepares and atomically activates a cosmetic generation", () => {
   const engine = new CosmeticEngine();
   const generation = engine.prepare([createCosmeticFilter({ domains: ["example.com"], selector: ".ad" })]);
   assert.deepEqual(engine.getSelectors("example.com"), []);
-  assert.deepEqual(engine.activate(generation), { cosmeticRules: 1, cosmeticUnsupported: 0, globalCosmeticRules: 0, indexedDomains: 1 });
+  assert.deepEqual(engine.activate(generation), { cosmeticRules: 1, cosmeticUnsupported: 0, globalCosmeticRules: 0, proceduralCosmeticRules: 0, indexedDomains: 1 });
   assert.deepEqual(engine.getSelectors("www.example.com"), [".ad"]);
 });
 
@@ -71,10 +99,18 @@ test("indexes the pinned EasyList global cosmetic baseline", async () => {
   assert.equal(diagnostics.globalCosmeticRules, 13_640);
 });
 
+test("supports the pinned procedural has-text baseline", async () => {
+  const sources = await Promise.all(["easylist.txt", "easyprivacy.txt"].map((name) => readFile(new URL(`../filters/${name}`, import.meta.url), "utf8")));
+  const parsed = parseFilterText(sources.join("\n"));
+  const generation = new CosmeticEngine().prepare(parsed.filters);
+  assert.equal(generation.proceduralFilters.length, 244);
+  assert.equal(generation.unsupported.filter(({ reason }) => reason === "procedural-selector-not-supported").length, 4);
+});
+
 test("manifest loads the cosmetic injector before its content-script bootstrap", async () => {
   const manifest = JSON.parse(await readFile(new URL("../manifest.json", import.meta.url), "utf8"));
   assert.deepEqual(manifest.content_scripts[0].js, [
-    "src/cosmetic/cosmetic-injector.js", "src/cosmetic/dynamic-cosmetic-filter.js", "src/cosmetic/content-script.js",
+    "src/cosmetic/cosmetic-injector.js", "src/cosmetic/dynamic-cosmetic-filter.js", "src/cosmetic/procedural-cosmetic-filter.js", "src/cosmetic/content-script.js",
   ]);
   assert.equal(manifest.content_scripts[0].run_at, "document_start");
   assert.equal(manifest.content_scripts[0].all_frames, true);

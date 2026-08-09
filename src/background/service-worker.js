@@ -302,7 +302,7 @@ async function getRequestLog(tabId) {
 
 function getCosmeticSelectors(hostname) {
   const plan = cosmeticEngine.getSelectorPlan(hostname);
-  return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors };
+  return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors, proceduralFilters: cosmeticEngine.getProceduralFilters(hostname) };
 }
 
 async function runScriptletsForSender(sender, phase, navigationId = "initial") {

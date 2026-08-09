@@ -21,6 +21,10 @@ test("re-evaluates cosmetic filters and scriptlet phases after an SPA route chan
     start(selectors) { dynamic.push(selectors); }
     getMetrics() { return {}; }
   };
+  globalThis.OriginMatrixProceduralCosmeticFilter = class {
+    start() {}
+    getMetrics() { return {}; }
+  };
 
   await import(`../src/cosmetic/content-script.js?spa=${Date.now()}`);
   await new Promise((resolve) => setTimeout(resolve, 0));

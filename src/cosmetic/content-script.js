@@ -17,6 +17,7 @@
     })
       .catch((error) => console.warn("OriginMatrix cosmetic metrics unavailable", error)),
   });
+  const proceduralFilter = new globalThis.OriginMatrixProceduralCosmeticFilter({ documentObject: document });
   const earlyScriptlets = evaluate("initial", { cosmetics: true, scriptletPhase: "early" });
   const runNormalScriptlets = () => earlyScriptlets.then(() => {
     if (activeNavigationId === "initial") return runScriptlets("normal", "initial");
@@ -43,7 +44,9 @@
         if (generation !== evaluationGeneration) return;
         injector.apply(response.selectors);
         dynamicFilter.start(response.dynamicSelectors ?? response.selectors);
+        proceduralFilter.start(response.proceduralFilters ?? []);
         globalThis.OriginMatrixCosmeticMetrics = () => dynamicFilter.getMetrics();
+        globalThis.OriginMatrixProceduralMetrics = () => proceduralFilter.getMetrics();
       })
       .catch((error) => console.warn("OriginMatrix cosmetic filtering unavailable", error)));
     await Promise.all(tasks);
