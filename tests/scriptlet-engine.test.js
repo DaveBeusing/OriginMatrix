@@ -2,15 +2,36 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createScriptletFilter } from "../src/filters/filter-model.js";
 import { ScriptletEngine } from "../src/scriptlets/scriptlet-engine.js";
-import { ScriptletRegistry } from "../src/scriptlets/scriptlet-registry.js";
+import { SCRIPTLET_PHASE, ScriptletRegistry } from "../src/scriptlets/scriptlet-registry.js";
 import { readFile } from "node:fs/promises";
 
 test("registry exposes only bundled scriptlet identifiers", () => {
   const registry = new ScriptletRegistry();
   assert.deepEqual(registry.list(), ["abort-on-property-read", "remove-node-text", "set-constant"]);
+  assert.equal(registry.getPhase("set-constant"), SCRIPTLET_PHASE.EARLY);
+  assert.equal(registry.getPhase("abort-on-property-read"), SCRIPTLET_PHASE.EARLY);
+  assert.equal(registry.getPhase("remove-node-text"), SCRIPTLET_PHASE.NORMAL);
   assert.throws(() => registry.createInvocation("remote-code", ["alert(1)"]), /Unknown scriptlet/);
   assert.throws(() => registry.createInvocation("set-constant", ["window.value", "alert(1)"]), /Invalid arguments/);
   assert.throws(() => registry.createInvocation("set-constant", ["__proto__.value", "true"]), /Invalid arguments/);
+});
+
+test("prepares deterministic early and normal phases without duplicate invocations", async () => {
+  const calls = [];
+  const engine = new ScriptletEngine({ api: { async executeScript(details) { calls.push(details); return []; } } });
+  const early = createScriptletFilter({ domains: ["example.com"], name: "set-constant", args: ["player.ads", "undefined"] });
+  const normal = createScriptletFilter({ domains: ["example.com"], name: "remove-node-text", args: [".advert", "Sponsored"] });
+  const filters = [normal, early, early];
+  const earlyGeneration = engine.prepare(filters, { hostname: "video.example.com", phase: SCRIPTLET_PHASE.EARLY });
+  const normalGeneration = engine.prepare(filters, { hostname: "video.example.com", phase: SCRIPTLET_PHASE.NORMAL });
+  assert.equal(earlyGeneration.phase, "early");
+  assert.deepEqual(earlyGeneration.invocations.map(({ name }) => name), ["set-constant"]);
+  assert.deepEqual(normalGeneration.invocations.map(({ name }) => name), ["remove-node-text"]);
+  await engine.execute(earlyGeneration, { tabId: 4 });
+  await engine.execute(normalGeneration, { tabId: 4 });
+  assert.deepEqual(calls.map(({ func }) => func.name), ["setConstant", "removeNodeText"]);
+  assert.ok(calls.every(({ world }) => world === "MAIN"));
+  assert.throws(() => engine.prepare(filters, { hostname: "example.com", phase: "late" }), /Invalid scriptlet execution phase/);
 });
 
 test("prepares only matching, valid, deduplicated site scriptlets", () => {

@@ -23,6 +23,7 @@ import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
 import { analyzeSiteFilterCoverage } from "../diagnostics/site-filter-coverage.js";
 import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
+import { SCRIPTLET_PHASE } from "../scriptlets/scriptlet-registry.js";
 import { profileDefinition } from "../engine/profiles.js";
 import { RuleAttributionRegistry } from "./rule-attribution-registry.js";
 import { DnrMatchObserver } from "./dnr-match-observer.js";
@@ -72,6 +73,7 @@ let startupTimeMs = null;
 let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
 let siteCoverageCache = { source: null, values: new Map() };
+const executedScriptletPhases = new Set();
 const requestObserver = new RequestObserver({
   tabStateManager,
   getTab: (tabId) => chrome.tabs.get(tabId),
@@ -94,6 +96,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
+  for (const key of executedScriptletPhases) if (key.startsWith(`${tabId}:`)) executedScriptletPhases.delete(key);
   try {
     await Promise.all([
       enqueuePolicyOperation(async () => {
@@ -124,7 +127,7 @@ async function handleMessage(message, sender) {
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
     case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
-    case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender));
+    case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender, message.phase));
     case "REPORT_COSMETIC_METRICS": return reportCosmeticMetrics(message, sender);
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "GET_SITE_FILTER_COVERAGE": return startupReconciliation.then(() => getSiteFilterCoverage(message.hostname));
@@ -295,16 +298,20 @@ function getCosmeticSelectors(hostname) {
   return { ok: true, selectors: cosmeticEngine.getSelectors(hostname) };
 }
 
-async function runScriptletsForSender(sender) {
-  if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0) {
+async function runScriptletsForSender(sender, phase) {
+  if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0 || typeof sender.documentId !== "string" || !sender.documentId) {
     throw new TypeError("Scriptlet execution requires a tab frame sender.");
   }
+  if (!Object.values(SCRIPTLET_PHASE).includes(phase)) throw new TypeError("Invalid scriptlet execution phase.");
+  const executionKey = `${sender.tab.id}:${sender.frameId}:${sender.documentId}:${phase}`;
+  if (executedScriptletPhases.has(executionKey)) return { ok: true, executed: 0, duplicate: true, phase };
   const hostname = hostnameFromUrl(sender.url);
-  const result = await scriptletEngine.execute(scriptletEngine.prepareForHostname(hostname), {
+  const result = await scriptletEngine.execute(scriptletEngine.prepareForHostname(hostname, { phase }), {
     tabId: sender.tab.id,
     frameIds: [sender.frameId],
   });
-  return { ok: true, executed: result.executed };
+  executedScriptletPhases.add(executionKey);
+  return { ok: true, executed: result.executed, duplicate: false, phase };
 }
 
 async function reportCosmeticMetrics(message, sender) {

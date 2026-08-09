@@ -1,5 +1,5 @@
 import { FILTER_TYPE, validateFilter } from "../filters/filter-model.js";
-import { ScriptletRegistry } from "./scriptlet-registry.js";
+import { SCRIPTLET_PHASE, ScriptletRegistry } from "./scriptlet-registry.js";
 
 export class ScriptletEngine {
   constructor({ registry = new ScriptletRegistry(), api = globalThis.chrome?.scripting } = {}) {
@@ -40,10 +40,11 @@ export class ScriptletEngine {
     this.diagnostics = Object.freeze({ scriptletRules: 0, scriptletUnsupported: 0 });
   }
 
-  prepareForHostname(hostname) { return this.prepare(this.filters, { hostname }); }
+  prepareForHostname(hostname, { phase = null } = {}) { return this.prepare(this.filters, { hostname, phase }); }
 
-  prepare(filters, { hostname } = {}) {
+  prepare(filters, { hostname, phase = null } = {}) {
     if (!Array.isArray(filters)) throw new TypeError("Scriptlet filters must be an array.");
+    if (phase !== null && !Object.values(SCRIPTLET_PHASE).includes(phase)) throw new TypeError("Invalid scriptlet execution phase.");
     const site = normalizeHostname(hostname);
     const invocations = [];
     const unsupported = [];
@@ -54,6 +55,7 @@ export class ScriptletEngine {
       const filter = validateFilter(input);
       if (!appliesTo(filter, site)) { skipped += 1; continue; }
       try {
+        if (phase !== null && this.registry.getPhase(filter.name) !== phase) { skipped += 1; continue; }
         const key = `${filter.name}\u0000${filter.args.join("\u0000")}`;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -62,7 +64,7 @@ export class ScriptletEngine {
         unsupported.push(Object.freeze({ filter, reason: error.message }));
       }
     }
-    return Object.freeze({ invocations: Object.freeze(invocations), unsupported: Object.freeze(unsupported), skipped });
+    return Object.freeze({ phase, invocations: Object.freeze(invocations), unsupported: Object.freeze(unsupported), skipped });
   }
 
   async execute(generation, { tabId, frameIds = [0] } = {}) {
