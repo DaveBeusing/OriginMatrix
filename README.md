@@ -67,7 +67,15 @@ Network lifecycle → read-only Request Observer → Tab State → UI
 
 UI modules send policy intent and never construct DNR rules. All direct `chrome.declarativeNetRequest` access is isolated in `src/network/`; the browser-independent matrix engine supplies validated rule generations through the unified Network Engine interface. Blocking and observation are deliberately separate systems.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the policy model, resolution hierarchy, storage schema, compilation rules, observation flow, and MV3 design decisions.
+See [Architecture](docs/ARCHITECTURE.md) for the policy model, resolution hierarchy, storage schema, compilation rules, observation flow, and MV3 design decisions.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Security](docs/SECURITY.md)
+- [Release-candidate checklist](docs/RELEASE-CANDIDATE.md)
+- [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md)
+- [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
 
 ## Local installation
 
@@ -154,7 +162,7 @@ Imports support validated merge and replace modes. Unsupported formats and uMatr
 - Request observation cannot modify network requests
 - Logical policies—not generated DNR rules—remain authoritative
 
-The reviewed trust boundaries, resource limits, and permission rationale are documented in [SECURITY.md](SECURITY.md).
+The reviewed trust boundaries, resource limits, and permission rationale are documented in [Security](docs/SECURITY.md).
 
 ## Roadmap
 
@@ -172,4 +180,4 @@ Version 1.0.0 is prepared as a release candidate. Repository tests and static re
 
 OriginMatrix is available under the [MIT License](LICENSE.md).
 
-The bundled EasyList snapshot is separately licensed by its upstream authors. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The bundled EasyList snapshot is separately licensed by its upstream authors. See [Third-party notices](docs/THIRD_PARTY_NOTICES.md).

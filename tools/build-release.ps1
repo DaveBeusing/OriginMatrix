@@ -11,9 +11,11 @@ try {
   foreach ($directory in @('filters', 'icons', 'rules', 'src')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $directory) -Destination $stagingDirectory -Recurse
   }
-  foreach ($file in @('manifest.json', 'LICENSE.md', 'THIRD_PARTY_NOTICES.md')) {
+  foreach ($file in @('manifest.json', 'LICENSE.md')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination $stagingDirectory
   }
+  New-Item -ItemType Directory -Path (Join-Path $stagingDirectory 'docs') | Out-Null
+  Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\THIRD_PARTY_NOTICES.md') -Destination (Join-Path $stagingDirectory 'docs')
   if (Test-Path -LiteralPath $archive) { Remove-Item -LiteralPath $archive -Force }
   Compress-Archive -Path (Join-Path $stagingDirectory '*') -DestinationPath $archive -CompressionLevel Optimal
   Write-Output $archive

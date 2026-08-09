@@ -81,7 +81,7 @@ Validated selectors are cached in bounded groups, and matching elements receive 
 
 `youtube-compatibility.js` performs an offline, versioned analysis of EasyList rules explicitly targeting YouTube, Googlevideo, ytimg, and related endpoints. It separates supported network blocks, exceptions, and cosmetic selectors from unsupported network, cosmetic, and scriptlet syntax, retaining bounded line-aware samples for diagnosis.
 
-This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `docs/YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
+This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
 
 Phase 12 improves YouTube coverage through generic Cosmetic Engine behavior rather than site-specific code. Domain lists and `#@#` hiding exceptions share the normalized cosmetic model, and `SelectorStore` subtracts applicable exceptions before selectors reach a document. Native CSS `:has()` is supported on the Chromium 121 baseline, enabling EasyList's relational ad-slot selectors for feeds, Shorts, and watch pages. Procedural lookalikes such as `:has-text()` remain rejected. The pinned offline diagnostic reaches 90.5% syntax coverage; `$rewrite` and `generichide` remain explicit unsupported cases, and runtime behavior still requires the documented browser checklist.
 
@@ -235,7 +235,7 @@ The service worker authenticates every runtime message against its own extension
 
 ## Release validation
 
-The Phase 21 release gate combines the complete browser-independent test suite with a static package validator. It verifies version alignment, referenced manifest assets, the MV3 and minimum-Chromium baselines, absence of external messaging/update configuration and dependency trees, and shipped JavaScript sinks. Packaging uses an explicit runtime allowlist. Cross-browser and live-site behavior remains a separately evidenced manual matrix in `docs/RELEASE-CANDIDATE.md`.
+The Phase 21 release gate combines the complete browser-independent test suite with a static package validator. It verifies version alignment, referenced manifest assets, the MV3 and minimum-Chromium baselines, absence of external messaging/update configuration and dependency trees, and shipped JavaScript sinks. Packaging uses an explicit runtime allowlist. Cross-browser and live-site behavior remains a separately evidenced manual matrix in `RELEASE-CANDIDATE.md`.
 
 ## Policy transfer and profiles
 
