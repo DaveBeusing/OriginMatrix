@@ -77,6 +77,12 @@ The service worker prepares the cosmetic generation before replacing network rul
 
 Validated selectors are cached in bounded groups, and matching elements receive a dedicated hide attribute covered by the injected stylesheet. Metrics track mutation records, batches, scanned roots, hidden elements, cumulative scan time, and worst-batch time. The observer does not evaluate remote code, parse new filters, or perform an unconditional full-DOM scan for every mutation.
 
+## SPA navigation lifecycle
+
+`SpaNavigationLifecycle` consumes Chromium's `webNavigation.onHistoryStateUpdated` and `onReferenceFragmentUpdated` events instead of modifying page History APIs. Events are debounced per tab and frame for 75 ms, so rapid route transitions produce one evaluation of the final URL. The service worker resets top-frame session diagnostics and site state, clears per-frame scriptlet execution keys, and sends a bounded navigation token to the affected content-script frame.
+
+The existing content script then requests a fresh effective cosmetic plan and runs the EARLY and NORMAL scriptlet phases for that route. A generation counter prevents an older asynchronous cosmetic response from replacing a newer route's plan. Scriptlet execution remains deduplicated within each document, route, and phase while allowing the same applicable bundled scriptlet to be evaluated again after a genuine SPA transition.
+
 ## YouTube compatibility diagnostics
 
 `youtube-compatibility.js` performs an offline, versioned analysis of EasyList rules explicitly targeting YouTube, Googlevideo, ytimg, and related endpoints. It separates supported network blocks, exceptions, and cosmetic selectors from unsupported network, cosmetic, and scriptlet syntax, retaining bounded line-aware samples for diagnosis.

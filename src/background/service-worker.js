@@ -28,6 +28,7 @@ import { profileDefinition } from "../engine/profiles.js";
 import { RuleAttributionRegistry } from "./rule-attribution-registry.js";
 import { DnrMatchObserver } from "./dnr-match-observer.js";
 import { assertTrustedMessage } from "./message-security.js";
+import { SpaNavigationLifecycle } from "./spa-navigation-lifecycle.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
@@ -74,6 +75,14 @@ let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
 let siteCoverageCache = { source: null, values: new Map() };
 const executedScriptletPhases = new Set();
+const spaNavigationLifecycle = new SpaNavigationLifecycle({
+  sendMessage: (tabId, message, options) => chrome.tabs.sendMessage(tabId, message, options),
+  onNavigation: async ({ tabId, frameId }) => clearExecutedScriptlets(tabId, frameId),
+  onTopFrameNavigation: async ({ tabId, url, timeStamp }) => {
+    clearExecutedScriptlets(tabId);
+    await tabStateManager.startNavigation({ tabId, url, timestamp: timeStamp });
+  },
+});
 const requestObserver = new RequestObserver({
   tabStateManager,
   getTab: (tabId) => chrome.tabs.get(tabId),
@@ -81,6 +90,7 @@ const requestObserver = new RequestObserver({
 
 requestObserver.start();
 dnrMatchObserver.start();
+spaNavigationLifecycle.start();
 
 const startupReconciliation = reconcileRules()
   .then(() => { startupTimeMs = roundPerformance(performance.now() - workerStartedAt); })
@@ -96,7 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
-  for (const key of executedScriptletPhases) if (key.startsWith(`${tabId}:`)) executedScriptletPhases.delete(key);
+  clearExecutedScriptlets(tabId);
   try {
     await Promise.all([
       enqueuePolicyOperation(async () => {
@@ -127,7 +137,7 @@ async function handleMessage(message, sender) {
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
     case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
-    case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender, message.phase));
+    case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender, message.phase, message.navigationId));
     case "REPORT_COSMETIC_METRICS": return reportCosmeticMetrics(message, sender);
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "GET_SITE_FILTER_COVERAGE": return startupReconciliation.then(() => getSiteFilterCoverage(message.hostname));
@@ -299,12 +309,13 @@ function getCosmeticSelectors(hostname) {
   return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors };
 }
 
-async function runScriptletsForSender(sender, phase) {
+async function runScriptletsForSender(sender, phase, navigationId = "initial") {
   if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0 || typeof sender.documentId !== "string" || !sender.documentId) {
     throw new TypeError("Scriptlet execution requires a tab frame sender.");
   }
   if (!Object.values(SCRIPTLET_PHASE).includes(phase)) throw new TypeError("Invalid scriptlet execution phase.");
-  const executionKey = `${sender.tab.id}:${sender.frameId}:${sender.documentId}:${phase}`;
+  if (typeof navigationId !== "string" || !navigationId || navigationId.length > 100) throw new TypeError("Invalid scriptlet navigation ID.");
+  const executionKey = `${sender.tab.id}:${sender.frameId}:${sender.documentId}:${navigationId}:${phase}`;
   if (executedScriptletPhases.has(executionKey)) return { ok: true, executed: 0, duplicate: true, phase };
   const hostname = hostnameFromUrl(sender.url);
   const result = await scriptletEngine.execute(scriptletEngine.prepareForHostname(hostname, { phase }), {
@@ -313,6 +324,11 @@ async function runScriptletsForSender(sender, phase) {
   });
   executedScriptletPhases.add(executionKey);
   return { ok: true, executed: result.executed, duplicate: false, phase };
+}
+
+function clearExecutedScriptlets(tabId, frameId = null) {
+  const prefix = frameId === null ? `${tabId}:` : `${tabId}:${frameId}:`;
+  for (const key of executedScriptletPhases) if (key.startsWith(prefix)) executedScriptletPhases.delete(key);
 }
 
 async function reportCosmeticMetrics(message, sender) {

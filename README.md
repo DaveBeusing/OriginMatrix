@@ -4,7 +4,7 @@
   <img src="icons/icon128.png" width="96" height="96" alt="OriginMatrix icon">
 </p>
 
-OriginMatrix 1.5.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
+OriginMatrix 1.6.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
 
 OriginMatrix is an independent Manifest V3 project—not a port or visual copy of uMatrix. Logical policies are the source of truth and are compiled into Chrome `declarativeNetRequest` rules.
 
@@ -26,6 +26,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Site-specific relevant filter coverage by network, cosmetic, and scriptlet support
 - Native relational cosmetic selectors and scoped hiding exceptions for modern sites
 - Optimized global cosmetic filters with deduplicated, cached per-site selector plans
+- Debounced SPA navigation lifecycle that re-evaluates cosmetics, scriptlets, diagnostics, and site state
 - Selected domain-scoped scriptlet-filter parsing with allowlisted MAIN-world execution
 - Deterministic EARLY and NORMAL scriptlet phases with per-document execution deduplication
 - Data-driven scriptlet usage inventory that gates MAIN-world library expansion on active filter demand
@@ -46,7 +47,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Browser-independent unit tests for the policy, storage, compiler, workflow, and observation modules
 - Opt-in Playwright acceptance tests for YouTube loading, playback, SPA navigation, page controls, diagnostics, and conservative ad-surface observations
 
-Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters, simple cosmetic selectors, and selected domain-scoped `##+js(...)` rules are parsed locally as data; unsupported syntax is reported and never guessed. Global and site-specific cosmetic selectors are merged into cached effective plans and injected as one native CSS batch, while the dynamic observer scans only the bounded site-specific subset. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Scriptlet names map exclusively to three bundled, argument-validated implementations. Balanced enables all engines without overriding automatic decisions, Strict adds targeted third-party Matrix blocks, and Relaxed disables scriptlets while retaining network and cosmetic protection. EasyList updates are fetched only from its catalogued HTTPS URL, validated and compiled as an inactive candidate, then swapped with rollback. Custom filter URLs, procedural cosmetic filters, broader scriptlet syntax, uMatrix text-rule conversion, a dedicated tracker list, and Public-Suffix-List-based domain grouping are not currently included.
+Automatic protection combines the small static proof ruleset with a pinned EasyList snapshot. EasyList network filters, simple cosmetic selectors, and selected domain-scoped `##+js(...)` rules are parsed locally as data; unsupported syntax is reported and never guessed. Global and site-specific cosmetic selectors are merged into cached effective plans and injected as one native CSS batch, while the dynamic observer scans only the bounded site-specific subset. Batched DOM observation handles inserted elements and class/ID changes without rescanning every mutation individually. Debounced native same-document navigation events re-evaluate the active cosmetic and scriptlet generations and reset top-frame session diagnostics without requiring a reload. Scriptlet names map exclusively to three bundled, argument-validated implementations. Balanced enables all engines without overriding automatic decisions, Strict adds targeted third-party Matrix blocks, and Relaxed disables scriptlets while retaining network and cosmetic protection. EasyList updates are fetched only from its catalogued HTTPS URL, validated and compiled as an inactive candidate, then swapped with rollback. Custom filter URLs, procedural cosmetic filters, broader scriptlet syntax, uMatrix text-rule conversion, a dedicated tracker list, and Public-Suffix-List-based domain grouping are not currently included.
 
 YouTube is tracked as a compatibility baseline, not as a guaranteed blocking claim. Generic native `:has()` filtering now covers promoted feed, Shorts, and ad-slot structures present in the pinned EasyList snapshot, while scoped `#@#` rules prevent incompatible hiding on excluded surfaces. The dashboard can analyze targeted bundled rules and report unsupported network, cosmetic, and scriptlet syntax. See [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md) for verified scope and the manual acceptance checklist.
 
@@ -188,7 +189,7 @@ The reviewed trust boundaries, resource limits, and permission rationale are doc
 
 ## Release status
 
-Version 1.5.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
+Version 1.6.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
 
 ## License
 

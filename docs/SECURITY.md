@@ -2,7 +2,7 @@
 
 ## Architecture review baseline
 
-OriginMatrix 1.5.0 was reviewed against remote-code execution, injection and XSS, unsafe HTML, parser and selector denial of service, scriptlet argument abuse, corrupted storage, malformed lists, DNR rule exhaustion, and extension permissions.
+OriginMatrix 1.6.0 was reviewed against remote-code execution, injection and XSS, unsafe HTML, parser and selector denial of service, scriptlet argument abuse, corrupted storage, malformed lists, DNR rule exhaustion, and extension permissions.
 
 - All executable JavaScript is bundled. Filter downloads are data only, require catalogued HTTPS URLs, reject redirects, and never become executable code.
 - UI values are assigned with DOM text properties. The extension does not use `innerHTML`, `eval`, dynamic functions, or remote assets.
@@ -18,6 +18,7 @@ OriginMatrix 1.5.0 was reviewed against remote-code execution, injection and XSS
 - `scripting` runs only bundled, registry-approved scriptlets in matched frames.
 - `storage` persists policies, profiles, validated list generations, and session-only observations.
 - `tabs` reads the active tab URL, reloads changed pages, and cleans tab-scoped state.
+- `webNavigation` reports same-document History API and fragment transitions so filters can be re-evaluated without patching page JavaScript.
 - `webRequest` observes request metadata without blocking or modifying traffic.
 - `<all_urls>` is required because a request firewall must apply network, cosmetic, and scriptlet protection across user-visited HTTP(S) sites. Content scripts themselves remain restricted to HTTP(S) matches.
 
