@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.4.0`, EasyList snapshot `202608081115`.
+Version baseline: OriginMatrix `1.5.0`, EasyList snapshot `202608081115`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -50,6 +50,7 @@ The Phase 4 inventory finds no scriptlet references in the pinned EasyList snaps
 - Property-protection scriptlets run in the EARLY phase requested at `document_start`; DOM text removal waits for the NORMAL phase after DOM readiness.
 - The dynamic cosmetic observer remains active during same-document SPA navigation.
 - Native CSS `:has()` rules cover the pinned list's promoted feed, Shorts, and ad-slot structures without YouTube-specific code.
+- Global cosmetic rules are merged with site selectors and injected as one native CSS batch; the mutation observer scans only site-specific selectors.
 - Domain-scoped `#@#` exceptions prevent matching hiding rules on excluded YouTube surfaces.
 - Diagnostics report unsupported rules instead of treating them as successful.
 - The pinned offline sample supports 38 of 42 targeted rules (90.5% syntax coverage).

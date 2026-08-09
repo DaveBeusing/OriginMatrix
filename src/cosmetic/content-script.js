@@ -20,7 +20,7 @@
     .then((response) => {
       if (!response?.ok) throw new Error(response?.error ?? "Cosmetic Engine did not respond.");
       injector.apply(response.selectors);
-      dynamicFilter.start(response.selectors);
+      dynamicFilter.start(response.dynamicSelectors ?? response.selectors);
       globalThis.OriginMatrixCosmeticMetrics = () => dynamicFilter.getMetrics();
     })
     .catch((error) => console.warn("OriginMatrix cosmetic filtering unavailable", error));

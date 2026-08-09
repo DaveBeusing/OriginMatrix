@@ -67,13 +67,13 @@ The minimum supported Chromium version is 121. Earlier versions shared a 5,000-r
 
 ## Cosmetic filtering foundation
 
-`CosmeticParser` accepts normalized EasyList cosmetic models only when their selectors are bounded, free of rule-breaking syntax, and do not use procedural constructs. `SelectorStore` indexes accepted selectors by domain and applies exclusions before returning a deduplicated site-specific set. Unrelated selectors are never sent to a page.
+`CosmeticParser` accepts normalized EasyList cosmetic models only when their selectors are bounded, free of rule-breaking syntax, and do not use procedural constructs. `SelectorStore` keeps separate global and site indexes, applies hostname-specific exclusions, and caches deduplicated effective selector plans for up to 128 hostnames. Native plans are capped at 20,000 selectors and dynamic site subsets at 5,000 selectors.
 
-The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests selectors for its frame hostname at `document_start`; `CosmeticInjector` writes them into a dedicated style element using `textContent`. No filter-provided JavaScript is executed. Scriptlets and procedural selectors remain outside this phase.
+The service worker prepares the cosmetic generation before replacing network rules and activates it only after the network update succeeds. A declarative content script requests the effective selector plan for its frame hostname at `document_start`; `CosmeticInjector` writes the global and site-specific native selectors into one reusable style element using `textContent`. No filter-provided JavaScript is executed. Procedural selectors remain unsupported.
 
 ## Dynamic cosmetic filtering
 
-`DynamicCosmeticFilter` observes only child-list changes and class/ID attribute changes. Added or changed element roots are deduplicated, nested roots collapse to their ancestor, mutation storms collapse to the document root, and work is debounced into 50 ms batches. Each batch scans only the site-scoped selectors already returned by `SelectorStore`.
+`DynamicCosmeticFilter` observes only child-list changes and class/ID attribute changes. Added or changed element roots are deduplicated, nested roots collapse to their ancestor, mutation storms collapse to the document root, and work is debounced into 50 ms batches. Each batch scans only the bounded site-specific selector subset; global selectors rely on the browser's native CSS engine and are never continuously queried from JavaScript.
 
 Validated selectors are cached in bounded groups, and matching elements receive a dedicated hide attribute covered by the injected stylesheet. Metrics track mutation records, batches, scanned roots, hidden elements, cumulative scan time, and worst-batch time. The observer does not evaluate remote code, parse new filters, or perform an unconditional full-DOM scan for every mutation.
 

@@ -5,7 +5,7 @@ export class CosmeticEngine {
   constructor({ parser = new CosmeticParser(), store = new SelectorStore() } = {}) {
     this.parser = parser;
     this.store = store;
-    this.diagnostics = Object.freeze({ cosmeticRules: 0, cosmeticUnsupported: 0, indexedDomains: 0 });
+    this.diagnostics = Object.freeze({ cosmeticRules: 0, cosmeticUnsupported: 0, globalCosmeticRules: 0, indexedDomains: 0 });
   }
 
   prepare(filters) { return this.parser.parseModels(filters); }
@@ -19,6 +19,7 @@ export class CosmeticEngine {
     this.diagnostics = Object.freeze({
       cosmeticRules: generation.filters.length,
       cosmeticUnsupported: generation.unsupported.length,
+      globalCosmeticRules: store.globalCosmeticFilters,
       indexedDomains: store.indexedDomains,
     });
     return this.diagnostics;
@@ -26,5 +27,6 @@ export class CosmeticEngine {
 
   clear() { return this.activate({ filters: [], unsupported: [] }); }
   getSelectors(hostname) { return this.store.getForHostname(hostname); }
+  getSelectorPlan(hostname) { return this.store.getPlanForHostname(hostname); }
   getDiagnostics() { return this.diagnostics; }
 }

@@ -295,7 +295,8 @@ async function getRequestLog(tabId) {
 }
 
 function getCosmeticSelectors(hostname) {
-  return { ok: true, selectors: cosmeticEngine.getSelectors(hostname) };
+  const plan = cosmeticEngine.getSelectorPlan(hostname);
+  return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors };
 }
 
 async function runScriptletsForSender(sender, phase) {

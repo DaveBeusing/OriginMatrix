@@ -31,6 +31,12 @@ test("parses inclusive and excluded domain restrictions", () => {
 });
 
 test("parses simple cosmetic and selected scriptlet rules", () => {
+  assert.deepEqual(parseFilterRule("##.ad-container").filter, {
+    type: "cosmetic", selector: ".ad-container", domains: [], excludedDomains: [],
+  });
+  assert.deepEqual(parseFilterRule("#@#[data-ad-slot]").filter, {
+    type: "cosmetic", selector: "[data-ad-slot]", domains: [], excludedDomains: [], exception: true,
+  });
   assert.deepEqual(parseFilterRule("example.com##.advertisement").filter, {
     type: "cosmetic", selector: ".advertisement", domains: ["example.com"], excludedDomains: [],
   });
