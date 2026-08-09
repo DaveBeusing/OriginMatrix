@@ -146,7 +146,7 @@ function statusFrom(list, enabled, state, metadata = null, parsed = null) {
     rulesSupported: diagnostics?.rulesSupported ?? 0,
     rulesUnsupported: diagnostics?.rulesUnsupported ?? 0,
     rulesCompiled: filters.filter(({ type }) => [FILTER_TYPE.NETWORK, FILTER_TYPE.EXCEPTION].includes(type)).length,
-    cosmeticRules: filters.filter(({ type }) => type === FILTER_TYPE.COSMETIC).length,
+    cosmeticRules: filters.filter(({ type }) => [FILTER_TYPE.COSMETIC, FILTER_TYPE.COSMETIC_CONTROL].includes(type)).length,
     scriptletRules: filters.filter(({ type }) => type === FILTER_TYPE.SCRIPTLET).length,
     checksum: metadata?.checksum ?? null,
   });

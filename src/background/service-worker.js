@@ -338,8 +338,10 @@ async function reportCosmeticMetrics(message, sender) {
 function roundPerformance(value) { return Math.round(value * 100) / 100; }
 
 async function getYouTubeDiagnostics() {
-  youtubeDiagnosticsPromise ??= loadBundledText(EASYLIST.path)
-    .then((source) => analyzeYouTubeCompatibility(source, { listVersion: EASYLIST.snapshotVersion }));
+  youtubeDiagnosticsPromise ??= Promise.all(DEFAULT_FILTER_LISTS.map(async (list) => ({ list, source: (filterListManager.getSourceState(list.id).source ?? await loadBundledText(list.path)) })))
+    .then((sources) => analyzeYouTubeCompatibility(sources.map(({ list, source }) => `! OriginMatrix source: ${list.title}\n${source}`).join("\n"), {
+      listVersion: sources.map(({ list }) => `${list.title} ${filterListManager.getSourceState(list.id).metadata?.version ?? list.snapshotVersion}`).join(" + "),
+    }));
   return { ok: true, diagnostics: await youtubeDiagnosticsPromise };
 }
 

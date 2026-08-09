@@ -1,12 +1,14 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.8.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
+Version baseline: OriginMatrix `1.9.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
 ## Automated browser acceptance suite
 
 Phase 1 adds opt-in Playwright tests under `tests/browser/youtube/`. They launch a persistent Chromium profile with the unpacked extension and exercise homepage loading, watch-page structure, playback, pause/play, seeking, fullscreen availability, comments, client-side video navigation, console errors, OriginMatrix diagnostics, and observable advertising surfaces.
+
+The Phase 9 matrix additionally covers search results, channels, playlists, Shorts, an explicit clean-profile signed-out baseline, and an optional dedicated signed-in profile. SPA navigation now verifies that OriginMatrix's session-backed top URL is updated after the client-side route transition.
 
 Install development dependencies and a compatible browser, then run from the repository root:
 
@@ -23,6 +25,8 @@ npm run test:browser:youtube
 ```
 
 The default browser channel is `chrome`; override it with `ORIGINMATRIX_BROWSER_CHANNEL`. A repeatable public watch URL is supplied by default and can be replaced with `ORIGINMATRIX_YOUTUBE_WATCH_URL`. Set `ORIGINMATRIX_HEADLESS=1` only on a Chromium setup that supports extensions in headless mode.
+
+For the optional signed-in scenario, set `ORIGINMATRIX_YOUTUBE_USER_DATA_DIR` to a dedicated Chromium test profile. Never point this at a daily-use browser profile: Playwright launches it directly and the test may change its browsing state.
 
 Live tests are intentionally skipped unless `ORIGINMATRIX_YOUTUBE_LIVE=1` is set. YouTube, consent flows, regional ad delivery, and test videos are remote and mutable. A skipped or advertisement-free run is not a passing ad-block result.
 
@@ -41,7 +45,7 @@ The dashboard accepts a hostname such as `youtube.com` and evaluates only filter
 
 The Phase 4 inventory finds no scriptlet references in the pinned EasyList snapshot, including the YouTube-related subset. No new MAIN-world primitive is therefore activated without filter evidence. See [Scriptlet coverage](SCRIPTLET-COVERAGE.md).
 
-## Working
+## Verified working offline or by repository automation
 
 - OriginMatrix can identify YouTube-, Googlevideo-, ytimg-, and related ad-endpoint rules in the bundled snapshot.
 - Supported network rules compile through the normal Filter-to-DNR pipeline.
@@ -55,11 +59,12 @@ The Phase 4 inventory finds no scriptlet references in the pinned EasyList snaps
 - Global cosmetic rules are merged with site selectors and injected as one native CSS batch; the mutation observer scans only site-specific selectors.
 - Supported `:has-text(...)` rules use a separate bounded evaluator and are re-evaluated after SPA navigation.
 - Domain-scoped `#@#` exceptions prevent matching hiding rules on excluded YouTube surfaces.
+- `$generichide` exceptions suppress generic cosmetic rules on matching YouTube surfaces while retaining explicit YouTube selectors.
 - Diagnostics report unsupported rules instead of treating them as successful.
-- The pinned offline sample supports 38 of 42 targeted rules (90.5% syntax coverage).
+- Combined offline diagnostics support 53 of 54 targeted EasyList/EasyPrivacy rules (98.1% relevant syntax coverage); EasyList alone supports 41 of 42 (97.6%).
 - Matrix domain cells expose attributable automatic EasyList decisions while explicit user Allow/Block rules remain authoritative.
 
-## Partially working
+## Verified partially working offline
 
 - General EasyList network and cosmetic protection applies to YouTube, but coverage is limited to the syntax OriginMatrix currently supports.
 - Feed, sidebar, promoted-content, pre-roll, and mid-roll filtering may improve where ordinary network or simple CSS rules apply; each scenario remains manually unverified in this baseline.
@@ -67,11 +72,21 @@ The Phase 4 inventory finds no scriptlet references in the pinned EasyList snaps
 
 ## Unsupported
 
-- `$rewrite`, `generichide`, wider scriptlet dialects, global/exception scriptlet rules, and procedural operators beyond the supported `:has-text(...)` subset.
+- `$rewrite`, wider scriptlet dialects, global/exception scriptlet rules, and procedural operators beyond the supported `:has-text(...)` subset.
 - Guaranteed classification of video-ad requests.
 - YouTube-specific hard-coded workarounds.
-- Automated signed-in, playlist, Shorts, and guaranteed ad-delivery scenarios.
+- Guaranteed ad-delivery scenarios.
 - Claims that all pre-roll or mid-roll advertisements are removed.
+
+## Not reproduced
+
+- A deterministic pre-roll or mid-roll delivery cannot be forced by the repository test environment.
+- Signed-in behavior requires an explicitly supplied dedicated Chromium profile and remains unverified until such a run is recorded.
+
+## Unknown
+
+- Current regional and account-specific ad delivery behavior.
+- Whether every observed player advertisement is removed without affecting playback.
 
 ## Required next features
 

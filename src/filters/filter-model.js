@@ -3,6 +3,7 @@ export const FILTER_TYPE = Object.freeze({
   COSMETIC: "cosmetic",
   EXCEPTION: "exception",
   SCRIPTLET: "scriptlet",
+  COSMETIC_CONTROL: "cosmetic-control",
 });
 
 export const FILTER_ACTION = Object.freeze({ BLOCK: "block", ALLOW: "allow" });
@@ -34,6 +35,13 @@ export function createCosmeticFilter(input) {
   });
 }
 
+export function createCosmeticControlFilter(input) {
+  if (input?.mode !== "generichide") throw new TypeError("Unsupported cosmetic control mode.");
+  const domains = normalizeDomains(input.domains);
+  if (domains.length === 0) throw new TypeError("Cosmetic controls require a hostname.");
+  return freezeFilter({ type: FILTER_TYPE.COSMETIC_CONTROL, mode: input.mode, domains, excludedDomains: normalizeDomains(input.excludedDomains) });
+}
+
 export function createScriptletFilter(input) {
   const name = requiredText(input?.name, "Scriptlet name");
   if (!/^[a-z][a-z0-9-]*$/i.test(name)) throw new TypeError("Scriptlet name is invalid.");
@@ -56,6 +64,7 @@ export function validateFilter(filter) {
     case FILTER_TYPE.EXCEPTION: return createExceptionFilter(filter);
     case FILTER_TYPE.COSMETIC: return createCosmeticFilter(filter);
     case FILTER_TYPE.SCRIPTLET: return createScriptletFilter(filter);
+    case FILTER_TYPE.COSMETIC_CONTROL: return createCosmeticControlFilter(filter);
     default: throw new TypeError(`Unsupported filter type: ${filter?.type}`);
   }
 }

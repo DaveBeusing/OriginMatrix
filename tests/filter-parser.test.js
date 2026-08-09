@@ -14,6 +14,9 @@ test("parses domain blocks and URL patterns", () => {
 });
 
 test("parses network exceptions, resource types, and party constraints", () => {
+  assert.deepEqual(parseFilterRule("@@||www.youtube.com^$generichide").filter, {
+    type: "cosmetic-control", mode: "generichide", domains: ["www.youtube.com"], excludedDomains: [],
+  });
   const result = parseFilterRule("@@||cdn.example^$script,xhr,third-party");
   assert.equal(result.status, "supported");
   assert.deepEqual(result.filter, {

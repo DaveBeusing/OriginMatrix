@@ -30,17 +30,18 @@ export class SelectorStore {
     this.cache.clear();
   }
 
-  getForHostname(hostname) { return this.getPlanForHostname(hostname).nativeSelectors; }
+  getForHostname(hostname, options) { return this.getPlanForHostname(hostname, options).nativeSelectors; }
 
-  getPlanForHostname(hostname) {
+  getPlanForHostname(hostname, { includeGlobal = true } = {}) {
     const normalized = normalizeHostname(hostname);
-    if (this.cache.has(normalized)) return this.cache.get(normalized);
+    const cacheKey = `${normalized}:${includeGlobal ? "global" : "site"}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
     const siteCandidates = [];
     const labels = normalized.split(".");
     for (let index = 0; index < labels.length; index += 1) {
       siteCandidates.push(...(this.byDomain.get(labels.slice(index).join(".")) ?? []));
     }
-    const candidates = [...this.global, ...siteCandidates];
+    const candidates = [...(includeGlobal ? this.global : []), ...siteCandidates];
     const applicable = candidates.filter(({ excludedDomains }) => (
       !excludedDomains.some((domain) => domainMatches(normalized, domain))
     ));
@@ -56,7 +57,7 @@ export class SelectorStore {
       dynamicSelectors: Object.freeze(effective(applicableSite, MAX_DYNAMIC_SELECTORS_PER_DOCUMENT)),
     });
     if (this.cache.size >= MAX_CACHED_HOSTNAMES) this.cache.delete(this.cache.keys().next().value);
-    this.cache.set(normalized, plan);
+    this.cache.set(cacheKey, plan);
     return plan;
   }
 

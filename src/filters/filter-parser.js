@@ -1,4 +1,4 @@
-import { createCosmeticFilter, createExceptionFilter, createNetworkFilter } from "./filter-model.js";
+import { createCosmeticControlFilter, createCosmeticFilter, createExceptionFilter, createNetworkFilter } from "./filter-model.js";
 import { parseScriptletRule } from "../scriptlets/scriptlet-parser.js";
 
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
@@ -35,6 +35,13 @@ export function parseFilterRule(source) {
 
   const options = parseOptions(rawOptions);
   if (!options.ok) return unsupported(text, options.reason, options.details);
+  if (options.value.genericHide) {
+    const host = pattern.match(HOST_ANCHORED_PATTERN)?.[1];
+    if (!exception || !host || options.value.resourceTypes.length > 0 || options.value.domains.length > 0 || options.value.thirdParty !== null) {
+      return unsupported(text, "invalid-generichide-rule");
+    }
+    return supported(text, createCosmeticControlFilter({ mode: "generichide", domains: [host] }));
+  }
   const input = { pattern, ...options.value };
   try {
     return supported(text, exception ? createExceptionFilter(input) : createNetworkFilter(input));
@@ -90,7 +97,7 @@ export function parseFilterText(source) {
 }
 
 function parseOptions(source) {
-  const value = { domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null };
+  const value = { domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null, genericHide: false };
   if (source.length === 0) return { ok: true, value };
   const options = source.split(",");
   if (options.some((option) => option.length === 0)) return { ok: false, reason: "invalid-options" };
@@ -110,6 +117,8 @@ function parseOptions(source) {
       if (!domainResult.ok) return domainResult;
       value.domains.push(...domainResult.domains);
       value.excludedDomains.push(...domainResult.excludedDomains);
+    } else if (normalized === "generichide") {
+      value.genericHide = true;
     } else {
       return { ok: false, reason: "unsupported-option", details: option };
     }

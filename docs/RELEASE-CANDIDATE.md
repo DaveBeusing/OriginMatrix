@@ -1,4 +1,4 @@
-# OriginMatrix 1.8.0 release candidate
+# OriginMatrix 1.9.0 release candidate
 
 This document separates reproducible repository checks from browser behavior that requires hands-on testing. A blank manual result is not evidence of compatibility.
 
@@ -37,7 +37,7 @@ For every case, compare a clean profile with OriginMatrix disabled and enabled. 
 
 | Surface | Required scenario | Status |
 | --- | --- | --- |
-| YouTube | Home, search, watch page, seek, captions, fullscreen, signed-out playback | Not verified |
+| YouTube | Home, search, channel, playlist, Shorts, watch page, seek, captions, fullscreen, signed-out and optional dedicated-profile signed-in playback | Not verified |
 | Google | Search, image search, result navigation, consent surface | Not verified |
 | Amazon | Search, product page, cart; stop before purchase submission | Not verified |
 | Reddit | Listing, comments, infinite scroll, sign-in surface | Not verified |

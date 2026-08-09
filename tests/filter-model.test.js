@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  createCosmeticFilter, createExceptionFilter, createNetworkFilter, createScriptletFilter, validateFilter,
+  createCosmeticControlFilter, createCosmeticFilter, createExceptionFilter, createNetworkFilter, createScriptletFilter, validateFilter,
 } from "../src/filters/filter-model.js";
 
 test("normalizes a network filter without leaking DNR representation", () => {
@@ -18,6 +18,9 @@ test("normalizes a network filter without leaking DNR representation", () => {
 });
 
 test("provides distinct exception, cosmetic, and scriptlet models", () => {
+  assert.deepEqual(createCosmeticControlFilter({ mode: "generichide", domains: ["example.com"] }), {
+    type: "cosmetic-control", mode: "generichide", domains: ["example.com"], excludedDomains: [],
+  });
   assert.equal(createExceptionFilter({ pattern: "||cdn.example^" }).action, "allow");
   assert.deepEqual(createCosmeticFilter({ domains: ["example.com"], selector: ".advert" }), {
     type: "cosmetic", selector: ".advert", domains: ["example.com"], excludedDomains: [],

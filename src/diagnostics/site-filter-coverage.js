@@ -48,7 +48,7 @@ function isRelevant(parsed, source, hostname) {
   if (parsed.status !== "supported") return mentionedHostnames(source).some((domain) => domainsRelated(hostname, domain));
   const filter = parsed.filter;
   if ([...filter.domains, ...filter.excludedDomains].some((domain) => domainsRelated(hostname, domain))) return true;
-  if (filter.type === FILTER_TYPE.COSMETIC || filter.type === FILTER_TYPE.SCRIPTLET) return filter.domains.length === 0;
+  if ([FILTER_TYPE.COSMETIC, FILTER_TYPE.COSMETIC_CONTROL, FILTER_TYPE.SCRIPTLET].includes(filter.type)) return filter.domains.length === 0;
   return mentionedHostnames(filter.pattern).some((domain) => domainsRelated(hostname, domain));
 }
 
@@ -57,7 +57,7 @@ function mentionedHostnames(source) {
 }
 
 function supportedType(type) {
-  if (type === FILTER_TYPE.COSMETIC) return "cosmetic";
+  if ([FILTER_TYPE.COSMETIC, FILTER_TYPE.COSMETIC_CONTROL].includes(type)) return "cosmetic";
   if (type === FILTER_TYPE.SCRIPTLET) return "scriptlet";
   return "network";
 }
@@ -65,7 +65,7 @@ function supportedType(type) {
 function evaluateSupport(parsed, source) {
   if (parsed.status === "unsupported") return { type: unsupportedType(source), status: "unsupported", reason: parsed.reason };
   const type = supportedType(parsed.filter.type);
-  if (parsed.filter.type === FILTER_TYPE.COSMETIC) {
+  if ([FILTER_TYPE.COSMETIC, FILTER_TYPE.COSMETIC_CONTROL].includes(parsed.filter.type)) {
     const result = cosmeticParser.parseModels([parsed.filter]);
     if (result.unsupported.length > 0) return { type, status: "unsupported", reason: result.unsupported[0].reason };
   }

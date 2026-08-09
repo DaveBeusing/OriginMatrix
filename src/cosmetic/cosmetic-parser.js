@@ -8,8 +8,10 @@ export class CosmeticParser {
     if (!Array.isArray(filters)) throw new TypeError("Cosmetic filter input must be an array.");
     const supported = [];
     const proceduralFilters = [];
+    const genericHideExceptions = [];
     const unsupported = [];
     for (const input of filters) {
+      if (input?.type === FILTER_TYPE.COSMETIC_CONTROL) { genericHideExceptions.push(validateFilter(input)); continue; }
       if (input?.type !== FILTER_TYPE.COSMETIC) continue;
       const filter = validateFilter(input);
       if (SUPPORTED_PROCEDURAL_SELECTOR.test(filter.selector)) {
@@ -21,7 +23,7 @@ export class CosmeticParser {
       if (reason) unsupported.push(Object.freeze({ filter, reason }));
       else supported.push(filter);
     }
-    return Object.freeze({ filters: Object.freeze(supported), proceduralFilters: Object.freeze(proceduralFilters), unsupported: Object.freeze(unsupported) });
+    return Object.freeze({ filters: Object.freeze(supported), proceduralFilters: Object.freeze(proceduralFilters), genericHideExceptions: Object.freeze(genericHideExceptions), unsupported: Object.freeze(unsupported) });
   }
 }
 

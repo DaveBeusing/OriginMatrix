@@ -91,11 +91,11 @@ The existing content script then requests a fresh effective cosmetic plan and ru
 
 ## YouTube compatibility diagnostics
 
-`youtube-compatibility.js` performs an offline, versioned analysis of EasyList rules explicitly targeting YouTube, Googlevideo, ytimg, and related endpoints. It separates supported network blocks, exceptions, and cosmetic selectors from unsupported network, cosmetic, and scriptlet syntax, retaining bounded line-aware samples for diagnosis.
+`youtube-compatibility.js` performs an offline, versioned analysis of the active EasyList and EasyPrivacy sources explicitly targeting YouTube, Googlevideo, ytimg, and related endpoints. It validates cosmetic and scriptlet models through their destination engines, separates supported network blocks, exceptions, controls, and selectors from unsupported syntax, and retains bounded line-aware samples for diagnosis.
 
 This analysis measures filter-language coverage only. It cannot prove that an advertisement was blocked or that playback, login, comments, playlists, fullscreen, or SPA navigation work. Those scenarios remain an explicit manual checklist in `YOUTUBE-COMPATIBILITY.md`; no YouTube-specific workaround is introduced by the diagnostic.
 
-Phase 12 improves YouTube coverage through generic Cosmetic Engine behavior rather than site-specific code. Domain lists and `#@#` hiding exceptions share the normalized cosmetic model, and `SelectorStore` subtracts applicable exceptions before selectors reach a document. Native CSS `:has()` is supported on the Chromium 121 baseline, enabling EasyList's relational ad-slot selectors for feeds, Shorts, and watch pages. Supported `:has-text()` rules now use the separate bounded procedural evaluator; runtime behavior still requires the documented browser checklist.
+YouTube coverage improves through generic Cosmetic Engine behavior rather than site-specific code. Domain lists, `#@#` hiding exceptions, and `$generichide` controls share validated models. A matching `$generichide` control suppresses only global native and procedural filters while preserving explicitly site-scoped rules. Native CSS `:has()` covers relational ad-slot selectors, and supported `:has-text()` rules use the separate bounded evaluator; runtime behavior still requires the documented browser checklist.
 
 ## Scriptlet Engine foundation
 

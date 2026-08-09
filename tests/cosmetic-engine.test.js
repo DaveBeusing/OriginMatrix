@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { CosmeticEngine } from "../src/cosmetic/cosmetic-engine.js";
 import { CosmeticParser } from "../src/cosmetic/cosmetic-parser.js";
 import { SelectorStore } from "../src/cosmetic/selector-store.js";
-import { createCosmeticFilter, createNetworkFilter } from "../src/filters/filter-model.js";
+import { createCosmeticControlFilter, createCosmeticFilter, createNetworkFilter } from "../src/filters/filter-model.js";
 import { parseFilterText } from "../src/filters/filter-parser.js";
 import { readFile } from "node:fs/promises";
 
@@ -46,6 +46,19 @@ test("scopes procedural plans by hostname and applies exceptions", () => {
   assert.equal(engine.getProceduralFilters("news.example.com").length, 1);
   assert.equal(engine.getProceduralFilters("shop.example.com").length, 0);
   assert.equal(engine.getProceduralFilters("other.test").length, 0);
+});
+
+test("generichide exceptions suppress global filters without disabling site rules", () => {
+  const engine = new CosmeticEngine();
+  engine.activate(engine.prepare([
+    createCosmeticFilter({ selector: ".generic-ad" }),
+    createCosmeticFilter({ domains: ["youtube.com"], selector: ".site-ad" }),
+    createCosmeticFilter({ selector: ".generic-card:has-text(Sponsored)" }),
+    createCosmeticControlFilter({ mode: "generichide", domains: ["www.youtube.com"] }),
+  ]));
+  assert.deepEqual(engine.getSelectors("www.youtube.com"), [".site-ad"]);
+  assert.deepEqual(engine.getProceduralFilters("www.youtube.com"), []);
+  assert.deepEqual(engine.getSelectors("music.youtube.com"), [".generic-ad", ".site-ad"]);
 });
 
 test("selects only matching site filters and honors exclusions", () => {
