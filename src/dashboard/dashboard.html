@@ -56,6 +56,9 @@
         <div class="buttons"><input id="coverage-hostname" type="text" value="youtube.com" aria-label="Coverage hostname" spellcheck="false"><button id="coverage-diagnostics">Analyze relevant rules</button></div>
         <dl id="coverage-values"></dl>
         <div class="table-scroll"><table><thead><tr><th>Line</th><th>Type</th><th>Reason</th><th>Filter list</th><th>Unsupported rule sample</th></tr></thead><tbody id="coverage-body"><tr><td colspan="5" class="empty">Analyze a hostname to inspect relevant coverage.</td></tr></tbody></table></div>
+        <h3>Unsupported scriptlet primitive ranking</h3>
+        <p>The deterministic score prioritizes relevant unsupported occurrences, then total occurrences and affected enabled lists.</p>
+        <div class="table-scroll"><table><thead><tr><th>Rank</th><th>Primitive</th><th>Score</th><th>Relevant unsupported</th><th>Occurrences</th><th>Filter lists</th><th>Domains</th></tr></thead><tbody id="scriptlet-ranking"><tr><td colspan="7" class="empty">Analyze a hostname to rank missing scriptlets.</td></tr></tbody></table></div>
       </section>
       <section id="profiles">
         <h2>Protection profiles</h2>

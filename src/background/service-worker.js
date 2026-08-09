@@ -153,6 +153,7 @@ async function handleMessage(message, sender) {
     case "GET_BREAKAGE_DIAGNOSTICS": return Promise.all([policyOperations, startupReconciliation]).then(() => getBreakageDiagnostics(message.tabId));
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "GET_SITE_FILTER_COVERAGE": return startupReconciliation.then(() => getSiteFilterCoverage(message.hostname));
+    case "GET_SCRIPTLET_COVERAGE": return startupReconciliation.then(async () => ({ ok: true, diagnostics: await filterListManager.getRelevantScriptletCoverage(message.hostname) }));
     case "GET_CUSTOM_FILTERS": return getCustomFilters();
     case "SAVE_CUSTOM_FILTERS": return enqueuePolicyOperation(() => saveCustomFilters(message.source));
     case "ADD_CUSTOM_FILTER": return enqueuePolicyOperation(() => addCustomFilter(message.rule));

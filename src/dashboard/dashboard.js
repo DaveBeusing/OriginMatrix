@@ -15,6 +15,7 @@ const domainFilter = document.querySelector("#log-domain");
 const coverageValues = document.querySelector("#coverage-values");
 const coverageBody = document.querySelector("#coverage-body");
 const coverageHostname = document.querySelector("#coverage-hostname");
+const scriptletRanking = document.querySelector("#scriptlet-ranking");
 const profileState = document.querySelector("#profile-state");
 let logEntries = [];
 const breakageSummary = document.querySelector("#breakage-summary");
@@ -139,18 +140,27 @@ async function runSiteCoverage() {
   try {
     const hostname = coverageHostname.value.trim().toLowerCase();
     statusElement.textContent = `Analyzing rules relevant to ${hostname}…`;
-    const { diagnostics } = await send({ type: "GET_SITE_FILTER_COVERAGE", hostname });
+    const [{ diagnostics }, { diagnostics: scriptlets }] = await Promise.all([
+      send({ type: "GET_SITE_FILTER_COVERAGE", hostname }),
+      send({ type: "GET_SCRIPTLET_COVERAGE", hostname }),
+    ]);
     const values = {
       hostname: diagnostics.hostname,
       filterList: `${diagnostics.filterList} ${diagnostics.listVersion}`,
       network: coverageLabel(diagnostics.coverage.network),
       cosmetic: coverageLabel(diagnostics.coverage.cosmetic),
       scriptlets: coverageLabel(diagnostics.coverage.scriptlet),
+      relevantScriptletCoverage: coverageLabel(scriptlets.relevant),
+      overallScriptletCoverage: coverageLabel(scriptlets.overall),
       totalRelevantCoverage: coverageLabel(diagnostics.coverage.total),
     };
     coverageValues.replaceChildren(...Object.entries(values).map(([name, value]) => metric(name, value)));
     coverageBody.replaceChildren(...diagnostics.unsupportedRelevantRules.map(coverageDiagnosticRow));
     if (diagnostics.unsupportedRelevantRules.length === 0) coverageBody.append(emptyRow(5, "No unsupported relevant rules."));
+    scriptletRanking.replaceChildren(...scriptlets.unsupportedRanking.map((item, index) => tableRow([
+      index + 1, item.name, item.score, item.relevantUnsupported, item.occurrences, item.sourceLists.join(", "), item.relevantDomains.join(", "),
+    ])));
+    if (scriptlets.unsupportedRanking.length === 0) scriptletRanking.append(emptyRow(7, "No unsupported relevant scriptlet primitives."));
     statusElement.textContent = `${diagnostics.hostname}: ${diagnostics.coverage.total.supported}/${diagnostics.coverage.total.total} relevant rules supported (${diagnostics.coverage.total.percent}%).`;
   } catch (error) { showError(error); }
 }

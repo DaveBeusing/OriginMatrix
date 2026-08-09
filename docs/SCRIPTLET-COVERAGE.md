@@ -1,23 +1,26 @@
 # Scriptlet coverage
 
-## EasyList demand analysis
+## Enabled-list demand analysis
 
-OriginMatrix 1.15.0 analyzes the pinned EasyList `202608081115` snapshot before expanding executable scriptlets. Run the reproducible inventory with:
+OriginMatrix 1.16.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. Run the reproducible inventory for any hostname with:
 
 ```sh
-node tools/analyze-scriptlet-usage.mjs
+node tools/analyze-scriptlet-usage.mjs youtube.com
 ```
 
-The analyzer recognizes supported `##+js(...)` references and unsupported AdGuard-style `#%#//scriptlet(...)` references, counts each name globally, ranks references for the configured YouTube-related domains, validates calls through the existing parser and bundled registry, and retains bounded line samples and failure reasons.
+The dashboard uses the same analyzer. It applies positive and excluded domain scopes, treats global rules as relevant to every valid hostname, resolves supported aliases through the bundled registry, records execution phases, deduplicates exact rules within each source, and reports both overall and hostname-specific coverage. Ranking is deterministic: each relevant unsupported occurrence contributes 1,000 points, each global unsupported occurrence contributes 10, and each affected source contributes one.
 
-Current result:
+Measured against EasyList `202608081115` and EasyPrivacy `202608091151`:
 
 | Metric | Count |
 | --- | ---: |
-| EasyList scriptlet references | 0 |
-| YouTube-related scriptlet references | 0 |
-| New executable primitives justified | 0 |
+| Scriptlet references | 27 |
+| Supported | 0 |
+| Unsupported | 27 |
+| `youtube.com` relevant | 0 |
+| `www.youtube.com` relevant | 0 |
+| `m.youtube.com` relevant | 0 |
 
-The snapshot contains extended procedural cosmetic rules but no executable scriptlet rules. Consequently, candidates such as `abort-on-property-write`, `abort-current-inline-script`, `json-prune`, `prevent-fetch`, `prevent-xhr`, `remove-attr`, and `remove-class` have no measurable demand in the active filter dataset. Adding any of them now would increase MAIN-world attack surface and maintenance cost without activating another real rule, so the bundled registry intentionally remains limited to its existing three validated implementations.
+The current global unsupported ranking starts with `set` (6 occurrences, score 61), `acs` and `rmnt` (4 each, score 41), followed by `aost` and `set-local-storage-item` (3 each, score 31). None is relevant to the three analyzed YouTube hostnames. These are measurements of enabled filter demand, not proof of advertising being blocked or visible.
 
-This is an evidence gate, not a claim that the candidates are universally unnecessary. Re-run the analyzer after every filter snapshot or catalog expansion. A future primitive must have non-zero real usage, site relevance or meaningful global frequency, strict bounded argument semantics, prototype-safety where applicable, and dedicated implementation tests before registry inclusion.
+No executable primitive is added in this phase. Phase 5 must use this evidence together with safety, general usefulness, and relevant-site demand before selecting implementations. A high global count alone does not justify a broad page-API interception or unsafe compatibility alias.

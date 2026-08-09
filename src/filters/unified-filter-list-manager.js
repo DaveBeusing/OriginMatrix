@@ -1,6 +1,7 @@
 import { parseFilterText } from "./filter-parser.js";
 import { FilterListService } from "./filter-list-service.js";
 import { FILTER_TYPE } from "./filter-model.js";
+import { analyzeRelevantScriptletCoverage } from "../diagnostics/scriptlet-usage.js";
 
 const UNIFIED_LIST = Object.freeze({
   id: "originmatrix-default-lists",
@@ -24,6 +25,7 @@ export class UnifiedFilterListManager {
     }]));
     this.service = new FilterListService({ list: UNIFIED_LIST, networkEngine, compiler, cosmeticEngine, scriptletEngine, preparedGenerationStore, loadText });
     this.customSource = "";
+    this.scriptletCoverageCache = new Map();
   }
 
   async initialize() {
@@ -43,7 +45,15 @@ export class UnifiedFilterListManager {
   configure(features) { return this.service.configure(features); }
   resolveAutomatic(context) { return this.service.resolveAutomatic(context); }
   getPerformanceDiagnostics() { return this.service.getPerformanceDiagnostics(); }
-  configureCustomSource(source) { this.customSource = String(source ?? ""); }
+  configureCustomSource(source) { this.customSource = String(source ?? ""); this.scriptletCoverageCache.clear(); }
+  async getRelevantScriptletCoverage(hostname) {
+    if (!this.scriptletCoverageCache.has(hostname)) {
+      const sources = (await this.#sources()).map(({ entry, source }) => ({ name: entry.list.title, source }));
+      if (this.customSource.trim()) sources.push({ name: "My Filters", source: this.customSource });
+      this.scriptletCoverageCache.set(hostname, analyzeRelevantScriptletCoverage(sources, { hostname }));
+    }
+    return this.scriptletCoverageCache.get(hostname);
+  }
   async setCustomSource(source) {
     const previous = this.customSource;
     this.customSource = source;
@@ -83,6 +93,7 @@ export class UnifiedFilterListManager {
       await this.service.activatePrepared(staged.prepared);
       await this.#refreshStatuses();
       await this.updater.persist(id, staged);
+      this.scriptletCoverageCache.clear();
       return entry.status;
     } catch (error) {
       entry.source = previous.source;
@@ -93,6 +104,7 @@ export class UnifiedFilterListManager {
   }
 
   async #rebuild() {
+    this.scriptletCoverageCache.clear();
     const sources = await this.#sources();
     if (sources.length === 0 && !this.customSource.trim()) {
       this.service.setEnabled(false);

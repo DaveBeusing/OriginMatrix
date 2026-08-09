@@ -1,9 +1,12 @@
 import { readFile } from "node:fs/promises";
-import { analyzeScriptletUsage } from "../src/diagnostics/scriptlet-usage.js";
-import { EASYLIST } from "../src/filters/filter-list-catalog.js";
+import { analyzeRelevantScriptletCoverage } from "../src/diagnostics/scriptlet-usage.js";
+import { DEFAULT_FILTER_LISTS } from "../src/filters/filter-list-catalog.js";
 
-const source = await readFile(new URL(`../${EASYLIST.path}`, import.meta.url), "utf8");
-const analysis = analyzeScriptletUsage(source, {
-  relevantDomains: ["youtube.com", "youtube-nocookie.com", "youtubei.googleapis.com", "googlevideo.com", "ytimg.com", "googleads.g.doubleclick.net"],
-});
-console.log(JSON.stringify({ filterList: EASYLIST.title, version: EASYLIST.snapshotVersion, ...analysis }, null, 2));
+const hostname = process.argv[2] ?? "youtube.com";
+const sources = await Promise.all(DEFAULT_FILTER_LISTS.map(async (list) => ({
+  name: list.title,
+  version: list.snapshotVersion,
+  source: await readFile(new URL(`../${list.path}`, import.meta.url), "utf8"),
+})));
+const analysis = analyzeRelevantScriptletCoverage(sources, { hostname });
+console.log(JSON.stringify({ filterLists: sources.map(({ name, version }) => ({ name, version })), ...analysis }, null, 2));

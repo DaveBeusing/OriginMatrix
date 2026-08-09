@@ -61,3 +61,28 @@ test("activates My Filters through the shared network and cosmetic generation", 
   const attribution = manager.getSourceState("base").generation.networkAttributions[installed[0].id];
   assert.deepEqual(attribution, [{ source: "My Filters", rule: "||custom-ads.example^" }]);
 });
+
+test("analyzes scriptlets from enabled lists and My Filters only", async () => {
+  const sources = {
+    "first.txt": "youtube.com##+js(set-constant, player.ads, undefined)",
+    "second.txt": "youtube.com##+js(json-prune, adPlacements)",
+  };
+  const manager = new UnifiedFilterListManager({
+    lists: [
+      { id: "first", title: "First", enabled: true, path: "first.txt", snapshotVersion: "1" },
+      { id: "second", title: "Second", enabled: true, path: "second.txt", snapshotVersion: "1" },
+    ],
+    networkEngine: { async getDynamicRules() { return []; }, async replaceFilterRules() {} },
+    compiler: new NetworkFilterCompiler(), cosmeticEngine: new CosmeticEngine(),
+    scriptletEngine: new ScriptletEngine({ api: { executeScript: async () => [] } }),
+    loadText: async (path) => sources[path], settingsStore: { async getAll() { return {}; }, async setEnabled() {} },
+  });
+  manager.configureCustomSource("youtube.com##+js(remove-attr, data-ad)");
+  await manager.initialize();
+  const initial = await manager.getRelevantScriptletCoverage("www.youtube.com");
+  assert.deepEqual(initial.relevant, { total: 3, supported: 1, unsupported: 2, percent: 33.3 });
+  assert.deepEqual(initial.primitives.flatMap(({ sourceLists }) => sourceLists).sort(), ["First", "My Filters", "Second"]);
+  await manager.setEnabled("second", false);
+  const changed = await manager.getRelevantScriptletCoverage("www.youtube.com");
+  assert.deepEqual(changed.relevant, { total: 2, supported: 1, unsupported: 1, percent: 50 });
+});
