@@ -1,4 +1,5 @@
 (() => {
+  if (globalThis.OriginMatrixElementPicker) return;
   let session = null;
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === "ORIGINMATRIX_START_ELEMENT_PICKER") start();
@@ -54,4 +55,5 @@
   function highlight(element) { if (!session || session.highlighted === element) return; if (session.highlighted) session.highlighted.style.outline = session.previousOutline; session.highlighted = element; session.previousOutline = element?.style.outline ?? ""; if (element) element.style.outline = "3px solid #ff4d6d"; }
   function onKey(event) { if (event.key === "Escape") { event.preventDefault(); stop(); } }
   function stop() { if (!session) return; highlight(null); document.removeEventListener("pointermove", session.move, true); document.removeEventListener("click", session.click, true); document.removeEventListener("keydown", session.key, true); session.host.remove(); session = null; }
+  globalThis.OriginMatrixElementPicker = Object.freeze({ start, stop });
 })();

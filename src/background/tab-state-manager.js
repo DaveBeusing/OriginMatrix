@@ -121,8 +121,8 @@ export class TabStateManager {
     });
   }
 
-  recordCosmeticMetrics({ tabId, frameId, elementsHidden, mutations = 0, batches = 0, rootsScanned = 0, scanTimeMs = 0, maxScanTimeMs = 0, contentScriptSetupMs = 0 }) {
-    const counters = { elementsHidden, mutations, batches, rootsScanned };
+  recordCosmeticMetrics({ tabId, frameId, elementsHidden, mutations = 0, batches = 0, rootsScanned = 0, rootEscalations = 0, containmentChecks = 0, fastSelectors = 0, complexSelectors = 0, proceduralBatches = 0, proceduralMutations = 0, proceduralRootsScanned = 0, proceduralNodesEvaluated = 0, scanTimeMs = 0, maxScanTimeMs = 0, contentScriptSetupMs = 0 }) {
+    const counters = { elementsHidden, mutations, batches, rootsScanned, rootEscalations, containmentChecks, fastSelectors, complexSelectors, proceduralBatches, proceduralMutations, proceduralRootsScanned, proceduralNodesEvaluated };
     const timings = { scanTimeMs, maxScanTimeMs, contentScriptSetupMs };
     if (!Number.isInteger(frameId) || frameId < 0
       || Object.values(counters).some((value) => !Number.isInteger(value) || value < 0)
@@ -195,6 +195,14 @@ export class TabStateManager {
       mutationRecordsProcessed: frames.reduce((sum, frame) => sum + frame.mutations, 0),
       mutationBatchesProcessed: frames.reduce((sum, frame) => sum + frame.batches, 0),
       mutationRootsScanned: frames.reduce((sum, frame) => sum + frame.rootsScanned, 0),
+      cosmeticRootEscalations: frames.reduce((sum, frame) => sum + frame.rootEscalations, 0),
+      cosmeticContainmentChecks: frames.reduce((sum, frame) => sum + frame.containmentChecks, 0),
+      cosmeticFastSelectors: frames.reduce((sum, frame) => sum + frame.fastSelectors, 0),
+      cosmeticComplexSelectors: frames.reduce((sum, frame) => sum + frame.complexSelectors, 0),
+      proceduralBatchesProcessed: frames.reduce((sum, frame) => sum + frame.proceduralBatches, 0),
+      proceduralMutationsProcessed: frames.reduce((sum, frame) => sum + frame.proceduralMutations, 0),
+      proceduralRootsScanned: frames.reduce((sum, frame) => sum + frame.proceduralRootsScanned, 0),
+      proceduralNodesEvaluated: frames.reduce((sum, frame) => sum + frame.proceduralNodesEvaluated, 0),
       cosmeticScanTimeMs: round(frames.reduce((sum, frame) => sum + frame.scanTimeMs, 0)),
       maximumCosmeticBatchTimeMs: round(Math.max(0, ...frames.map((frame) => frame.maxScanTimeMs))),
     });
@@ -291,8 +299,9 @@ function createDomainState() {
 }
 
 function normalizeCosmeticFrame(value) {
-  if (Number.isInteger(value)) return { elementsHidden: value, mutations: 0, batches: 0, rootsScanned: 0, scanTimeMs: 0, maxScanTimeMs: 0, contentScriptSetupMs: 0 };
-  return { elementsHidden: 0, mutations: 0, batches: 0, rootsScanned: 0, scanTimeMs: 0, maxScanTimeMs: 0, contentScriptSetupMs: 0, ...(value ?? {}) };
+  const empty = { elementsHidden: 0, mutations: 0, batches: 0, rootsScanned: 0, rootEscalations: 0, containmentChecks: 0, fastSelectors: 0, complexSelectors: 0, proceduralBatches: 0, proceduralMutations: 0, proceduralRootsScanned: 0, proceduralNodesEvaluated: 0, scanTimeMs: 0, maxScanTimeMs: 0, contentScriptSetupMs: 0 };
+  if (Number.isInteger(value)) return { ...empty, elementsHidden: value };
+  return { ...empty, ...(value ?? {}) };
 }
 
 function cumulativeDelta(value, previous) { return value >= previous ? value - previous : value; }

@@ -31,6 +31,7 @@ import { RuleAttributionRegistry } from "./rule-attribution-registry.js";
 import { DnrMatchObserver } from "./dnr-match-observer.js";
 import { assertTrustedMessage } from "./message-security.js";
 import { SpaNavigationLifecycle } from "./spa-navigation-lifecycle.js";
+import { PageToolLoader } from "./page-tool-loader.js";
 
 const compiler = new DnrCompiler();
 const policyStore = new PolicyStore();
@@ -75,6 +76,7 @@ let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
 let siteCoverageCache = { source: null, values: new Map() };
 const executedScriptletPhases = new Set();
+const pageToolLoader = new PageToolLoader();
 const spaNavigationLifecycle = new SpaNavigationLifecycle({
   sendMessage: (tabId, message, options) => chrome.tabs.sendMessage(tabId, message, options),
   onNavigation: async ({ tabId, frameId }) => clearExecutedScriptlets(tabId, frameId),
@@ -244,8 +246,7 @@ async function addCustomFilter(rule) {
 }
 
 async function startElementPicker(tabId) {
-  if (!Number.isInteger(tabId) || tabId < 0) throw new TypeError("Element picker requires a tab ID.");
-  await chrome.tabs.sendMessage(tabId, { type: "ORIGINMATRIX_START_ELEMENT_PICKER" }, { frameId: 0 });
+  await pageToolLoader.startElementPicker(tabId);
   return { ok: true };
 }
 

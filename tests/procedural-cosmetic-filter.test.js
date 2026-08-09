@@ -25,7 +25,7 @@ test("hides literal and nested has-text matches in a bounded batch", () => {
   assert.equal(sponsored.hidden, true);
   assert.equal(organic.hidden, false);
   assert.equal(nested.hidden, true);
-  assert.deepEqual(filter.getMetrics(), { rules: 2, rejectedRules: 0, mutations: 0, batches: 1, nodesEvaluated: 6, elementsHidden: 2 });
+  assert.deepEqual(filter.getMetrics(), { rules: 2, rejectedRules: 0, mutations: 0, batches: 1, rootsScanned: 1, rootEscalations: 0, containmentChecks: 0, nodesEvaluated: 6, elementsHidden: 2 });
 });
 
 test("caps each procedural evaluation batch at 2000 candidate nodes", () => {

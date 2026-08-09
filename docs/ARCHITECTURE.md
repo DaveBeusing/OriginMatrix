@@ -73,13 +73,13 @@ The service worker prepares the cosmetic generation before replacing network rul
 
 ## Dynamic cosmetic filtering
 
-`DynamicCosmeticFilter` observes only child-list changes and class/ID attribute changes. Added or changed element roots are deduplicated, nested roots collapse to their ancestor, mutation storms collapse to the document root, and work is debounced into 50 ms batches. Each batch scans only the bounded site-specific selector subset; global selectors rely on the browser's native CSS engine and are never continuously queried from JavaScript.
+`DynamicCosmeticFilter` prepares and caches selector metadata, separating simple ID, class, tag, attribute, and tag-class fast paths from complex selector groups. Its observer derives the bounded attribute filter from the active selectors and omits attribute observation entirely when no selector can depend on an attribute change. Added or changed roots are deduplicated without per-root array allocation, nested roots collapse to their ancestor, and a configurable 100-root burst threshold escalates work to one document scan. Work remains debounced into 50 ms batches. Each batch scans only the bounded site-specific selector subset; global selectors rely on the browser's native CSS engine.
 
 Validated selectors are cached in bounded groups, and matching elements receive a dedicated hide attribute covered by the injected stylesheet. Metrics track mutation records, batches, scanned roots, hidden elements, cumulative scan time, and worst-batch time. The observer does not evaluate remote code, parse new filters, or perform an unconditional full-DOM scan for every mutation.
 
 ## Procedural cosmetic filtering
 
-`ProceduralCosmeticFilter` is a separate evaluator for the high-value `:has-text(...)` syntax present in the pinned lists. It supports bounded literal matching, restricted regular expressions, and one nested descendant form such as `.card:has(.label:has-text(Sponsored))`. It rejects backreferences, lookarounds, nested quantified groups, unsafe selectors, oversized text arguments, additional procedural operators, and complex trailing expressions.
+`ProceduralCosmeticFilter` is a separate evaluator for the high-value `:has-text(...)` syntax present in the pinned lists. It supports bounded literal matching, restricted regular expressions, and one nested descendant form such as `.card:has(.label:has-text(Sponsored))`. Overlapping ancestor roots are coalesced, bursts escalate at a configurable 50-root limit, and batches use `requestIdleCallback` with a bounded 100 ms timeout and timer fallback; native CSS application remains immediate. It rejects backreferences, lookarounds, nested quantified groups, unsafe selectors, oversized text arguments, additional procedural operators, and complex trailing expressions.
 
 The engine accepts at most 500 applicable rules per document, queues at most 50 mutation roots, walks at most eight ancestors for inserted text, evaluates at most 2,000 candidate elements per 100 ms batch, and reads at most 10,000 text characters per candidate. Native selectors never enter this evaluator. Hostname scoping and procedural exceptions are resolved before plans reach the content script.
 
@@ -93,7 +93,7 @@ Filter attribution metadata follows supported filter models from the combined-li
 
 `CustomFilterStore` persists one versioned local My Filters document. `custom-filter-validator.js` applies source-size, parser, cosmetic-engine, and scriptlet-registry validation before `UnifiedFilterListManager` stages the text as a labelled `My Filters` source. The complete combined generation activates before storage changes; activation or persistence failure restores the previous generation. Unsupported lines remain visible in the editor and are never silently accepted.
 
-The element picker runs as a bundled content script. It uses a closed Shadow DOM control surface, bounded selector depth, stable IDs or data attributes where available, and an explicit preview/save step. It creates only site-scoped cosmetic candidates and never executes page-provided code.
+The element picker is not part of the always-on content-script bundle. `PageToolLoader` injects its bundled selector generator and picker implementation into the top frame only after an explicit popup request. The picker uses a closed Shadow DOM control surface, bounded selector depth, stable IDs or data attributes where available, and an explicit preview/save step. It creates only site-scoped cosmetic candidates and never executes page-provided code.
 
 The existing content script then requests a fresh effective cosmetic plan and runs the EARLY and NORMAL scriptlet phases for that route. A generation counter prevents an older asynchronous cosmetic response from replacing a newer route's plan. Scriptlet execution remains deduplicated within each document, route, and phase while allowing the same applicable bundled scriptlet to be evaluated again after a genuine SPA transition.
 
@@ -247,7 +247,7 @@ Block counters advance only when a request first receives an exact `blocked` Ori
 
 ## Performance diagnostics
 
-The dashboard reports service-worker reconciliation time and message activity, total active DNR rules, filter parsing and compilation durations, prepared-generation cache hits, and cumulative per-frame cosmetic processing metrics. Filter generations are reused only when the source, feature flags, and reserved DNR capacity are identical. Mutation processing remains debounced, scans collapsed DOM roots in batches, and caches validated selector groups.
+The dashboard reports service-worker reconciliation time and message activity, total active DNR rules, filter parsing and compilation durations, prepared-generation cache hits, and cumulative per-frame cosmetic processing metrics. Metrics include prepared fast/complex selectors, containment checks, root escalations, dynamic roots and scan time, and procedural batches, roots, and evaluated nodes. Filter generations are reused only when the source, feature flags, and reserved DNR capacity are identical. Mutation processing remains debounced, scans collapsed DOM roots in batches, and caches validated selector metadata.
 
 Runtime counters live only as long as their service worker or session-backed tab state. JavaScript heap size is shown only where Chromium exposes it; YouTube playback and comparative page-load impact deliberately remain manual browser-profile baselines because an extension cannot isolate those effects reliably from its own runtime.
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OriginMatrix",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "minimum_chrome_version": "121",
   "description": "A granular request firewall for the modern web.",
   "icons": {
@@ -42,8 +42,6 @@
         "https://*/*"
       ],
       "js": [
-        "src/picker/selector-generator.js",
-        "src/picker/element-picker.js",
         "src/cosmetic/cosmetic-injector.js",
         "src/cosmetic/dynamic-cosmetic-filter.js",
         "src/cosmetic/procedural-cosmetic-filter.js",

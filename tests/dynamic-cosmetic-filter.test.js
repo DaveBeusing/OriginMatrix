@@ -66,16 +66,44 @@ test("batches mutations, removes nested roots, and records scan metrics", () => 
 
   assert.equal(child.hasAttribute("data-originmatrix-cosmetic-hidden"), true);
   assert.deepEqual(filter.getMetrics(), {
-    selectors: 2,
+    selectors: 2, fastSelectors: 2, complexSelectors: 0,
     invalidSelectors: 0,
     mutations: 3,
     batches: 2,
     rootsScanned: 2,
+    rootEscalations: 0,
+    containmentChecks: 3,
     elementsHidden: 2,
     scanTimeMs: 4,
     maxScanTimeMs: 2,
   });
   assert.deepEqual(FakeObserver.instance.options.attributeFilter, ["class", "id"]);
+});
+
+test("prepares selector fast paths and observes only required attributes", () => {
+  const callbacks = [];
+  const filter = new DynamicCosmeticFilter({ documentObject: { documentElement: new FakeElement() }, Observer: FakeObserver, schedule(callback) { callbacks.push(callback); return callbacks.length; }, cancel() {} });
+  let metrics = filter.start(["article", ".ad", "main > .sponsor", "[data-ad-slot]"]);
+  assert.equal(metrics.fastSelectors, 3);
+  assert.equal(metrics.complexSelectors, 1);
+  assert.deepEqual(FakeObserver.instance.options.attributeFilter, ["class", "data-ad-slot"]);
+  filter.start(["article", "aside"]);
+  assert.equal("attributes" in FakeObserver.instance.options, false);
+});
+
+test("deduplicates nested roots and escalates a large burst to one document scan", () => {
+  const callbacks = [];
+  const documentElement = new FakeElement();
+  const filter = new DynamicCosmeticFilter({ documentObject: { documentElement }, Observer: FakeObserver, schedule(callback) { callbacks.push(callback); return callbacks.length; }, cancel() {}, maxQueuedRoots: 2 });
+  filter.start([".ad"]); callbacks.shift()();
+  const first = new FakeElement(); const second = new FakeElement(); const third = new FakeElement();
+  documentElement.children.push(first, second, third);
+  filter.enqueue(first); filter.enqueue(first); filter.enqueue(second); filter.enqueue(third);
+  callbacks.shift()();
+  const metrics = filter.getMetrics();
+  assert.equal(metrics.rootEscalations, 1);
+  assert.equal(metrics.rootsScanned, 2);
+  assert.ok(metrics.containmentChecks > 0);
 });
 
 test("caches valid selector groups and excludes invalid selectors", () => {

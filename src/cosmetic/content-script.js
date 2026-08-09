@@ -8,21 +8,36 @@
     const tag = event.target?.tagName?.toLowerCase();
     if (tag === "video" || tag === "audio") reportBreakage("media-error", `media error code ${event.target.error?.code ?? "unknown"}`);
   }, true);
+  let proceduralFilter;
   const dynamicFilter = new globalThis.OriginMatrixDynamicCosmeticFilter({
     documentObject: document,
-    onMetrics: (metrics) => chrome.runtime.sendMessage({
+    onMetrics: reportCosmeticMetrics,
+  });
+  proceduralFilter = new globalThis.OriginMatrixProceduralCosmeticFilter({ documentObject: document, onMetrics: reportCosmeticMetrics });
+
+  function reportCosmeticMetrics() {
+    const metrics = dynamicFilter.getMetrics();
+    const procedural = proceduralFilter?.getMetrics() ?? {};
+    chrome.runtime.sendMessage({
       type: "REPORT_COSMETIC_METRICS",
-      elementsHidden: metrics.elementsHidden,
+      elementsHidden: metrics.elementsHidden + (procedural.elementsHidden ?? 0),
       mutations: metrics.mutations,
       batches: metrics.batches,
       rootsScanned: metrics.rootsScanned,
       scanTimeMs: metrics.scanTimeMs,
       maxScanTimeMs: metrics.maxScanTimeMs,
+      rootEscalations: metrics.rootEscalations,
+      containmentChecks: metrics.containmentChecks,
+      fastSelectors: metrics.fastSelectors,
+      complexSelectors: metrics.complexSelectors,
+      proceduralBatches: procedural.batches ?? 0,
+      proceduralMutations: procedural.mutations ?? 0,
+      proceduralRootsScanned: procedural.rootsScanned ?? 0,
+      proceduralNodesEvaluated: procedural.nodesEvaluated ?? 0,
       contentScriptSetupMs: Math.max(0, performance.now() - contentScriptStarted),
     })
-      .catch((error) => console.warn("OriginMatrix cosmetic metrics unavailable", error)),
-  });
-  const proceduralFilter = new globalThis.OriginMatrixProceduralCosmeticFilter({ documentObject: document });
+      .catch((error) => console.warn("OriginMatrix cosmetic metrics unavailable", error));
+  }
   const earlyScriptlets = evaluate("initial", { cosmetics: true, scriptletPhase: "early" });
   const runNormalScriptlets = () => earlyScriptlets.then(() => {
     if (activeNavigationId === "initial") return runScriptlets("normal", "initial");

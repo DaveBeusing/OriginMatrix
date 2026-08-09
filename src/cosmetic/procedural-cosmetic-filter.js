@@ -6,12 +6,14 @@
   const MAX_ANCESTOR_DEPTH = 8;
 
   class ProceduralCosmeticFilter {
-    constructor({ documentObject = document, Observer = MutationObserver, schedule = (callback, delay) => setTimeout(callback, delay), cancel = (handle) => clearTimeout(handle), debounceMs = 100 } = {}) {
+    constructor({ documentObject = document, Observer = MutationObserver, schedule = defaultSchedule, cancel = defaultCancel, debounceMs = 100, maxQueuedRoots = MAX_ROOTS, onMetrics = () => {} } = {}) {
       this.document = documentObject;
       this.Observer = Observer;
       this.schedule = schedule;
       this.cancel = cancel;
       this.debounceMs = debounceMs;
+      this.maxQueuedRoots = maxQueuedRoots;
+      this.onMetrics = onMetrics;
       this.rules = [];
       this.roots = new Set();
       this.timer = null;
@@ -62,16 +64,23 @@
 
     enqueue(root) {
       if (!root || root.nodeType !== 1) return;
-      if (this.roots.size >= MAX_ROOTS) { this.roots.clear(); this.roots.add(this.document.documentElement); }
-      else this.roots.add(root);
+      if (this.roots.has(this.document.documentElement)) return;
+      if (root === this.document.documentElement || this.roots.size >= this.maxQueuedRoots) { const escalated = root !== this.document.documentElement || this.roots.size > 0; this.roots.clear(); this.roots.add(this.document.documentElement); if (escalated) this.metrics.rootEscalations += 1; }
+      else if (!this.hasQueuedAncestor(root)) {
+        for (const queued of this.roots) { this.metrics.containmentChecks += 1; if (root.contains?.(queued)) this.roots.delete(queued); }
+        this.roots.add(root);
+      }
       if (this.timer === null) this.timer = this.schedule(() => this.flush(), this.debounceMs);
     }
+
+    hasQueuedAncestor(root) { for (const queued of this.roots) { this.metrics.containmentChecks += 1; if (queued.contains?.(root)) return true; } return false; }
 
     flush() {
       this.timer = null;
       let remaining = MAX_NODES_PER_BATCH;
       let hidden = 0;
-      for (const root of this.roots) {
+      const roots = [...this.roots];
+      for (const root of roots) {
         for (const rule of this.rules) {
           if (remaining <= 0) break;
           const candidates = candidatesWithin(root, rule.targetSelector, remaining);
@@ -82,8 +91,10 @@
       }
       this.roots.clear();
       this.metrics.batches += 1;
+      this.metrics.rootsScanned += roots.length;
       this.metrics.nodesEvaluated += MAX_NODES_PER_BATCH - remaining;
       this.metrics.elementsHidden += hidden;
+      this.onMetrics(this.getMetrics());
     }
 
     getMetrics() { return Object.freeze({ ...this.metrics }); }
@@ -125,6 +136,8 @@
     return 1;
   }
 
-  function emptyMetrics() { return { rules: 0, rejectedRules: 0, mutations: 0, batches: 0, nodesEvaluated: 0, elementsHidden: 0 }; }
+  function defaultSchedule(callback, timeout) { return typeof requestIdleCallback === "function" ? requestIdleCallback(callback, { timeout }) : setTimeout(callback, timeout); }
+  function defaultCancel(handle) { if (typeof cancelIdleCallback === "function") cancelIdleCallback(handle); else clearTimeout(handle); }
+  function emptyMetrics() { return { rules: 0, rejectedRules: 0, mutations: 0, batches: 0, rootsScanned: 0, rootEscalations: 0, containmentChecks: 0, nodesEvaluated: 0, elementsHidden: 0 }; }
   globalThis.OriginMatrixProceduralCosmeticFilter = ProceduralCosmeticFilter;
 })();
