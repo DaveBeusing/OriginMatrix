@@ -27,7 +27,8 @@ youtube.com#@#.allowed
   assert.equal(result.unsupportedRules, 1);
   assert.equal(result.supportPercent, 85.7);
   assert.equal(result.capabilities.scriptlets, true);
-  assert.equal(result.capabilities.runtimePlaybackVerification, false);
+  assert.equal(result.capabilities.runtimePlaybackVerification, true);
+  assert.equal(result.capabilities.advertisingTelemetry, true);
   assert.equal(result.samples.length, 1);
 });
 

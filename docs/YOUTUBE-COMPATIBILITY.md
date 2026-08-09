@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.17.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
+Version baseline: OriginMatrix `1.18.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -30,14 +30,17 @@ For the optional signed-in scenario, set `ORIGINMATRIX_YOUTUBE_USER_DATA_DIR` to
 
 Live tests are intentionally skipped unless `ORIGINMATRIX_YOUTUBE_LIVE=1` is set. YouTube, consent flows, regional ad delivery, and test videos are remote and mutable. A skipped or advertisement-free run is not a passing ad-block result.
 
-Ad observations use four explicit outcomes:
+Ad observations use five explicit outcomes:
 
 - `not_observed`: no matching surface appeared; this is not evidence of blocking.
-- `observed_and_blocked`: the surface was found with OriginMatrix's cosmetic marker.
-- `observed_and_visible`: the surface was found and rendered visibly.
+- `observed`: the surface was found but was neither visibly rendered nor attributable as suppressed.
+- `suppressed`: the surface was found with OriginMatrix's cosmetic marker.
+- `visible`: the surface was found and rendered visibly.
 - `unknown`: evidence was incomplete or observation failed.
 
-The JSON reporter writes machine-readable results below `test-results/youtube/`; traces, screenshots, video, and the structured `ad-observations` attachment are retained for failures or analysis.
+The JSON reporter writes machine-readable results below `test-results/youtube/`; traces, screenshots, video, structured `ad-observations`, and per-scenario `youtube-telemetry` attachments are retained for failures or analysis. Telemetry covers homepage, watch, playback, search, channel, playlist, Shorts, SPA navigation, signed-out, and optional dedicated signed-in scenarios. It records playback/page-health assertions alongside content-script setup, cosmetic/procedural work, executed scriptlets, and DNR generation metrics. Missing measurements remain `null`.
+
+Repository automation verifies the classification and aggregation model, but no live observations were produced for this release in the current environment. Advertising effectiveness, playback health, and runtime cost therefore remain `unknown` until an opt-in browser run records evidence. A run with no delivered advertising is `not_reproduced`, never a successful block claim.
 
 ## Relevant filter coverage
 

@@ -7,5 +7,6 @@ test("extension exposes conservative YouTube diagnostics", async ({ context }) =
   const response = await worker.evaluate(() => chrome.runtime.sendMessage({ type: "GET_YOUTUBE_DIAGNOSTICS" }));
   expect(response.ok).toBe(true);
   expect(response.diagnostics.relevantRules).toBeGreaterThan(0);
-  expect(response.diagnostics.capabilities.runtimePlaybackVerification).toBe(false);
+  expect(response.diagnostics.capabilities.runtimePlaybackVerification).toBe(true);
+  expect(response.diagnostics.capabilities.advertisingTelemetry).toBe(true);
 });

@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
-import { test, openYouTube, WATCH_URL } from "./fixture.js";
+import { attachYouTubeTelemetry, test, openYouTube, WATCH_URL } from "./fixture.js";
 
-test("client-side video navigation changes the watch route without reloading", async ({ context }) => {
+test("client-side video navigation changes the watch route without reloading", async ({ context }, testInfo) => {
   const { page } = await openYouTube(context, WATCH_URL);
   await expect(page.locator("video")).toBeAttached();
   const initialUrl = page.url();
@@ -19,4 +19,5 @@ test("client-side video navigation changes the watch route without reloading", a
   }, page.url());
   expect(state.ok).toBe(true);
   expect(state.observation?.topUrl).toBe(page.url());
+  await attachYouTubeTelemetry(context, testInfo, { scenario: "spa-navigation", playback: { routeChanged: page.url() !== initialUrl, videoAvailable: true, extensionStateUpdated: state.observation?.topUrl === page.url() } });
 });

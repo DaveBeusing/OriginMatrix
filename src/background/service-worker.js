@@ -74,6 +74,7 @@ const advancedPolicyManager = new AdvancedPolicyManager({
 const ruleOptimizer = new RuleOptimizer();
 const workerStartedAt = performance.now();
 let workerMessagesHandled = 0;
+let scriptletsExecuted = 0;
 let startupTimeMs = null;
 let policyOperations = Promise.resolve();
 let youtubeDiagnosticsPromise = null;
@@ -276,6 +277,7 @@ async function getDashboardState() {
       startupTimeMs: startupTimeMs ?? "measuring",
       serviceWorkerWakeups: 1,
       serviceWorkerMessages: workerMessagesHandled,
+      scriptletsExecuted,
       serviceWorkerUptimeMs: roundPerformance(performance.now() - workerStartedAt),
       dnrRuleCount: network.dynamicRules.length + network.sessionRules.length + network.availableStaticRules,
       memoryUsage: performance.memory?.usedJSHeapSize ?? "unavailable",
@@ -381,6 +383,7 @@ async function runScriptletsForSender(sender, phase, navigationId = "initial") {
     tabId: sender.tab.id,
     frameIds: [sender.frameId],
   });
+  scriptletsExecuted += result.executed;
   executedScriptletPhases.add(executionKey);
   if (generation.invocations.length) await tabStateManager.recordProtectionAction({
     tabId: sender.tab.id, frameId: sender.frameId, type: "scriptlet", source: `${phase} scriptlet phase`,

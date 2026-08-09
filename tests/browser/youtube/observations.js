@@ -1,16 +1,19 @@
-export const OBSERVATION_STATUS = Object.freeze({
-  NOT_OBSERVED: "not_observed",
-  OBSERVED_BLOCKED: "observed_and_blocked",
-  OBSERVED_VISIBLE: "observed_and_visible",
-  UNKNOWN: "unknown",
-});
+import { classifyYouTubeAdEvidence, YOUTUBE_EVIDENCE } from "../../../src/diagnostics/youtube-telemetry.js";
 
-export function classifyAdObservation({ detected, visible, originMatrixHidden, error = null }) {
-  if (error || typeof detected !== "boolean") return OBSERVATION_STATUS.UNKNOWN;
-  if (!detected) return OBSERVATION_STATUS.NOT_OBSERVED;
-  if (originMatrixHidden === true) return OBSERVATION_STATUS.OBSERVED_BLOCKED;
-  if (visible === true) return OBSERVATION_STATUS.OBSERVED_VISIBLE;
-  return OBSERVATION_STATUS.UNKNOWN;
+export const OBSERVATION_STATUS = YOUTUBE_EVIDENCE;
+export const classifyAdObservation = classifyYouTubeAdEvidence;
+
+export const YOUTUBE_AD_SURFACES = Object.freeze([
+  Object.freeze({ name: "promoted-feed", selectors: Object.freeze(["ytd-promoted-video-renderer", "ytd-ad-slot-renderer"]) }),
+  Object.freeze({ name: "promoted-shorts", selectors: Object.freeze(["ytd-reel-item-renderer:has([aria-label*='Ad'])"]) }),
+  Object.freeze({ name: "sidebar-display", selectors: Object.freeze(["#player-ads", "ytd-action-companion-ad-renderer"]) }),
+  Object.freeze({ name: "player-ad-state", selectors: Object.freeze([".ad-showing", ".ytp-ad-player-overlay", ".ytp-ad-preview-container"]) }),
+  Object.freeze({ name: "player-ad-indicators", selectors: Object.freeze([".ytp-ad-text", ".ytp-ad-simple-ad-badge"]) }),
+  Object.freeze({ name: "skip-ad-controls", selectors: Object.freeze([".ytp-ad-skip-button", ".ytp-skip-ad-button"]) }),
+]);
+
+export function observeYouTubeAdSurfaces(page) {
+  return Promise.all(YOUTUBE_AD_SURFACES.map(({ name, selectors }) => observeAdSurface(page, name, selectors)));
 }
 
 export async function observeAdSurface(page, name, selectors) {

@@ -60,7 +60,7 @@ export function analyzeYouTubeCompatibility(source, { listVersion = "unknown" } 
     supportPercent: counts.relevantRules === 0 ? 0 : Math.round((supportedRules / counts.relevantRules) * 1_000) / 10,
     unsupportedReasons: Object.freeze(Object.fromEntries([...reasons].sort(([left], [right]) => left.localeCompare(right)))),
     samples: Object.freeze(samples),
-    capabilities: Object.freeze({ network: true, cosmetic: true, proceduralCosmetic: true, genericHideExceptions: true, scriptlets: true, runtimePlaybackVerification: false }),
+    capabilities: Object.freeze({ network: true, cosmetic: true, proceduralCosmetic: true, genericHideExceptions: true, scriptlets: true, runtimePlaybackVerification: true, advertisingTelemetry: true }),
   });
 }
 

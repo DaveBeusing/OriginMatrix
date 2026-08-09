@@ -269,7 +269,9 @@ The Phase 21 release gate combines the complete browser-independent test suite w
 
 ## Browser-driven YouTube acceptance
 
-The opt-in Playwright suite launches a clean persistent Chromium context with OriginMatrix loaded unpacked. Independent scenarios cover homepage health, watch-page controls and comments, actual media pause/play/seek behavior, client-side watch-route changes, extension diagnostics, and structured ad-surface observations. Live execution is gated by `ORIGINMATRIX_YOUTUBE_LIVE=1`, serialized to one worker, and retains diagnostic artifacts. Observation classification distinguishes absent, OriginMatrix-marked hidden, visible, and unknown evidence; absence is never promoted to a successful block.
+The opt-in Playwright suite launches a clean persistent Chromium context with OriginMatrix loaded unpacked. Independent scenarios cover homepage, watch, search, channel, playlist, Shorts, signed-out and optional dedicated signed-in health; watch-page controls and comments; actual media pause/play/seek behavior; client-side watch-route changes; extension diagnostics; and structured ad-surface observations. Live execution is gated by `ORIGINMATRIX_YOUTUBE_LIVE=1`, serialized to one worker, and retains diagnostic artifacts.
+
+Each scenario attaches a normalized telemetry document. Advertising evidence distinguishes `not_observed`, `observed`, `suppressed`, `visible`, and `unknown`; only an OriginMatrix cosmetic marker can classify a detected surface as suppressed, while absence is never promoted to blocking. Playback health records only asserted booleans for the scenario. The performance snapshot allowlists content-script setup, cosmetic mutations/batches/roots/timing, procedural batches/nodes, executed scriptlets, and DNR generation changes; unavailable values remain `null`. Session aggregation reports tested sessions, observed/suppressed/visible/unknown ad states, playback failures, SPA failures, and major page-health regressions without synthesizing observations.
 
 ## Site-specific filter coverage
 

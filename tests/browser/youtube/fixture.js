@@ -2,6 +2,7 @@ import { test as base, chromium } from "@playwright/test";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { summarizeYouTubeTelemetry } from "../../../src/diagnostics/youtube-telemetry.js";
 
 const extensionPath = resolve(import.meta.dirname, "../../..");
 
@@ -38,4 +39,20 @@ export async function openYouTube(context, path = "/") {
 export function majorErrors(consoleErrors, pageErrors) {
   const ignored = /favicon|ERR_BLOCKED_BY_CLIENT|net::ERR_FAILED|Failed to load resource/i;
   return [...consoleErrors, ...pageErrors].filter((message) => !ignored.test(message));
+}
+
+export async function attachYouTubeTelemetry(context, testInfo, { scenario, observations = [], playback = {} }) {
+  let worker = context.serviceWorkers()[0];
+  if (!worker) worker = await context.waitForEvent("serviceworker");
+  const response = await worker.evaluate(() => chrome.runtime.sendMessage({ type: "GET_DASHBOARD_STATE" }));
+  if (!response?.ok) throw new Error(response?.error ?? "OriginMatrix telemetry is unavailable.");
+  const telemetry = summarizeYouTubeTelemetry({
+    scenario,
+    accountState: SIGNED_IN_PROFILE ? "signed_in" : "signed_out",
+    observations,
+    playback,
+    performance: { ...response.performance, ...response.statistics, ...response.diagnostics },
+  });
+  await testInfo.attach("youtube-telemetry", { body: JSON.stringify(telemetry, null, 2), contentType: "application/json" });
+  return telemetry;
 }
