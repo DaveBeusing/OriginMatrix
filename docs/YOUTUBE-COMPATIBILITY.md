@@ -1,6 +1,6 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.3.0`, EasyList snapshot `202608081115`.
+Version baseline: OriginMatrix `1.4.0`, EasyList snapshot `202608081115`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
 
@@ -38,6 +38,8 @@ The JSON reporter writes machine-readable results below `test-results/youtube/`;
 ## Relevant filter coverage
 
 The dashboard accepts a hostname such as `youtube.com` and evaluates only filter lines that explicitly reference that hostname, a parent domain, or a subdomain. Supported rules pass both the common filter parser and their destination engine's validation: cosmetic rules pass `CosmeticParser`, and scriptlets must resolve through `ScriptletRegistry`. Results show Network, Cosmetic, Scriptlet, and total coverage with the exact unsupported line, reason, and filter-list source. Coverage measures implementation support only; it does not prove runtime blocking or playback compatibility.
+
+The Phase 4 inventory finds no scriptlet references in the pinned EasyList snapshot, including the YouTube-related subset. No new MAIN-world primitive is therefore activated without filter evidence. See [Scriptlet coverage](SCRIPTLET-COVERAGE.md).
 
 ## Working
 

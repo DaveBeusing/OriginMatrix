@@ -4,7 +4,7 @@
   <img src="icons/icon128.png" width="96" height="96" alt="OriginMatrix icon">
 </p>
 
-OriginMatrix 1.3.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
+OriginMatrix 1.4.0 is a release-candidate implementation of a granular request firewall for Chromium-based browsers. Its matrix interface shows which domains a site contacts and lets users allow, block, or inherit policies by destination and resource type. The automated release gate passes independently of the live cross-browser acceptance matrix; pending live results are documented rather than presented as verified compatibility.
 
 OriginMatrix is an independent Manifest V3 project—not a port or visual copy of uMatrix. Logical policies are the source of truth and are compiled into Chrome `declarativeNetRequest` rules.
 
@@ -27,6 +27,7 @@ OriginMatrix is an independent Manifest V3 project—not a port or visual copy o
 - Native relational cosmetic selectors and scoped hiding exceptions for modern sites
 - Selected domain-scoped scriptlet-filter parsing with allowlisted MAIN-world execution
 - Deterministic EARLY and NORMAL scriptlet phases with per-document execution deduplication
+- Data-driven scriptlet usage inventory that gates MAIN-world library expansion on active filter demand
 - Matrix cells distinguish automatic filter decisions from user Allow/Block overrides
 - Matrix columns for ALL, COOKIE, CSS, IMAGE, MEDIA, SCRIPT, XHR, FRAME, FONT, WEBSOCKET, and OTHER
 - GLOBAL, site-wide, first-party, third-party, and observed-domain rows
@@ -76,6 +77,7 @@ See [Architecture](docs/ARCHITECTURE.md) for the policy model, resolution hierar
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Security](docs/SECURITY.md)
+- [Scriptlet coverage](docs/SCRIPTLET-COVERAGE.md)
 - [Release-candidate checklist](docs/RELEASE-CANDIDATE.md)
 - [YouTube compatibility](docs/YOUTUBE-COMPATIBILITY.md)
 - [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
@@ -185,7 +187,7 @@ The reviewed trust boundaries, resource limits, and permission rationale are doc
 
 ## Release status
 
-Version 1.3.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
+Version 1.4.0 is prepared as a release candidate. Repository tests and static release validation are automated; browser and live-site rows remain explicitly unverified until recorded with evidence in the [release-candidate checklist](docs/RELEASE-CANDIDATE.md).
 
 ## License
 
