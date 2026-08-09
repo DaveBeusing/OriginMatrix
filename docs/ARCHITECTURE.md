@@ -27,7 +27,7 @@ Future filters ──────┘      ├── StaticRuleManager
                             └── RuleBudget
 ```
 
-`DynamicRuleManager` and `SessionRuleManager` validate IDs and rule counts before installation, support targeted install/removal, and replace complete generations with one corresponding Chrome update call. `StaticRuleManager` manages enabled rulesets and available-static-rule accounting. The manifest enables the bundled `base-network` ruleset automatically.
+`DynamicRuleManager` and `SessionRuleManager` validate IDs and rule counts before installation and support targeted install/removal. Dynamic Matrix and filter generations use a deterministic range-scoped diff: removed IDs are deleted, changed IDs are atomically replaced, added rules are installed, and unchanged rules never enter the Chrome update payload. Identical generations skip the DNR API call entirely. `StaticRuleManager` manages enabled rulesets and available-static-rule accounting. The manifest enables the bundled `base-network` ruleset automatically.
 
 ## Bundled static network filtering
 
@@ -45,7 +45,7 @@ Parser diagnostics expose total, parsed, supported, unsupported, and ignored rul
 
 `NetworkFilterCompiler` is separate from the Matrix `DnrCompiler`. It translates normalized network blocks and exceptions into standard DNR rules accepted by the shared Network Engine, while non-network models remain untouched for later engines. Exact host filters are safely aggregated through `requestDomains`; other URL patterns remain independent. Duplicate models are removed before compilation.
 
-Filter rules occupy dynamic IDs `500000–899999`, between persistent Matrix IDs and session IDs. Automatic blocks use priority `10000`, filter exceptions use `20000`, and Matrix priorities begin at `100000000`. This makes filter conflicts deterministic while preserving explicit Matrix overrides. The compiler accounts for already-reserved Matrix rules before accepting a generation against the shared dynamic budget. Range-scoped replacement in `DynamicRuleManager` lets Matrix and filter generations update independently without deleting one another.
+Filter rules occupy dynamic IDs `500000–899999`, between persistent Matrix IDs and session IDs. Automatic blocks use priority `10000`, filter exceptions use `20000`, and Matrix priorities begin at `100000000`. This makes filter conflicts deterministic while preserving explicit Matrix overrides. The compiler accounts for already-reserved Matrix rules before accepting a generation against the shared dynamic budget. Range-scoped diffing in `DynamicRuleManager` lets Matrix and filter generations update independently without deleting or rewriting one another.
 
 ## Automatic filters and Matrix overrides
 
@@ -57,7 +57,7 @@ Phase 13 defines the product semantics independently of incidental DNR ordering:
 
 OriginMatrix ships unmodified, version- and hash-pinned EasyList and EasyPrivacy snapshots. Bundled snapshots make advertising and tracking protection available offline and keep releases reproducible. Both lists are filter data only and are parsed locally; they never become executable code.
 
-At service-worker reconciliation, `UnifiedFilterListManager` loads every enabled source and passes their combined data through one `FilterListService`. Network filters are therefore deduplicated and budgeted before one atomic DNR replacement, while cosmetic filters, scriptlets, and automatic Matrix attribution use the same combined generation. The dashboard retains independent enable, update, version, checksum, and rule-count state for each source.
+At service-worker reconciliation, `UnifiedFilterListManager` loads every enabled source and passes their combined data through one `FilterListService`. Network filters are deduplicated and budgeted before one incremental atomic DNR update, while cosmetic filters, scriptlets, and automatic Matrix attribution use the same combined generation. The dashboard retains independent enable, update, version, checksum, and rule-count state for each source.
 
 The versioned `FilterListSettingsStore` keeps EasyList and EasyPrivacy enabled by default across service-worker restarts. Toggling either list rebuilds the unified candidate from the remaining enabled sources. State is persisted only after successful activation, and a failed toggle restores the previous combined generation.
 
@@ -143,7 +143,7 @@ The compiler accepts validated logical policies and emits block or allow rules. 
 
 `RuleIdManager` hashes canonical policy IDs into reserved persistent (`100000–499999`) and session (`900000–999999`) ranges. It sorts inputs and resolves collisions deterministically. The mapping is stored as derived diagnostic metadata, never as the policy source of truth.
 
-Compiler errors occur before browser rule replacement. Chrome removes the previous generation and adds the new generation in one atomic DNR update.
+Compiler and budget errors occur before browser updates. The manager compares canonical object-key signatures once per old and new rule, then sends only removed, changed, and added rules in one atomic DNR update. Unchanged rules remain installed.
 
 DNR priorities encode the specificity band plus the same canonical-ID tie-breaker. This prevents Chrome's action-type tie rules from producing a different winner than `PolicyResolver` when two overlapping policies have equal specificity.
 
@@ -247,7 +247,7 @@ Block counters advance only when a request first receives an exact `blocked` Ori
 
 ## Performance diagnostics
 
-The dashboard reports service-worker reconciliation time and message activity, total active DNR rules, filter parsing and compilation durations, prepared-generation cache hits, and cumulative per-frame cosmetic processing metrics. Metrics include prepared fast/complex selectors, containment checks, root escalations, dynamic roots and scan time, and procedural batches, roots, and evaluated nodes. Filter generations are reused only when the source, feature flags, and reserved DNR capacity are identical. Mutation processing remains debounced, scans collapsed DOM roots in batches, and caches validated selector metadata.
+The dashboard reports service-worker reconciliation time and message activity, total active DNR rules, the latest DNR generation diff and skipped/update call counts, filter parsing and compilation durations, prepared-generation cache hits, and cumulative per-frame cosmetic processing metrics. DNR metrics separate previous, next, added, removed, changed, and unchanged rules. Cosmetic metrics include prepared fast/complex selectors, containment checks, root escalations, dynamic roots and scan time, and procedural batches, roots, and evaluated nodes. Filter generations are reused only when the source, feature flags, and reserved DNR capacity are identical. Mutation processing remains debounced, scans collapsed DOM roots in batches, and caches validated selector metadata.
 
 Runtime counters live only as long as their service worker or session-backed tab state. JavaScript heap size is shown only where Chromium exposes it; YouTube playback and comparative page-load impact deliberately remain manual browser-profile baselines because an extension cannot isolate those effects reliably from its own runtime.
 

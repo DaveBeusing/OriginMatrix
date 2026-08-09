@@ -41,6 +41,7 @@ export class NetworkEngine {
       sessionRules,
       enabledStaticRulesets,
       availableStaticRules,
+      dnrGeneration: this.dynamic.getDiagnostics(),
       budget: this.budget.account({ dynamic: dynamicRules.length, session: sessionRules.length }),
     };
   }
