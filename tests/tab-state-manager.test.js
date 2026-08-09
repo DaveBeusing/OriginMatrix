@@ -45,6 +45,18 @@ test("maps advanced and unknown webRequest types", () => {
   assert.equal(normalizeResourceType("main_frame"), "other");
 });
 
+test("retains bounded breakage context across SPA navigation only", async () => {
+  const manager = new TabStateManager(memoryStorage());
+  await manager.startNavigation({ tabId: 9, url: "https://example.com/" });
+  for (let index = 0; index < 55; index += 1) await manager.recordBreakageSignal({ tabId: 9, frameId: 0, type: "spa-navigation", timestamp: index });
+  await manager.recordProtectionAction({ tabId: 9, frameId: 0, type: "cosmetic", source: "plan", details: ".ad" });
+  await manager.startNavigation({ tabId: 9, url: "https://example.com/next", preserveDiagnostics: true });
+  assert.equal((await manager.get(9)).breakageSignals.length, 50);
+  assert.equal((await manager.get(9)).protectionActions.length, 1);
+  await manager.startNavigation({ tabId: 9, url: "https://other.test/" });
+  assert.deepEqual((await manager.get(9)).breakageSignals, []);
+});
+
 test("persists reload-required until the next navigation", async () => {
   const manager = new TabStateManager(memoryStorage());
   await manager.setReloadRequired({ tabId: 11, required: true, topUrl: "https://example.com/" });

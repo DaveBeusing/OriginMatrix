@@ -21,6 +21,7 @@ import { NetworkFilterCompiler } from "../filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../cosmetic/cosmetic-engine.js";
 import { analyzeYouTubeCompatibility } from "../diagnostics/youtube-compatibility.js";
 import { analyzeSiteFilterCoverage } from "../diagnostics/site-filter-coverage.js";
+import { analyzeBreakage } from "../diagnostics/breakage-diagnostics.js";
 import { ScriptletEngine } from "../scriptlets/scriptlet-engine.js";
 import { SCRIPTLET_PHASE } from "../scriptlets/scriptlet-registry.js";
 import { profileDefinition } from "../engine/profiles.js";
@@ -76,7 +77,12 @@ const spaNavigationLifecycle = new SpaNavigationLifecycle({
   onNavigation: async ({ tabId, frameId }) => clearExecutedScriptlets(tabId, frameId),
   onTopFrameNavigation: async ({ tabId, url, timeStamp }) => {
     clearExecutedScriptlets(tabId);
-    await tabStateManager.startNavigation({ tabId, url, timestamp: timeStamp });
+    await tabStateManager.startNavigation({ tabId, url, timestamp: timeStamp, preserveDiagnostics: true });
+    await tabStateManager.recordBreakageSignal({ tabId, frameId: 0, type: "spa-navigation", timestamp: timeStamp });
+  },
+  onError: (error, navigation) => {
+    console.warn("OriginMatrix SPA navigation update failed", error);
+    if (navigation) tabStateManager.recordBreakageSignal({ tabId: navigation.tabId, frameId: navigation.frameId, type: "spa-delivery-failed", details: error.message, timestamp: Date.now() }).catch(console.error);
   },
 });
 const requestObserver = new RequestObserver({
@@ -132,9 +138,11 @@ async function handleMessage(message, sender) {
     case "RECOMPILE_RULES": return enqueuePolicyOperation(recompileWithResult);
     case "CLEAR_SESSION_RULES": return enqueuePolicyOperation(clearSessionRules);
     case "GET_REQUEST_LOG": return getRequestLog(message.tabId);
-    case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname));
+    case "GET_COSMETIC_SELECTORS": return startupReconciliation.then(() => getCosmeticSelectors(message.hostname, sender));
     case "RUN_SCRIPTLETS": return startupReconciliation.then(() => runScriptletsForSender(sender, message.phase, message.navigationId));
     case "REPORT_COSMETIC_METRICS": return reportCosmeticMetrics(message, sender);
+    case "REPORT_BREAKAGE_SIGNAL": return reportBreakageSignal(message, sender);
+    case "GET_BREAKAGE_DIAGNOSTICS": return Promise.all([policyOperations, startupReconciliation]).then(() => getBreakageDiagnostics(message.tabId));
     case "GET_YOUTUBE_DIAGNOSTICS": return getYouTubeDiagnostics();
     case "GET_SITE_FILTER_COVERAGE": return startupReconciliation.then(() => getSiteFilterCoverage(message.hostname));
     case "EXPORT_DEBUG_REPORT": return policyOperations.then(exportDebugReport);
@@ -300,9 +308,14 @@ async function getRequestLog(tabId) {
   return { ok: true, tabId, topDomain: state?.topDomain ?? null, attributionAvailable: dnrMatchObserver.available, entries: state?.requestLog ?? [] };
 }
 
-function getCosmeticSelectors(hostname) {
+async function getCosmeticSelectors(hostname, sender) {
   const plan = cosmeticEngine.getSelectorPlan(hostname);
-  return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors, proceduralFilters: cosmeticEngine.getProceduralFilters(hostname) };
+  const proceduralFilters = cosmeticEngine.getProceduralFilters(hostname);
+  if (Number.isInteger(sender?.tab?.id) && Number.isInteger(sender?.frameId)) {
+    const samples = [...plan.nativeSelectors, ...plan.dynamicSelectors, ...proceduralFilters.map((item) => item.targetSelector)].slice(0, 5);
+    if (samples.length) await tabStateManager.recordProtectionAction({ tabId: sender.tab.id, frameId: sender.frameId, type: "cosmetic", source: "active cosmetic filter plan", details: samples.join(", ") });
+  }
+  return { ok: true, selectors: plan.nativeSelectors, dynamicSelectors: plan.dynamicSelectors, proceduralFilters };
 }
 
 async function runScriptletsForSender(sender, phase, navigationId = "initial") {
@@ -314,11 +327,16 @@ async function runScriptletsForSender(sender, phase, navigationId = "initial") {
   const executionKey = `${sender.tab.id}:${sender.frameId}:${sender.documentId}:${navigationId}:${phase}`;
   if (executedScriptletPhases.has(executionKey)) return { ok: true, executed: 0, duplicate: true, phase };
   const hostname = hostnameFromUrl(sender.url);
-  const result = await scriptletEngine.execute(scriptletEngine.prepareForHostname(hostname, { phase }), {
+  const generation = scriptletEngine.prepareForHostname(hostname, { phase });
+  const result = await scriptletEngine.execute(generation, {
     tabId: sender.tab.id,
     frameIds: [sender.frameId],
   });
   executedScriptletPhases.add(executionKey);
+  if (generation.invocations.length) await tabStateManager.recordProtectionAction({
+    tabId: sender.tab.id, frameId: sender.frameId, type: "scriptlet", source: `${phase} scriptlet phase`,
+    details: generation.invocations.map((item) => item.name).join(", "),
+  });
   return { ok: true, executed: result.executed, duplicate: false, phase };
 }
 
@@ -333,6 +351,20 @@ async function reportCosmeticMetrics(message, sender) {
   }
   await tabStateManager.recordCosmeticMetrics({ tabId: sender.tab.id, frameId: sender.frameId, ...message });
   return { ok: true };
+}
+
+async function reportBreakageSignal(message, sender) {
+  if (!Number.isInteger(sender?.tab?.id) || !Number.isInteger(sender?.frameId) || sender.frameId < 0) throw new TypeError("Breakage signals require a tab frame sender.");
+  await tabStateManager.recordBreakageSignal({ tabId: sender.tab.id, frameId: sender.frameId, type: message.signalType, details: message.details });
+  return { ok: true };
+}
+
+async function getBreakageDiagnostics(tabId) {
+  if (!Number.isInteger(tabId) || tabId < 0) throw new TypeError("Breakage diagnostics require a tab ID.");
+  const [state, persistent, temporary] = await Promise.all([tabStateManager.get(tabId), policyStore.getPersistentPolicies(), policyStore.getTemporaryPolicies()]);
+  const topDomain = state?.topDomain;
+  const relevant = [...persistent.filter((policy) => topDomain && [topDomain, "*"].includes(policy.scope)), ...temporary.filter((policy) => policy.tabId === tabId)];
+  return { ok: true, tabId, topDomain: topDomain ?? null, diagnostics: analyzeBreakage({ state, matrixOverrides: relevant }) };
 }
 
 function roundPerformance(value) { return Math.round(value * 100) / 100; }
@@ -361,6 +393,9 @@ async function getSiteFilterCoverage(hostname) {
 
 async function exportDebugReport() {
   const state = await getDashboardState();
+  const tabs = await chrome.tabs.query({});
+  const observed = tabs.find((tab) => Number.isInteger(tab.id) && /^https?:/.test(tab.url ?? ""));
+  const breakage = observed ? (await getBreakageDiagnostics(observed.id)).diagnostics : null;
   return {
     ok: true,
     report: {
@@ -371,6 +406,7 @@ async function exportDebugReport() {
       diagnostics: state.diagnostics,
       performance: state.performance,
       policies: state.policies,
+      breakage,
     },
   };
 }

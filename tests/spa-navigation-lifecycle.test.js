@@ -60,3 +60,14 @@ test("ignores unsupported URLs and does not reset top-frame state for subframes"
   assert.equal(topFrameNavigations, 0);
   assert.deepEqual(messages[0][2], { frameId: 3 });
 });
+
+test("reports failed SPA delivery with navigation context", async () => {
+  const scheduled = [];
+  let failure;
+  const lifecycle = new SpaNavigationLifecycle({ sendMessage: async () => { throw new Error("receiver unavailable"); }, onError: (error, navigation) => { failure = { error, navigation }; }, schedule(callback) { scheduled.push(callback); return scheduled.length; } });
+  lifecycle.handle({ tabId: 7, frameId: 0, url: "https://example.com/next", timeStamp: 5 });
+  await scheduled[0]();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.match(failure.error.message, /receiver unavailable/);
+  assert.equal(failure.navigation.tabId, 7);
+});

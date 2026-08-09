@@ -87,6 +87,8 @@ The engine accepts at most 500 applicable rules per document, queues at most 50 
 
 `SpaNavigationLifecycle` consumes Chromium's `webNavigation.onHistoryStateUpdated` and `onReferenceFragmentUpdated` events instead of modifying page History APIs. Events are debounced per tab and frame for 75 ms, so rapid route transitions produce one evaluation of the final URL. The service worker resets top-frame session diagnostics and site state, clears per-frame scriptlet execution keys, and sends a bounded navigation token to the affected content-script frame.
 
+`breakage-diagnostics.js` evaluates bounded, session-only tab signals for media that never becomes playable, repeated player errors, navigation loops, exception bursts, and failed SPA delivery. It correlates warnings with recent attributable network matches, cosmetic plans, executed scriptlets, and applicable Matrix overrides. The dashboard presents evidence for manual review; diagnostics never change or disable a rule.
+
 The existing content script then requests a fresh effective cosmetic plan and runs the EARLY and NORMAL scriptlet phases for that route. A generation counter prevents an older asynchronous cosmetic response from replacing a newer route's plan. Scriptlet execution remains deduplicated within each document, route, and phase while allowing the same applicable bundled scriptlet to be evaluated again after a genuine SPA transition.
 
 ## YouTube compatibility diagnostics

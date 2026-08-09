@@ -56,7 +56,7 @@ export class SpaNavigationLifecycle {
         navigationId: navigation.navigationId,
       }, { frameId: navigation.frameId });
     } catch (error) {
-      this.onError(error);
+      this.onError(error, navigation);
     }
   }
 }

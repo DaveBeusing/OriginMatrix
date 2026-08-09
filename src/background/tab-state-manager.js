@@ -1,6 +1,7 @@
 const TAB_STATE_KEY = "tabStateDocument";
 const TAB_STATE_SCHEMA_VERSION = 1;
 const MAX_LOG_ENTRIES = 250;
+const MAX_DIAGNOSTIC_ENTRIES = 50;
 
 export class TabStateManager {
   constructor(storageArea = chrome.storage.session) {
@@ -14,11 +15,28 @@ export class TabStateManager {
     return document.tabs[String(tabId)] ?? null;
   }
 
-  startNavigation({ tabId, url, timestamp = Date.now() }) {
+  startNavigation({ tabId, url, timestamp = Date.now(), preserveDiagnostics = false }) {
     return this.#mutate((document) => {
       const topDomain = hostnameFromUrl(url);
-      document.tabs[String(tabId)] = createTabState(tabId, url, topDomain, timestamp);
+      const previous = document.tabs[String(tabId)];
+      const state = createTabState(tabId, url, topDomain, timestamp);
+      if (preserveDiagnostics && previous) {
+        state.breakageSignals = previous.breakageSignals ?? [];
+        state.protectionActions = previous.protectionActions ?? [];
+      }
+      document.tabs[String(tabId)] = state;
     });
+  }
+
+  recordBreakageSignal({ tabId, frameId, type, details = "", timestamp = Date.now() }) {
+    const supported = new Set(["media-not-playable", "media-error", "spa-navigation", "spa-delivery-failed"]);
+    if (!supported.has(type) || !Number.isInteger(frameId) || frameId < 0) throw new TypeError("Invalid breakage diagnostic signal.");
+    return this.#appendDiagnostic(tabId, "breakageSignals", { type, frameId, details: boundedText(details), timestamp });
+  }
+
+  recordProtectionAction({ tabId, frameId, type, source, details = "", timestamp = Date.now() }) {
+    if (!["cosmetic", "scriptlet"].includes(type) || !Number.isInteger(frameId) || frameId < 0 || typeof source !== "string") throw new TypeError("Invalid protection diagnostic action.");
+    return this.#appendDiagnostic(tabId, "protectionActions", { type, frameId, source: boundedText(source), details: boundedText(details), timestamp });
   }
 
   recordRequest({ tabId, requestId, url, type, topUrl, timestamp = Date.now() }) {
@@ -214,8 +232,21 @@ export class TabStateManager {
       if (!Number.isInteger(state.blockedTrackers)) state.blockedTrackers = 0;
       if (!Number.isInteger(state.cosmeticElementsHidden)) state.cosmeticElementsHidden = 0;
       if (!state.cosmeticFrames || typeof state.cosmeticFrames !== "object") state.cosmeticFrames = {};
+      if (!Array.isArray(state.breakageSignals)) state.breakageSignals = [];
+      if (!Array.isArray(state.protectionActions)) state.protectionActions = [];
     }
     return document;
+  }
+
+  #appendDiagnostic(tabId, property, entry) {
+    return this.#mutate((document) => {
+      const state = document.tabs[String(tabId)];
+      if (!state) return false;
+      state[property].push(entry);
+      if (state[property].length > MAX_DIAGNOSTIC_ENTRIES) state[property].splice(0, state[property].length - MAX_DIAGNOSTIC_ENTRIES);
+      state.updatedAt = entry.timestamp;
+      return true;
+    });
   }
 }
 
@@ -239,11 +270,15 @@ function createTabState(tabId, topUrl, topDomain, timestamp) {
     cosmeticFrames: {},
     reloadRequired: false,
     requestLog: [],
+    breakageSignals: [],
+    protectionActions: [],
     domains: {},
     startedAt: timestamp,
     updatedAt: timestamp,
   };
 }
+
+function boundedText(value) { return String(value).slice(0, 300); }
 
 function createDomainState() {
   return { total: 0, completed: 0, failed: 0, blocked: false, types: {} };

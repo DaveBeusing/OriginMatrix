@@ -10,12 +10,22 @@
     <header><div><h1>OriginMatrix</h1><p>Policy and diagnostics dashboard</p></div><span id="version">…</span></header>
     <main>
       <nav aria-label="Dashboard sections">
-        <a href="#diagnostics">Diagnostics</a><a href="#performance">Performance</a><a href="#statistics">Statistics</a><a href="#filter-lists">Filter Lists</a><a href="#coverage">Coverage</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
+        <a href="#diagnostics">Diagnostics</a><a href="#breakage">Breakage</a><a href="#performance">Performance</a><a href="#statistics">Statistics</a><a href="#filter-lists">Filter Lists</a><a href="#coverage">Coverage</a><a href="#profiles">Profiles</a><a href="#rules">My Rules</a><a href="#transfer">Import / Export</a><a href="#log">Request Log</a>
       </nav>
       <section id="diagnostics">
         <h2>Diagnostics</h2>
         <dl id="diagnostic-values"></dl>
         <div class="buttons"><button id="recompile">Recompile rules</button><button id="debug-report">Export debug report</button><button id="clear-session" class="danger">Clear session rules</button></div>
+      </section>
+      <section id="breakage">
+        <h2>Breakage diagnostics</h2>
+        <p id="breakage-summary">Checking the most recently used browser tab…</p>
+        <p>Signals and correlations are retained only for the tab session. OriginMatrix never disables a rule automatically.</p>
+        <div class="buttons"><button id="refresh-breakage">Refresh active tab</button></div>
+        <h3>Potential issues</h3>
+        <div class="table-scroll"><table><thead><tr><th>Signal</th><th>Evidence</th><th>Summary</th></tr></thead><tbody id="breakage-issues"></tbody></table></div>
+        <h3>Recent matching filters and overrides</h3>
+        <div class="table-scroll"><table><thead><tr><th>Time</th><th>Engine</th><th>Source</th><th>Details</th></tr></thead><tbody id="breakage-actions"></tbody></table></div>
       </section>
       <section id="performance">
         <h2>Performance</h2>

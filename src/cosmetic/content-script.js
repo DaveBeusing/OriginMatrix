@@ -3,6 +3,11 @@
   const injector = new globalThis.OriginMatrixCosmeticInjector(document);
   let evaluationGeneration = 0;
   let activeNavigationId = "initial";
+  let playabilityTimer = typeof document.querySelectorAll === "function" ? schedulePlayabilityCheck() : null;
+  if (typeof document.addEventListener === "function") document.addEventListener("error", (event) => {
+    const tag = event.target?.tagName?.toLowerCase();
+    if (tag === "video" || tag === "audio") reportBreakage("media-error", `media error code ${event.target.error?.code ?? "unknown"}`);
+  }, true);
   const dynamicFilter = new globalThis.OriginMatrixDynamicCosmeticFilter({
     documentObject: document,
     onMetrics: (metrics) => chrome.runtime.sendMessage({
@@ -29,6 +34,8 @@
     if (message?.type !== "ORIGINMATRIX_SPA_NAVIGATION" || typeof message.navigationId !== "string") return;
     if (message.navigationId === activeNavigationId) return;
     activeNavigationId = message.navigationId;
+    clearTimeout(playabilityTimer);
+    playabilityTimer = typeof document.querySelectorAll === "function" ? schedulePlayabilityCheck() : null;
     evaluate(message.navigationId, { cosmetics: true, scriptletPhase: "early" })
       .then(() => {
         if (activeNavigationId === message.navigationId) return runScriptlets("normal", message.navigationId);
@@ -56,5 +63,17 @@
     return chrome.runtime.sendMessage({ type: "RUN_SCRIPTLETS", phase, navigationId })
       .then((response) => { if (!response?.ok) throw new Error(response?.error ?? "Scriptlet Engine did not respond."); return response; })
       .catch((error) => { console.warn(`OriginMatrix ${phase} scriptlets unavailable`, error); return { ok: false, executed: 0 }; });
+  }
+
+  function schedulePlayabilityCheck() {
+    return setTimeout(() => {
+      const media = [...document.querySelectorAll("video, audio")].slice(0, 8);
+      if (media.length && media.every((element) => element.readyState === 0)) reportBreakage("media-not-playable", `${media.length} media element(s) have no playable data`);
+    }, 15_000);
+  }
+
+  function reportBreakage(type, details) {
+    chrome.runtime.sendMessage({ type: "REPORT_BREAKAGE_SIGNAL", signalType: type, details })
+      .catch((error) => console.warn("OriginMatrix page-health signal unavailable", error));
   }
 })();

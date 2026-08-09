@@ -2,7 +2,7 @@
 
 ## EasyList demand analysis
 
-OriginMatrix 1.9.0 analyzes the pinned EasyList `202608081115` snapshot before expanding executable scriptlets. Run the reproducible inventory with:
+OriginMatrix 1.10.0 analyzes the pinned EasyList `202608081115` snapshot before expanding executable scriptlets. Run the reproducible inventory with:
 
 ```sh
 node tools/analyze-scriptlet-usage.mjs

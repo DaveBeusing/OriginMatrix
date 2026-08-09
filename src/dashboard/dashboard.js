@@ -17,6 +17,9 @@ const coverageBody = document.querySelector("#coverage-body");
 const coverageHostname = document.querySelector("#coverage-hostname");
 const profileState = document.querySelector("#profile-state");
 let logEntries = [];
+const breakageSummary = document.querySelector("#breakage-summary");
+const breakageIssues = document.querySelector("#breakage-issues");
+const breakageActions = document.querySelector("#breakage-actions");
 
 initialize().catch(showError);
 
@@ -28,6 +31,7 @@ document.querySelector("#import-replace").addEventListener("click", () => import
 document.querySelector("#export").addEventListener("click", exportDocument);
 document.querySelector("#debug-report").addEventListener("click", exportDebugReport);
 document.querySelector("#refresh-log").addEventListener("click", refreshLog);
+document.querySelector("#refresh-breakage").addEventListener("click", refreshBreakage);
 document.querySelector("#coverage-diagnostics").addEventListener("click", runSiteCoverage);
 filterListsBody.addEventListener("click", toggleFilterList);
 outcomeFilter.addEventListener("change", renderLog);
@@ -35,7 +39,22 @@ decisionFilter.addEventListener("change", renderLog);
 typeFilter.addEventListener("change", renderLog);
 domainFilter.addEventListener("input", renderLog);
 
-async function initialize() { await Promise.all([refreshDashboard(), refreshLog()]); }
+async function initialize() { await Promise.all([refreshDashboard(), refreshLog(), refreshBreakage()]); }
+
+async function refreshBreakage() {
+  try {
+    const tab = await getObservedTab();
+    const result = await send({ type: "GET_BREAKAGE_DIAGNOSTICS", tabId: tab.id });
+    const diagnostics = result.diagnostics;
+    breakageSummary.textContent = diagnostics.issues.length
+      ? `${result.topDomain}: ${diagnostics.issues.length} potential breakage signal(s). Review recent actions before changing a rule.`
+      : `${result.topDomain ?? "Active tab"}: no supported breakage signal detected.`;
+    breakageIssues.replaceChildren(...diagnostics.issues.map((item) => tableRow([item.type, item.evidenceCount, item.summary])));
+    if (!diagnostics.issues.length) breakageIssues.append(emptyRow(3, "No potential breakage detected."));
+    breakageActions.replaceChildren(...diagnostics.recentActions.map((item) => tableRow([new Date(item.timestamp).toLocaleTimeString(), item.type, item.source, item.details])));
+    if (!diagnostics.recentActions.length) breakageActions.append(emptyRow(4, "No matching filters or Matrix overrides recorded."));
+  } catch (error) { showError(error); }
+}
 
 async function refreshDashboard() {
   const state = await send({ type: "GET_DASHBOARD_STATE" });
@@ -95,10 +114,7 @@ async function exportDebugReport() {
 
 async function refreshLog() {
   try {
-    const [tab] = (await chrome.tabs.query({}))
-      .filter((candidate) => /^https?:/.test(candidate.url ?? ""))
-      .sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0));
-    if (!Number.isInteger(tab?.id)) throw new Error("No active browser tab is available.");
+    const tab = await getObservedTab();
     const result = await send({ type: "GET_REQUEST_LOG", tabId: tab.id });
     logEntries = result.entries;
     logAttribution.textContent = result.attributionAvailable
@@ -188,8 +204,10 @@ function filterListRow(list) {
 function logRow(entry) { const row = document.createElement("tr"); const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.sourceSite, entry.domain, entry.resourceType, entry.decision, entry.outcome, entry.engine ?? "—", `${entry.reason} ${entry.url}`]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
 function coverageDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.type, sample.reason, sample.sourceFilterList, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
 function coverageLabel(value) { return `${value.supported}/${value.total} (${value.percent}%)`; }
+function tableRow(values) { const row = document.createElement("tr"); for (const value of values) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }
 function emptyRow(span, text) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = span; cell.className = "empty"; cell.textContent = text; row.append(cell); return row; }
 function option(value, label) { const item = document.createElement("option"); item.value = value; item.textContent = label; return item; }
 function downloadJson(value, filename) { const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); URL.revokeObjectURL(url); }
 async function send(message) { const response = await chrome.runtime.sendMessage(message); if (!response?.ok) throw new Error(response?.error ?? "Service worker did not respond."); return response; }
+async function getObservedTab() { const [tab] = (await chrome.tabs.query({})).filter((candidate) => /^https?:/.test(candidate.url ?? "")).sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0)); if (!Number.isInteger(tab?.id)) throw new Error("No active browser tab is available."); return tab; }
 function showError(error) { console.error(error); statusElement.textContent = error.message; statusElement.className = "error"; }
