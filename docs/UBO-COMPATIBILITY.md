@@ -1,6 +1,6 @@
 # uBO filter compatibility
 
-Version baseline: OriginMatrix `1.19.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
+Version baseline: OriginMatrix `1.20.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
 
 OriginMatrix is an independent Manifest V3 implementation. It treats public uBlock-compatible filter syntax as data and does not embed or copy the uBlock Origin runtime. Run the deterministic analyzer with:
 
@@ -9,6 +9,10 @@ npm run analyze:ubo -- youtube.com
 ```
 
 Append `--json` for the complete machine-readable result. Exact duplicate lines are counted once per source; the same rule in different lists remains separate so source demand is retained. Overall coverage counts primary filter rules. Modifier coverage counts each modifier independently and is therefore not added to the overall denominator. Host coverage includes rules that explicitly name the requested hostname, a parent, or a subdomain; generic rules and related Google/YouTube service domains are not silently attributed to `youtube.com`.
+
+The command analyzes enabled-by-default lists. Add `--all` to include the four bundled opt-in uAssets sources before enabling them.
+
+With all six bundled snapshots included, the analyzer measures 143,509 of 153,539 primary rules supported (93.5%). Explicit `youtube.com` coverage is 53 of 118 (44.9%). The all-list dataset contains 215 preprocessor directives, 3,247 scriptlet rules, and 661 redirect rules. These figures explain why the uAssets sources remain opt-in: analyzing mutually exclusive branches is useful, but activating them before preprocessing would be semantically unsafe.
 
 ## Measured compatibility
 

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { DEFAULT_FILTER_LISTS, EASYPRIVACY } from "../src/filters/filter-list-catalog.js";
+import { DEFAULT_FILTER_LISTS, EASYPRIVACY, UBLOCK_FILTER_LISTS } from "../src/filters/filter-list-catalog.js";
 import { UnifiedFilterListManager } from "../src/filters/unified-filter-list-manager.js";
 import { NetworkFilterCompiler } from "../src/filters/network-filter-compiler.js";
 import { CosmeticEngine } from "../src/cosmetic/cosmetic-engine.js";
@@ -28,12 +28,27 @@ test("activates EasyList and EasyPrivacy through one deduplicated generation", a
   assert.deepEqual(statuses.map(({ id, enabled, state }) => ({ id, enabled, state })), [
     { id: "easylist", enabled: true, state: "active" },
     { id: "easyprivacy", enabled: true, state: "active" },
+    { id: "ublock-ads", enabled: false, state: "disabled" },
+    { id: "ublock-privacy", enabled: false, state: "disabled" },
+    { id: "ublock-quick-fixes", enabled: false, state: "disabled" },
+    { id: "ublock-unbreak", enabled: false, state: "disabled" },
   ]);
   assert.ok(installed.length > 10_000);
   assert.equal(new Set(installed.map(({ id }) => id)).size, installed.length);
   await manager.setEnabled("easyprivacy", false);
   assert.equal(manager.getStatuses()[1].state, "disabled");
   assert.ok(installed.length < 10_000);
+});
+
+test("bundled uAssets snapshots match pinned metadata and remain opt-in", async () => {
+  for (const list of UBLOCK_FILTER_LISTS) {
+    const bytes = await readFile(new URL(`../${list.path}`, import.meta.url));
+    const source = bytes.toString("utf8");
+    assert.match(source, /^! Title: uBlock/m);
+    assert.match(source, /! License: https:\/\/github\.com\/uBlockOrigin\/uAssets\/blob\/master\/LICENSE/);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), list.sha256);
+    assert.equal(list.enabled, false);
+  }
 });
 
 test("bundled EasyPrivacy snapshot matches pinned metadata", async () => {

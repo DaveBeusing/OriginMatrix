@@ -49,3 +49,8 @@ test("is deterministic, deduplicates within a source, and retains cross-list dem
   assert.equal(analyzeUboCompatibility([{ name: "Generic", source: "##.generic-ad" }], { hostname: "youtube.com" }).siteRelevant.overall.total, 0);
   assert.throws(() => analyzeUboCompatibility([], { hostname: "not a host" }), /valid compatibility hostname/);
 });
+
+test("counts repeated preprocessor directives because each controls a distinct branch", () => {
+  const result = analyzeUboCompatibility([{ name: "Directives", source: "!#if env_mv3\n!#endif\n!#if env_mv3\n!#endif" }]);
+  assert.deepEqual(result.categories.preprocessors, { total: 4, supported: 0, unsupported: 4, percent: 0 });
+});

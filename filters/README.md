@@ -1,7 +1,14 @@
-# Bundled EasyList snapshot
+# Bundled filter snapshots
 
-`easylist.txt` is an unmodified snapshot downloaded from <https://easylist.to/easylist/easylist.txt>. Its version, upstream commit, and SHA-256 digest are pinned in `src/filters/filter-list-catalog.js`.
+OriginMatrix bundles pinned, unmodified filter-data snapshots so releases work offline and remain reproducible. Catalog metadata in `src/filters/filter-list-catalog.js` records source URL, snapshot version/time, SHA-256 digest, default state, and license URL.
 
-OriginMatrix bundles the snapshot so protection works offline and extension releases remain reproducible. Users can persistently enable, disable, or update the complete generation from the dashboard. Updates come only from the catalogued HTTPS source and are size-, format-, version-, checksum-, parser-, compiler-, and budget-validated before activation. Filter content remains data and is never executed as code.
+EasyList and EasyPrivacy are enabled by default. The following GPL-3.0 uAssets lists are integrated but remain opt-in until OriginMatrix evaluates their 215 preprocessor directives in Phase 3:
 
-EasyList is maintained by the EasyList authors and is distributed under its upstream dual-license terms. See [Third-party notices](../docs/THIRD_PARTY_NOTICES.md) and <https://easylist.to/pages/licence.html>.
+- uBlock filters – Ads
+- uBlock filters – Privacy
+- uBlock filters – Quick fixes
+- uBlock filters – Unbreak
+
+Users can enable, disable, or update each complete list independently from the dashboard. Updates come only from catalogued HTTPS URLs and are size-, format-, timestamp/version-, checksum-, parser-, compiler-, and budget-validated before activation. Both Adblock Plus headers and official uAssets `Title` plus `Last modified` metadata are accepted. Filter content remains data and is never executed as code.
+
+See [Third-party notices](../docs/THIRD_PARTY_NOTICES.md) for upstream sources and license terms.

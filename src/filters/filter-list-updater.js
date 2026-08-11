@@ -21,10 +21,10 @@ export class FilterListUpdater {
     const source = await response.text();
     const size = new TextEncoder().encode(source).length;
     if (size === 0 || size > FILTER_LIST_MAX_SOURCE_BYTES) throw new Error("Filter list download has an invalid size.");
-    if (!/^\[Adblock Plus[^\]]*\]/.test(source)) throw new Error("Filter list header is invalid.");
+    if (!/^\[Adblock Plus[^\]]*\]/.test(source) && !/^!\s*Title:\s*\S+/mi.test(source)) throw new Error("Filter list header is invalid.");
     const ruleCount = source.split(/\r?\n/).filter((line) => line.trim() && !line.startsWith("!") && !/^\[.*\]$/.test(line)).length;
     if (ruleCount < this.minimumRules) throw new Error("Filter list does not contain enough rules.");
-    const version = source.match(/^!\s*Version:\s*(\S+)/mi)?.[1];
+    const version = source.match(/^!\s*Version:\s*(\S+)/mi)?.[1] ?? versionFromLastModified(source.match(/^!\s*Last modified:\s*(.+)$/mi)?.[1]);
     if (!version) throw new Error("Filter list version is missing.");
     const checksum = await sha256(source);
     const lastUpdated = this.now();
@@ -44,6 +44,11 @@ export class FilterListUpdater {
     const metadata = Object.freeze({ version: stored.version, lastUpdated: stored.lastUpdated, checksum: stored.checksum });
     return Object.freeze({ source: stored.source, metadata, prepared: await service.prepareSource(stored.source, metadata) });
   }
+}
+
+function versionFromLastModified(value) {
+  if (!value || !Number.isFinite(Date.parse(value))) return null;
+  return new Date(value).toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
 }
 
 async function sha256(source) {

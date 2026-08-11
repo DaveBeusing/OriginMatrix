@@ -57,6 +57,19 @@ test("keeps attribution outside Chrome DNR rules", () => {
   assert.deepEqual(result.attributions[result.rules[0].id], [{ source: "EasyList", rule: "||ads.example^" }, { source: "EasyPrivacy", rule: "||tracker.example^" }]);
 });
 
+test("deduplicates semantically identical cross-list rules while retaining attribution", () => {
+  const result = new NetworkFilterCompiler().compile([
+    createNetworkFilter({ pattern: "*/shared-ad.js", sourceList: "EasyList", sourceRule: "*/shared-ad.js" }),
+    createNetworkFilter({ pattern: "*/shared-ad.js", sourceList: "uBlock filters – Ads", sourceRule: "*/shared-ad.js" }),
+  ]);
+  assert.equal(result.rules.length, 1);
+  assert.equal(result.diagnostics.duplicatesRemoved, 1);
+  assert.deepEqual(result.attributions[result.rules[0].id], [
+    { source: "EasyList", rule: "*/shared-ad.js" },
+    { source: "uBlock filters – Ads", rule: "*/shared-ad.js" },
+  ]);
+});
+
 test("chunks large host aggregations into bounded DNR conditions", () => {
   const filters = Array.from({ length: 1_001 }, (_, index) => createNetworkFilter({ pattern: `||ads-${index}.example^` }));
   const result = new NetworkFilterCompiler().compile(filters);

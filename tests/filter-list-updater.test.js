@@ -41,3 +41,10 @@ test("verifies persisted source checksums before reuse", async () => {
   assert.deepEqual((await updater.prepareStored(service, { source: staged.source, ...staged.metadata })).prepared, { restored: true });
   await assert.rejects(() => updater.prepareStored(service, { source: `${staged.source}\n||tampered.example^`, ...staged.metadata }), /checksum/);
 });
+
+test("accepts official uAssets title and Last modified metadata", async () => {
+  const uAssets = "! Title: uBlock filters – Test\n! Last modified: Tue, 11 Aug 2026 15:16:33 +0000\n||ads.example^";
+  const updater = new FilterListUpdater({ generationStore: { async set() {} }, fetcher: async () => response(uAssets), minimumRules: 1 });
+  const staged = await updater.downloadAndPrepare({ list: { sourceUrl: "https://ublockorigin.github.io/uAssets/filters/test.txt" }, async prepareSource() { return {}; } });
+  assert.equal(staged.metadata.version, "20260811151633");
+});

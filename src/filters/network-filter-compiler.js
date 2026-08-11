@@ -49,7 +49,7 @@ export class NetworkFilterCompiler {
   }
 }
 
-function compileCondition(filter) {
+function compileCondition({ filter, attributions }) {
   const condition = {};
   const hostMatch = filter.pattern.match(HOST_PATTERN);
   if (hostMatch) condition.requestDomains = [hostMatch[1].toLowerCase()];
@@ -62,13 +62,20 @@ function compileCondition(filter) {
     priority: filter.type === FILTER_TYPE.EXCEPTION ? EXCEPTION_PRIORITY : BLOCK_PRIORITY,
     action: { type: filter.type === FILTER_TYPE.EXCEPTION ? "allow" : "block" },
     condition,
-  }, attributions: [Object.freeze({ source: filter.sourceList ?? "Filter list", rule: filter.sourceRule ?? formatFilter(filter) })] };
+  }, attributions };
 }
 
 function deduplicate(filters) {
   const bySignature = new Map();
-  for (const filter of filters) bySignature.set(stableStringify(filter), filter);
-  return [...bySignature.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, filter]) => filter);
+  for (const filter of filters) {
+    const { sourceList, sourceRule, ...semanticFilter } = filter;
+    const signature = stableStringify(semanticFilter);
+    const entry = bySignature.get(signature) ?? { filter: semanticFilter, attributions: new Map() };
+    const attribution = Object.freeze({ source: sourceList ?? "Filter list", rule: sourceRule ?? formatFilter(filter) });
+    entry.attributions.set(stableStringify(attribution), attribution);
+    bySignature.set(signature, entry);
+  }
+  return [...bySignature.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, entry]) => ({ filter: entry.filter, attributions: [...entry.attributions.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([, attribution]) => attribution) }));
 }
 
 function aggregateHostRules(rules) {

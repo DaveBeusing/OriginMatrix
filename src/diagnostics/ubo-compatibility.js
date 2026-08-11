@@ -27,8 +27,9 @@ export function analyzeUboCompatibility(sources, { hostname = "youtube.com" } = 
     const seen = new Set();
     source.source.split(/\r?\n/).forEach((raw, index) => {
       const line = raw.trim();
-      if (!line || seen.has(line) || (line.startsWith("!") && !PREPROCESSOR.test(line)) || /^\[.*\]$/.test(line)) return;
-      seen.add(line);
+      const directive = PREPROCESSOR.test(line);
+      if (!line || (!directive && seen.has(line)) || (line.startsWith("!") && !directive) || /^\[.*\]$/.test(line)) return;
+      if (!directive) seen.add(line);
       const analysis = analyzeRule(line);
       const relevant = isSiteRelevant(line, analysis.category, site);
       total += 1;

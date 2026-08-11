@@ -3,8 +3,9 @@ import { analyzeUboCompatibility } from "../../src/diagnostics/ubo-compatibility
 import { DEFAULT_FILTER_LISTS } from "../../src/filters/filter-list-catalog.js";
 
 const json = process.argv.includes("--json");
+const includeDisabled = process.argv.includes("--all");
 const hostname = process.argv.slice(2).find((value) => !value.startsWith("--")) ?? "youtube.com";
-const sources = await Promise.all(DEFAULT_FILTER_LISTS.map(async (list) => ({
+const sources = await Promise.all(DEFAULT_FILTER_LISTS.filter((list) => includeDisabled || list.enabled).map(async (list) => ({
   name: list.title,
   version: list.snapshotVersion,
   source: await readFile(new URL(`../../${list.path}`, import.meta.url), "utf8"),

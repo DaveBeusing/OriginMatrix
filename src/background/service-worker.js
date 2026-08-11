@@ -336,11 +336,15 @@ async function applyProtectionFeatures(features) {
 }
 
 async function setFilterListEnabled({ id, enabled }) {
-  return { ok: true, list: await filterListManager.setEnabled(id, enabled) };
+  const list = await filterListManager.setEnabled(id, enabled);
+  youtubeDiagnosticsPromise = null;
+  return { ok: true, list };
 }
 
 async function updateFilterList({ id }) {
-  return { ok: true, list: await filterListManager.update(id) };
+  const list = await filterListManager.update(id);
+  youtubeDiagnosticsPromise = null;
+  return { ok: true, list };
 }
 
 async function recompileWithResult() {
@@ -422,7 +426,8 @@ async function getBreakageDiagnostics(tabId) {
 function roundPerformance(value) { return Math.round(value * 100) / 100; }
 
 async function getYouTubeDiagnostics() {
-  youtubeDiagnosticsPromise ??= Promise.all(DEFAULT_FILTER_LISTS.map(async (list) => ({ list, source: (filterListManager.getSourceState(list.id).source ?? await loadBundledText(list.path)) })))
+  const enabledIds = new Set(filterListManager.getStatuses().filter(({ enabled }) => enabled).map(({ id }) => id));
+  youtubeDiagnosticsPromise ??= Promise.all(DEFAULT_FILTER_LISTS.filter(({ id }) => enabledIds.has(id)).map(async (list) => ({ list, source: (filterListManager.getSourceState(list.id).source ?? await loadBundledText(list.path)) })))
     .then((sources) => analyzeYouTubeCompatibility(sources.map(({ list, source }) => `! OriginMatrix source: ${list.title}\n${source}`).join("\n"), {
       listVersion: sources.map(({ list }) => `${list.title} ${filterListManager.getSourceState(list.id).metadata?.version ?? list.snapshotVersion}`).join(" + "),
     }));
