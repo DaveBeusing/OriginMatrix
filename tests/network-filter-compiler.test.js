@@ -96,6 +96,30 @@ test("compiles reviewed redirect resources with aliases and inferred types", () 
   ]), /incompatible/);
 });
 
+test("compiles advanced target, method, case, and query transformations", () => {
+  const filter = createNetworkFilter({
+    pattern: "*tracking*", requestDomains: ["cdn.example"], excludedRequestDomains: ["private.cdn.example"],
+    requestMethods: ["get"], removeParams: ["utm_source", "gclid"], matchCase: true,
+  });
+  const { rules } = new NetworkFilterCompiler().compile([filter]);
+  assert.deepEqual(rules[0].action, {
+    type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["gclid", "utm_source"] } } },
+  });
+  assert.deepEqual(rules[0].condition, {
+    urlFilter: "*tracking*", requestDomains: ["cdn.example"], excludedRequestDomains: ["private.cdn.example"],
+    requestMethods: ["get"], isUrlFilterCaseSensitive: true,
+  });
+});
+
+test("intersects host patterns with narrower target domains", () => {
+  const filter = createNetworkFilter({ pattern: "||example.com^", requestDomains: ["media.example.com"] });
+  const { rules } = new NetworkFilterCompiler().compile([filter]);
+  assert.deepEqual(rules[0].condition.requestDomains, ["media.example.com"]);
+  assert.throws(() => new NetworkFilterCompiler().compile([
+    createNetworkFilter({ pattern: "||example.com^", requestDomains: ["unrelated.example"] }),
+  ]), /do not overlap/);
+});
+
 test("assigns stable IDs in a range isolated from Matrix and session rules", () => {
   const filters = [createNetworkFilter({ pattern: "||a.example^" }), createNetworkFilter({ pattern: "*/ads/*" })];
   const compiler = new NetworkFilterCompiler();

@@ -10,7 +10,7 @@ export const FILTER_TEXT_LIMITS = Object.freeze({ sourceBytes: 5_000_000, lines:
 const RESOURCE_OPTIONS = new Map([
   ["stylesheet", "stylesheet"], ["image", "image"], ["font", "font"],
   ["media", "media"], ["script", "script"], ["xmlhttprequest", "xmlhttprequest"],
-  ["xhr", "xmlhttprequest"], ["subdocument", "sub_frame"], ["document", "main_frame"],
+  ["xhr", "xmlhttprequest"], ["subdocument", "sub_frame"], ["frame", "sub_frame"], ["document", "main_frame"], ["doc", "main_frame"],
   ["ping", "ping"], ["websocket", "websocket"], ["other", "other"],
 ]);
 
@@ -31,13 +31,16 @@ export function parseFilterRule(source) {
   const separator = networkText.indexOf("$");
   const rawPattern = separator === -1 ? networkText : networkText.slice(0, separator);
   const rawOptions = separator === -1 ? "" : networkText.slice(separator + 1);
-  const pattern = normalizePattern(rawPattern);
-  if (pattern === null) return unsupported(text, "pattern-not-supported");
-
   const options = parseOptions(rawOptions);
   if (!options.ok) return unsupported(text, options.reason, options.details);
+  if (exception && options.value.removeParams.length > 0) return unsupported(text, "removeparam-exception-not-supported");
+  const pattern = rawPattern.length === 0 && options.value.removeParams.length > 0 ? "*" : normalizePattern(rawPattern);
+  if (pattern === null) return unsupported(text, "pattern-not-supported");
+  const host = pattern.match(HOST_ANCHORED_PATTERN)?.[1];
+  if (host && options.value.requestDomains.length > 0 && !options.value.requestDomains.some((domain) => domainsOverlap(host, domain))) {
+    return unsupported(text, "target-domain-does-not-overlap");
+  }
   if (options.value.genericHide) {
-    const host = pattern.match(HOST_ANCHORED_PATTERN)?.[1];
     if (!exception || !host || options.value.resourceTypes.length > 0 || options.value.domains.length > 0 || options.value.thirdParty !== null) {
       return unsupported(text, "invalid-generichide-rule");
     }
@@ -115,7 +118,7 @@ function validateWithAttribution(filter, sourceRule, sourceList) {
 }
 
 function parseOptions(source) {
-  const value = { domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null, genericHide: false, important: false, badfilter: false, redirectResource: null };
+  const value = { domains: [], excludedDomains: [], requestDomains: [], excludedRequestDomains: [], resourceTypes: [], requestMethods: [], excludedRequestMethods: [], removeParams: [], thirdParty: null, genericHide: false, important: false, badfilter: false, redirectResource: null, matchCase: false };
   if (source.length === 0) return { ok: true, value };
   const options = source.split(",");
   if (options.some((option) => option.length === 0)) return { ok: false, reason: "invalid-options" };
@@ -124,8 +127,8 @@ function parseOptions(source) {
     const normalized = option.toLowerCase();
     if (RESOURCE_OPTIONS.has(normalized)) {
       value.resourceTypes.push(RESOURCE_OPTIONS.get(normalized));
-    } else if (normalized === "third-party" || normalized === "~third-party") {
-      const requested = normalized === "third-party";
+    } else if (["third-party", "~third-party", "3p", "~3p", "1p", "~1p"].includes(normalized)) {
+      const requested = normalized === "third-party" || normalized === "3p" || normalized === "~1p";
       if (value.thirdParty !== null && value.thirdParty !== requested) {
         return { ok: false, reason: "conflicting-options", details: "third-party" };
       }
@@ -145,6 +148,26 @@ function parseOptions(source) {
       const redirect = resolveRedirectResource(option.slice("redirect=".length));
       if (!redirect) return { ok: false, reason: "unknown-redirect-resource", details: option.slice("redirect=".length) };
       value.redirectResource = redirect.name;
+    } else if (normalized.startsWith("removeparam=")) {
+      const param = option.slice("removeparam=".length);
+      if (!/^[a-z0-9_.%-][a-z0-9_.%~-]{0,127}$/i.test(param)) return { ok: false, reason: "invalid-removeparam", details: param };
+      value.removeParams.push(param);
+    } else if (normalized.startsWith("denyallow=")) {
+      const domains = parseTargetDomains(option.slice("denyallow=".length), { exclusionsOnly: true });
+      if (!domains.ok) return domains;
+      value.excludedRequestDomains.push(...domains.excludedRequestDomains);
+    } else if (normalized.startsWith("to=")) {
+      const domains = parseTargetDomains(option.slice("to=".length));
+      if (!domains.ok) return domains;
+      value.requestDomains.push(...domains.requestDomains);
+      value.excludedRequestDomains.push(...domains.excludedRequestDomains);
+    } else if (normalized.startsWith("method=")) {
+      const methods = parseMethods(option.slice("method=".length));
+      if (!methods.ok) return methods;
+      value.requestMethods.push(...methods.requestMethods);
+      value.excludedRequestMethods.push(...methods.excludedRequestMethods);
+    } else if (normalized === "match-case") {
+      value.matchCase = true;
     } else {
       return { ok: false, reason: "unsupported-option", details: option };
     }
@@ -156,6 +179,37 @@ function parseOptions(source) {
     }
   }
   return { ok: true, value };
+}
+
+function parseTargetDomains(source, { exclusionsOnly = false } = {}) {
+  if (!source) return { ok: false, reason: "invalid-target-domain" };
+  const requestDomains = [];
+  const excludedRequestDomains = [];
+  for (const raw of source.split("|")) {
+    const excluded = exclusionsOnly || raw.startsWith("~");
+    const domain = (raw.startsWith("~") ? raw.slice(1) : raw).toLowerCase();
+    if (!new RegExp(`^${DOMAIN_PATTERN}$`, "i").test(domain)) return { ok: false, reason: "invalid-target-domain", details: raw };
+    (excluded ? excludedRequestDomains : requestDomains).push(domain);
+  }
+  return { ok: true, requestDomains, excludedRequestDomains };
+}
+
+function parseMethods(source) {
+  if (!source) return { ok: false, reason: "invalid-method" };
+  const requestMethods = [];
+  const excludedRequestMethods = [];
+  for (const raw of source.split("|")) {
+    const excluded = raw.startsWith("~");
+    const method = (excluded ? raw.slice(1) : raw).toLowerCase();
+    if (!/^(connect|delete|get|head|options|patch|post|put)$/.test(method)) return { ok: false, reason: "invalid-method", details: raw };
+    (excluded ? excludedRequestMethods : requestMethods).push(method);
+  }
+  if (requestMethods.length > 0 && excludedRequestMethods.length > 0) return { ok: false, reason: "conflicting-methods" };
+  return { ok: true, requestMethods, excludedRequestMethods };
+}
+
+function domainsOverlap(left, right) {
+  return left === right || left.endsWith(`.${right}`) || right.endsWith(`.${left}`);
 }
 
 function parseDomainOption(source) {

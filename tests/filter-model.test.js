@@ -39,6 +39,20 @@ test("models redirects independently from their DNR representation", () => {
   assert.throws(() => createExceptionFilter({ pattern: "||tracker.example^", redirectResource: "noop.js" }), /Redirect resource/);
 });
 
+test("normalizes advanced network modifier state", () => {
+  const filter = createNetworkFilter({
+    pattern: "*", requestDomains: ["CDN.Example"], excludedRequestDomains: ["private.example"],
+    requestMethods: ["POST", "get"], removeParams: ["utm_source"], matchCase: true,
+  });
+  assert.deepEqual(filter.requestDomains, ["cdn.example"]);
+  assert.deepEqual(filter.requestMethods, ["get", "post"]);
+  assert.deepEqual(filter.removeParams, ["utm_source"]);
+  assert.equal(filter.action, "redirect");
+  assert.equal(filter.matchCase, true);
+  assert.throws(() => createNetworkFilter({ pattern: "*", requestMethods: ["get"], excludedRequestMethods: ["post"] }), /cannot be combined/);
+  assert.throws(() => createExceptionFilter({ pattern: "*", removeParams: ["utm_source"] }), /not supported/);
+});
+
 test("rejects invalid normalized filter data", () => {
   assert.throws(() => createNetworkFilter({ pattern: "x", thirdParty: "yes" }), /thirdParty/);
   assert.throws(() => createNetworkFilter({ pattern: "x", resourceTypes: ["document"] }), /resource type/);

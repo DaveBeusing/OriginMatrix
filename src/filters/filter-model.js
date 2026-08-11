@@ -12,6 +12,7 @@ const NETWORK_RESOURCE_TYPES = new Set([
   "stylesheet", "image", "font", "media", "script", "xmlhttprequest",
   "sub_frame", "main_frame", "ping", "websocket", "other",
 ]);
+const REQUEST_METHODS = new Set(["connect", "delete", "get", "head", "options", "patch", "post", "put"]);
 
 export function createNetworkFilter(input) {
   return createNetworkLikeFilter(input, FILTER_TYPE.NETWORK, FILTER_ACTION.BLOCK);
@@ -85,6 +86,17 @@ function createNetworkLikeFilter(input, type, action) {
   if (redirectResource !== undefined && (type !== FILTER_TYPE.NETWORK || typeof redirectResource !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(redirectResource))) {
     throw new TypeError("Redirect resource is invalid.");
   }
+  const requestDomains = normalizeDomains(input.requestDomains);
+  const excludedRequestDomains = normalizeDomains(input.excludedRequestDomains);
+  const requestMethods = [...new Set(normalizeStrings(input.requestMethods, "requestMethods").map((method) => method.toLowerCase()))].sort();
+  const excludedRequestMethods = [...new Set(normalizeStrings(input.excludedRequestMethods, "excludedRequestMethods").map((method) => method.toLowerCase()))].sort();
+  if (requestMethods.length > 0 && excludedRequestMethods.length > 0) throw new TypeError("Request method inclusions and exclusions cannot be combined.");
+  if ([...requestMethods, ...excludedRequestMethods].some((method) => !REQUEST_METHODS.has(method))) throw new TypeError("Unsupported request method.");
+  const removeParams = normalizeStrings(input.removeParams, "removeParams");
+  if (removeParams.length > 32 || removeParams.some((param) => !/^[a-z0-9_.%-][a-z0-9_.%~-]{0,127}$/i.test(param))) throw new TypeError("Invalid removeparam name.");
+  if (input.matchCase !== undefined && typeof input.matchCase !== "boolean") throw new TypeError("matchCase must be a boolean.");
+  if (redirectResource && removeParams.length > 0) throw new TypeError("Redirect resources and removeparam cannot be combined.");
+  if (type === FILTER_TYPE.EXCEPTION && removeParams.length > 0) throw new TypeError("removeparam exceptions are not supported.");
   return freezeFilter({
     type,
     pattern,
@@ -92,8 +104,14 @@ function createNetworkLikeFilter(input, type, action) {
     excludedDomains: normalizeDomains(input.excludedDomains),
     resourceTypes,
     thirdParty,
-    action: redirectResource ? FILTER_ACTION.REDIRECT : action,
+    action: redirectResource || removeParams.length > 0 ? FILTER_ACTION.REDIRECT : action,
     ...(redirectResource ? { redirectResource } : {}),
+    ...(requestDomains.length > 0 ? { requestDomains } : {}),
+    ...(excludedRequestDomains.length > 0 ? { excludedRequestDomains } : {}),
+    ...(requestMethods.length > 0 ? { requestMethods } : {}),
+    ...(excludedRequestMethods.length > 0 ? { excludedRequestMethods } : {}),
+    ...(removeParams.length > 0 ? { removeParams } : {}),
+    ...(input.matchCase === true ? { matchCase: true } : {}),
     ...(input.important === true ? { important: true } : {}),
     ...(input.badfilter === true ? { badfilter: true } : {}),
     ...attribution(input),

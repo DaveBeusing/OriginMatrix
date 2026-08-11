@@ -65,6 +65,11 @@ function compileCondition({ filter, attributions }) {
   if (filter.resourceTypes.length > 0) condition.resourceTypes = filter.resourceTypes;
   else if (filter.redirectResource) condition.resourceTypes = [...resolveRedirectResource(filter.redirectResource).resourceTypes];
   if (filter.thirdParty !== null) condition.domainType = filter.thirdParty ? "thirdParty" : "firstParty";
+  if (filter.requestDomains?.length > 0) condition.requestDomains = mergeDomains(condition.requestDomains, filter.requestDomains);
+  if (filter.excludedRequestDomains?.length > 0) condition.excludedRequestDomains = filter.excludedRequestDomains;
+  if (filter.requestMethods?.length > 0) condition.requestMethods = filter.requestMethods;
+  if (filter.excludedRequestMethods?.length > 0) condition.excludedRequestMethods = filter.excludedRequestMethods;
+  if (filter.matchCase) condition.isUrlFilterCaseSensitive = true;
   return { rule: {
     priority: priorityFor(filter),
     action: compileAction(filter),
@@ -82,7 +87,19 @@ function compileAction(filter) {
     }
     return { type: "redirect", redirect: { extensionPath: resource.extensionPath } };
   }
+  if (filter.removeParams?.length > 0) return { type: "redirect", redirect: { transform: { queryTransform: { removeParams: filter.removeParams } } } };
   return { type: "block" };
+}
+
+function mergeDomains(left = [], right = []) {
+  if (left.length === 0) return [...right];
+  const intersections = left.flatMap((domain) => right.flatMap((target) => {
+    if (domain === target || domain.endsWith(`.${target}`)) return [domain];
+    if (target.endsWith(`.${domain}`)) return [target];
+    return [];
+  }));
+  if (intersections.length === 0) throw new TypeError("Filter pattern and target domains do not overlap.");
+  return [...new Set(intersections)].sort();
 }
 
 function priorityFor(filter) {

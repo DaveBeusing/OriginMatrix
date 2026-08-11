@@ -1,6 +1,6 @@
 # uBO filter compatibility
 
-Version baseline: OriginMatrix `1.23.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
+Version baseline: OriginMatrix `1.24.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
 
 OriginMatrix is an independent Manifest V3 implementation. It treats public uBlock-compatible filter syntax as data and does not embed or copy the uBlock Origin runtime. Run the deterministic analyzer with:
 
@@ -12,15 +12,15 @@ Append `--json` for the complete machine-readable result. Exact duplicate lines 
 
 The command analyzes enabled-by-default lists. Add `--all` to include the four bundled opt-in uAssets sources before enabling them.
 
-With all six bundled snapshots included, the analyzer measures 144,272 of 153,539 primary rules supported (94.0%). Explicit `youtube.com` coverage remains 56 of 118 (47.5%). Redirect coverage is 150 of 661 (22.7%). The all-list dataset contains 215 supported preprocessor directives and 3,247 scriptlet rules. The uAssets sources remain opt-in because several referenced include snapshots are not bundled yet and broader scriptlet, redirect, and modifier coverage still requires hardening.
+With all six bundled snapshots included, the analyzer measures 145,383 of 153,539 primary rules supported (94.7%). Explicit `youtube.com` coverage is 67 of 118 (56.8%). Modifier coverage is 18,803 of 23,121 (81.3%), and redirect coverage is 195 of 661 (29.5%). The all-list dataset contains 215 supported preprocessor directives and 3,247 scriptlet rules. The uAssets sources remain opt-in because several referenced include snapshots are not bundled yet and broader scriptlet, redirect, and modifier coverage still requires hardening.
 
 ## Measured compatibility
 
 | Area | Supported | Total | Coverage |
 | --- | ---: | ---: | ---: |
-| Overall filters | 138,860 | 142,596 | 97.4% |
-| Network filters | 113,233 | 116,533 | 97.2% |
-| Network modifiers | 10,979 | 14,056 | 78.1% |
+| Overall filters | 138,861 | 142,596 | 97.4% |
+| Network filters | 113,234 | 116,533 | 97.2% |
+| Network modifiers | 10,980 | 14,056 | 78.1% |
 | Exceptions | 1,528 | 1,591 | 96.0% |
 | Cosmetic filters | 23,825 | 24,138 | 98.7% |
 | Procedural cosmetic filters | 245 | 282 | 86.9% |
@@ -33,14 +33,15 @@ The explicit `youtube.com` subset contains 39 rules: 15 network blocks, four exc
 ## Supported
 
 - Ordinary block and exception network patterns accepted by the OriginMatrix parser
-- Resource-type, party, domain and `generichide` modifiers
+- Resource-type, party, domain and `generichide` modifiers, including `doc`, `frame`, `1p`, and `3p` aliases
+- Literal `$removeparam=`, `$to=`, `$denyallow=`, `$method=`, and `$match-case` network modifiers
 - Domain-scoped native cosmetic hiding and exceptions
 - The bounded `:has-text(...)` procedural subset
 - Bundled, argument-validated scriptlets registered by OriginMatrix
 
 ## Partially supported
 
-- Network filtering: regular expressions, advanced anchors and several uBO modifiers remain outside the normalized model
+- Network filtering: regular expressions, advanced anchors, regex/negated parameter transforms, parameter-removal exceptions, and several uBO modifiers remain outside the normalized model
 - Cosmetic filtering: HTML filtering, entity-wildcard domains and several procedural operators remain unsupported
 - Scriptlets: only bundled reviewed primitives and aliases are executable
 - Preprocessor expressions are intentionally limited to a capability name or its negation; compound expressions are rejected instead of guessed

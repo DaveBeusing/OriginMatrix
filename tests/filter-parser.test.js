@@ -38,6 +38,31 @@ test("parses inclusive and excluded domain restrictions", () => {
   assert.deepEqual(filter.resourceTypes, ["image"]);
 });
 
+test("parses advanced network modifiers into normalized fields", () => {
+  const result = parseFilterRule("||cdn.example^$frame,3p,to=cdn.example|media.example|~private.cdn.example,method=get|post,match-case");
+  assert.equal(result.status, "supported");
+  assert.deepEqual(result.filter, {
+    type: "network", pattern: "||cdn.example^", domains: [], excludedDomains: [],
+    resourceTypes: ["sub_frame"], thirdParty: true, action: "block",
+    requestDomains: ["cdn.example", "media.example"], excludedRequestDomains: ["private.cdn.example"],
+    requestMethods: ["get", "post"], matchCase: true,
+  });
+  assert.equal(parseFilterRule("||cdn.example^$doc,1p").filter.thirdParty, false);
+  assert.deepEqual(parseFilterRule("||cdn.example^$method=~post").filter.excludedRequestMethods, ["post"]);
+  assert.deepEqual(parseFilterRule("||cdn.example^$denyallow=account.example|private.example").filter.excludedRequestDomains, ["account.example", "private.example"]);
+});
+
+test("parses literal query-parameter removal without approximating advanced forms", () => {
+  assert.deepEqual(parseFilterRule("$removeparam=utm_source").filter, {
+    type: "network", pattern: "*", domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null,
+    action: "redirect", removeParams: ["utm_source"],
+  });
+  assert.equal(parseFilterRule("||example.com^$removeparam=/^utm_/i").reason, "invalid-removeparam");
+  assert.equal(parseFilterRule("@@||example.com^$removeparam=utm_source").reason, "removeparam-exception-not-supported");
+  assert.equal(parseFilterRule("||cdn.example^$to=unrelated.example").reason, "target-domain-does-not-overlap");
+  assert.equal(parseFilterRule("||example.com^$method=get|~post").reason, "conflicting-methods");
+});
+
 test("parses simple cosmetic and selected scriptlet rules", () => {
   assert.deepEqual(parseFilterRule("example.com#?#.card:has-text(Sponsored)").filter, {
     type: "cosmetic", selector: ".card:has-text(Sponsored)", domains: ["example.com"], excludedDomains: [],

@@ -1,4 +1,4 @@
-# OriginMatrix 1.23.0 release candidate
+# OriginMatrix 1.24.0 release candidate
 
 This document separates reproducible repository checks from browser behavior that requires hands-on testing. A blank manual result is not evidence of compatibility.
 
