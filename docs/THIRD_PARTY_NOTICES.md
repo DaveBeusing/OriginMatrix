@@ -38,4 +38,4 @@ OriginMatrix includes unmodified snapshots of **uBlock filters – Ads**, **uBlo
 - Unbreak snapshot: `20260810155226`, SHA-256 `75be24d41ee6d18c509088c98b7464231e0faeb2a802ef85aedf7a7bf2fac7c8`
 - License: <https://github.com/uBlockOrigin/uAssets/blob/master/LICENSE> (GNU General Public License v3.0)
 
-These files are filter data, remain separately subject to their upstream GPL-3.0 terms, and are not incorporated into OriginMatrix's MIT-licensed application code. No uBlock Origin runtime or scriptlet implementation is copied. The uAssets lists are disabled by default until OriginMatrix can evaluate their preprocessor branches rather than activating mutually exclusive rules together.
+These files are filter data, remain separately subject to their upstream GPL-3.0 terms, and are not incorporated into OriginMatrix's MIT-licensed application code. No uBlock Origin runtime or scriptlet implementation is copied. The uAssets lists are enabled by default and their preprocessor branches are evaluated before activation.

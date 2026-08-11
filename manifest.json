@@ -45,17 +45,17 @@
       },
       {
         "id": "core_ublock_ads",
-        "enabled": false,
+        "enabled": true,
         "path": "rules/generated/ublock-ads.json"
       },
       {
         "id": "core_ublock_privacy",
-        "enabled": false,
+        "enabled": true,
         "path": "rules/generated/ublock-privacy.json"
       },
       {
         "id": "core_ublock_unbreak",
-        "enabled": false,
+        "enabled": true,
         "path": "rules/generated/ublock-unbreak.json"
       }
     ]

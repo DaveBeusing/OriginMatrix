@@ -28,16 +28,17 @@ test("activates EasyList and EasyPrivacy through one deduplicated generation", a
   assert.deepEqual(statuses.map(({ id, enabled, state }) => ({ id, enabled, state })), [
     { id: "easylist", enabled: true, state: "active" },
     { id: "easyprivacy", enabled: true, state: "active" },
-    { id: "ublock-ads", enabled: false, state: "disabled" },
-    { id: "ublock-privacy", enabled: false, state: "disabled" },
-    { id: "ublock-quick-fixes", enabled: false, state: "disabled" },
-    { id: "ublock-unbreak", enabled: false, state: "disabled" },
+    { id: "ublock-ads", enabled: true, state: "active" },
+    { id: "ublock-privacy", enabled: true, state: "active" },
+    { id: "ublock-quick-fixes", enabled: true, state: "active" },
+    { id: "ublock-unbreak", enabled: true, state: "active" },
   ]);
   assert.ok(installed.length > 10_000);
   assert.equal(new Set(installed.map(({ id }) => id)).size, installed.length);
+  const enabledRuleCount = installed.length;
   await manager.setEnabled("easyprivacy", false);
   assert.equal(manager.getStatuses()[1].state, "disabled");
-  assert.ok(installed.length < 10_000);
+  assert.ok(installed.length < enabledRuleCount);
 });
 
 test("activates bundled core network snapshots statically without runtime network compilation", async () => {

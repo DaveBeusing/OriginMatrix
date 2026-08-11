@@ -37,5 +37,5 @@ export const UBLOCK_FILTER_LISTS = Object.freeze([UBLOCK_ADS, UBLOCK_PRIVACY, UB
 export const DEFAULT_FILTER_LISTS = Object.freeze([EASYLIST, EASYPRIVACY, ...UBLOCK_FILTER_LISTS]);
 
 function ublockList({ id, title, path, version, updatedAt, sha256, filename, staticRulesetId }) {
-  return Object.freeze({ id, title, enabled: false, path, snapshotVersion: version, snapshotUpdatedAt: updatedAt, sha256, sourceUrl: `https://ublockorigin.github.io/uAssets/filters/${filename}`, licenseUrl: UASSETS_LICENSE, ...(staticRulesetId ? { staticRulesetId } : {}) });
+  return Object.freeze({ id, title, enabled: true, path, snapshotVersion: version, snapshotUpdatedAt: updatedAt, sha256, sourceUrl: `https://ublockorigin.github.io/uAssets/filters/${filename}`, licenseUrl: UASSETS_LICENSE, ...(staticRulesetId ? { staticRulesetId } : {}) });
 }

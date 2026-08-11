@@ -191,8 +191,9 @@ async function toggleFilterList(event) {
   }
   const enabled = button.dataset.enabled !== "true";
   try {
-    await send({ type: "SET_FILTER_LIST_ENABLED", id: button.dataset.listId, enabled });
-    statusElement.textContent = `${button.dataset.listId} ${enabled ? "enabled" : "disabled"}.`;
+    const result = await send({ type: "SET_FILTER_LIST_ENABLED", id: button.dataset.listId, enabled });
+    setFilterListToggleState(button, result.list.enabled);
+    statusElement.textContent = `${button.dataset.listId} ${result.list.enabled ? "enabled" : "disabled"}.`;
     await refreshDashboard();
   } catch (error) { showError(error); if (button.isConnected) button.disabled = false; }
 }
@@ -207,10 +208,8 @@ function filterListRow(list) {
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.dataset.listId = list.id;
-  toggle.dataset.enabled = String(list.enabled);
   toggle.dataset.action = "toggle";
-  toggle.textContent = list.enabled ? "Disable" : "Enable";
-  if (list.enabled) toggle.className = "danger";
+  setFilterListToggleState(toggle, list.enabled);
   const update = document.createElement("button");
   update.type = "button";
   update.dataset.listId = list.id;
@@ -219,6 +218,13 @@ function filterListRow(list) {
   action.append(toggle, update);
   row.append(action);
   return row;
+}
+function setFilterListToggleState(button, enabled) {
+  button.dataset.enabled = String(enabled);
+  button.textContent = enabled ? "Enabled" : "Disabled";
+  button.className = enabled ? "" : "danger";
+  button.setAttribute("aria-label", `${enabled ? "Disable" : "Enable"} filter list`);
+  button.title = `${enabled ? "Disable" : "Enable"} filter list`;
 }
 function logRow(entry) { const row = document.createElement("tr"); const attribution = entry.attributionSource ? `${entry.engine ?? "rule"}: ${entry.attributionSource}` : entry.engine ?? "—"; const values = [new Date(entry.timestamp).toLocaleTimeString(), entry.sourceSite, entry.domain, entry.resourceType, entry.decision, entry.outcome, attribution, entry.filterRule ?? "—", entry.url]; for (const value of values) { const cell = document.createElement("td"); cell.textContent = value; cell.title = value; row.append(cell); } return row; }
 function coverageDiagnosticRow(sample) { const row = document.createElement("tr"); for (const value of [sample.line, sample.type, sample.reason, sample.sourceFilterList, sample.source]) { const cell = document.createElement("td"); cell.textContent = String(value); cell.title = String(value); row.append(cell); } return row; }

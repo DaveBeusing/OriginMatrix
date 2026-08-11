@@ -10,9 +10,9 @@ npm run analyze:ubo -- youtube.com
 
 Append `--json` for the complete machine-readable result. Exact duplicate lines are counted once per source; the same rule in different lists remains separate so source demand is retained. Overall coverage counts primary filter rules. Modifier coverage counts each modifier independently and is therefore not added to the overall denominator. Host coverage includes rules that explicitly name the requested hostname, a parent, or a subdomain; generic rules and related Google/YouTube service domains are not silently attributed to `youtube.com`.
 
-The command analyzes enabled-by-default lists. Add `--all` to include the four bundled opt-in uAssets sources before enabling them.
+The command analyzes enabled-by-default lists. Use `--all` when an explicit full-catalog analysis is required.
 
-With all six bundled snapshots included, the analyzer measures 145,388 of 153,539 primary rules supported (94.7%). Explicit `youtube.com` coverage is 69 of 118 (58.5%). Scriptlet coverage is 1,158 of 3,247 (35.7%), modifier coverage is 18,803 of 23,121 (81.3%), and redirect coverage is 195 of 661 (29.5%). The all-list dataset contains 215 supported preprocessor directives. The uAssets sources remain opt-in because several referenced include snapshots are not bundled yet and broader scriptlet, redirect, and modifier coverage still requires hardening.
+With all six bundled snapshots included, the analyzer measures 145,388 of 153,539 primary rules supported (94.7%). Explicit `youtube.com` coverage is 69 of 118 (58.5%). Scriptlet coverage is 1,158 of 3,247 (35.7%), modifier coverage is 18,803 of 23,121 (81.3%), and redirect coverage is 195 of 661 (29.5%). The all-list dataset contains 215 supported preprocessor directives. Unsupported uAssets syntax remains visible in diagnostics while the bundled sources are enabled by default.
 
 ## Measured compatibility
 

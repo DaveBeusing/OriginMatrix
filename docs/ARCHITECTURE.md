@@ -65,7 +65,7 @@ Phase 13 defines the product semantics independently of incidental DNR ordering:
 
 ## Unified filter-list integration
 
-OriginMatrix ships unmodified, version- and hash-pinned EasyList, EasyPrivacy, and four uBlock Origin uAssets snapshots. Bundled snapshots make protection available offline and keep releases reproducible. Every list is filter data only and is parsed locally; it never becomes executable code. EasyList and EasyPrivacy remain enabled by default. uBlock Ads, Privacy, Quick fixes, and Unbreak are fully catalogued and updateable but remain opt-in while broader syntax coverage is hardened. Their conditional directives now pass through the capability-aware preprocessor before activation.
+OriginMatrix ships unmodified, version- and hash-pinned EasyList, EasyPrivacy, and four uBlock Origin uAssets snapshots. Bundled snapshots make protection available offline and keep releases reproducible. Every list is filter data only and is parsed locally; it never becomes executable code. All six lists are enabled by default and remain independently configurable and updateable. Their conditional directives pass through the capability-aware preprocessor before activation.
 
 At service-worker reconciliation, `UnifiedFilterListManager` loads every enabled source and passes their combined data through one `FilterListService`. Network filters are deduplicated and budgeted before one incremental atomic DNR update, while cosmetic filters, scriptlets, and automatic Matrix attribution use the same combined generation. The dashboard retains independent enable, update, version, checksum, and rule-count state for each source.
 

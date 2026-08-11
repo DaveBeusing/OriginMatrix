@@ -2,7 +2,7 @@
 
 ## Enabled-list demand analysis
 
-OriginMatrix 1.26.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. The development CLI inventories all six bundled snapshots so compatibility work can be ranked before opt-in lists are enabled. Run it for any hostname with:
+OriginMatrix 1.26.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. All six bundled snapshots are enabled by default and the development CLI inventories them so compatibility work can be ranked. Run it for any hostname with:
 
 ```sh
 node tools/analyze-scriptlet-usage.mjs youtube.com
