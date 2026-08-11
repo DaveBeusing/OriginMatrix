@@ -81,7 +81,9 @@ export function abortOnPropertyWrite(propertyPath) {
 
 export function jsonPrune(rawPaths, rawRequiredPaths = "") {
   const parsePaths = (source) => typeof source === "string" ? source.trim().split(/\s+/).filter(Boolean).map((path) => path.split(".")) : [];
-  const safe = (parts) => parts.length > 0 && parts.length <= 8 && parts.every((part) => /^[A-Za-z_$][\w$]*$/.test(part) && !["__proto__", "prototype", "constructor"].includes(part));
+  const safe = (parts) => parts.length > 0 && parts.length <= 8 && parts.every((part) => (
+    ["[]", "[-]"].includes(part) || (/^[A-Za-z_$][\w$]*$/.test(part) && !["__proto__", "prototype", "constructor"].includes(part))
+  ));
   const paths = parsePaths(rawPaths);
   const required = parsePaths(rawRequiredPaths);
   if (paths.length === 0 || paths.length > 16 || required.length > 16 || [...paths, ...required].some((parts) => !safe(parts))) return false;
@@ -89,28 +91,33 @@ export function jsonPrune(rawPaths, rawRequiredPaths = "") {
   const existing = globalThis[registryKey];
   if (existing?.paths) {
     existing.paths.push({ paths, required });
+    if (existing.proxy && JSON.parse !== existing.proxy) JSON.parse = existing.proxy;
     return true;
   }
   const nativeParse = JSON.parse;
   const rules = [{ paths, required }];
   const hasPath = (root, parts) => {
-    let value = root;
-    for (const part of parts) {
-      if ((typeof value !== "object" || value === null) || !Object.prototype.hasOwnProperty.call(value, part)) return false;
-      value = value[part];
-    }
-    return true;
+    if (parts.length === 0) return true;
+    const [part, ...rest] = parts;
+    if (part === "[]" || part === "[-]") return Array.isArray(root) && root.some((value) => hasPath(value, rest));
+    return typeof root === "object" && root !== null && Object.prototype.hasOwnProperty.call(root, part) && hasPath(root[part], rest);
   };
   const removePath = (root, parts) => {
-    let owner = root;
-    for (const part of parts.slice(0, -1)) {
-      if (typeof owner !== "object" || owner === null) return;
-      owner = owner[part];
+    if (parts.length === 0 || typeof root !== "object" || root === null) return;
+    const [part, ...rest] = parts;
+    if (part === "[]") {
+      if (Array.isArray(root)) for (const value of root) removePath(value, rest);
+      return;
     }
-    if (typeof owner === "object" && owner !== null) delete owner[parts.at(-1)];
+    if (part === "[-]") {
+      if (Array.isArray(root)) for (let index = root.length - 1; index >= 0; index -= 1) if (hasPath(root[index], rest)) root.splice(index, 1);
+      return;
+    }
+    if (!Object.prototype.hasOwnProperty.call(root, part)) return;
+    if (rest.length === 0) delete root[part];
+    else removePath(root[part], rest);
   };
-  Object.defineProperty(globalThis, registryKey, { value: { paths: rules }, configurable: false });
-  JSON.parse = new Proxy(nativeParse, {
+  const proxy = new Proxy(nativeParse, {
     apply(target, thisArg, args) {
       const value = Reflect.apply(target, thisArg, args);
       if (typeof value !== "object" || value === null) return value;
@@ -120,6 +127,8 @@ export function jsonPrune(rawPaths, rawRequiredPaths = "") {
       return value;
     },
   });
+  Object.defineProperty(globalThis, registryKey, { value: { paths: rules, proxy }, configurable: false });
+  JSON.parse = proxy;
   return true;
 }
 

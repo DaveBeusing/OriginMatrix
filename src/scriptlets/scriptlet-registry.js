@@ -3,7 +3,8 @@ import { abortOnPropertyRead, abortOnPropertyWrite, jsonPrune, removeAttribute, 
 const SAFE_PROPERTY = /^(?!.*(?:^|\.)(?:__proto__|prototype|constructor)(?:\.|$))[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*){0,7}$/;
 const CONSTANTS = new Set(["true", "false", "null", "undefined", "0", "1", "", "noopFunc", "{}"]);
 const STORAGE_VALUES = new Set(["$remove$", "true", "false", "0", "1", "null", "undefined", ""]);
-const JSON_PATHS = /^(?:[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*){0,7})(?:\s+[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*){0,7}){0,15}$/;
+const JSON_SEGMENT = String.raw`(?:[A-Za-z_$][\w$]*|\[\]|\[-\])`;
+const JSON_PATHS = new RegExp(`^${JSON_SEGMENT}(?:\\.${JSON_SEGMENT}){0,7}(?:\\s+${JSON_SEGMENT}(?:\\.${JSON_SEGMENT}){0,7}){0,15}$`);
 const ATTRIBUTE = /^[a-z_:][a-z0-9_:.-]{0,63}$/i;
 const BEHAVIOR = /^(?:asap|stay)(?:\s+(?:asap|stay))?$/;
 export const SCRIPTLET_PHASE = Object.freeze({ EARLY: "early", NORMAL: "normal" });

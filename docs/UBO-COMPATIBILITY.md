@@ -1,6 +1,6 @@
 # uBO filter compatibility
 
-Version baseline: OriginMatrix `1.25.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
+Version baseline: OriginMatrix `1.26.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
 
 OriginMatrix is an independent Manifest V3 implementation. It treats public uBlock-compatible filter syntax as data and does not embed or copy the uBlock Origin runtime. Run the deterministic analyzer with:
 
@@ -12,7 +12,7 @@ Append `--json` for the complete machine-readable result. Exact duplicate lines 
 
 The command analyzes enabled-by-default lists. Add `--all` to include the four bundled opt-in uAssets sources before enabling them.
 
-With all six bundled snapshots included, the analyzer measures 145,383 of 153,539 primary rules supported (94.7%). Explicit `youtube.com` coverage is 67 of 118 (56.8%). Modifier coverage is 18,803 of 23,121 (81.3%), and redirect coverage is 195 of 661 (29.5%). The all-list dataset contains 215 supported preprocessor directives and 3,247 scriptlet rules. The uAssets sources remain opt-in because several referenced include snapshots are not bundled yet and broader scriptlet, redirect, and modifier coverage still requires hardening.
+With all six bundled snapshots included, the analyzer measures 145,388 of 153,539 primary rules supported (94.7%). Explicit `youtube.com` coverage is 69 of 118 (58.5%). Scriptlet coverage is 1,158 of 3,247 (35.7%), modifier coverage is 18,803 of 23,121 (81.3%), and redirect coverage is 195 of 661 (29.5%). The all-list dataset contains 215 supported preprocessor directives. The uAssets sources remain opt-in because several referenced include snapshots are not bundled yet and broader scriptlet, redirect, and modifier coverage still requires hardening.
 
 ## Measured compatibility
 
@@ -38,6 +38,7 @@ The explicit `youtube.com` subset contains 39 rules: 15 network blocks, four exc
 - Domain-scoped native cosmetic hiding and exceptions
 - The bounded `:has-text(...)` procedural subset
 - Bundled, argument-validated scriptlets registered by OriginMatrix
+- Bounded `json-prune` object paths, array traversal with `[]`, and conditional array-entry removal with `[-]`
 
 ## Partially supported
 
@@ -58,6 +59,7 @@ No unsupported primitive in the current snapshots explicitly references `youtube
 - Response-body/HTML filtering is not available through Declarative Net Request.
 - Popup suppression cannot be represented as ordinary DNR request blocking with equivalent uBO semantics.
 - Remote executable redirect resources and downloaded scriptlets are prohibited.
+- Trusted response replacement, request editing, DOM bypass prevention, and broad fetch/XHR mutation remain unsupported until their semantics and playback safety can be demonstrated without arbitrary filter code.
 - Redirects to the reviewed `noop.js`, `empty.json`, and `empty.txt` resources are supported. Library shims, `redirect-rule`, rewrite filters, and unknown resources remain reported rather than approximated.
 - Chromium/MV3 conditional branches, nested conditions, and safe local includes are evaluated before parsing. HTML-filtering and IP-address branches remain disabled because MV3 cannot provide those capabilities.
 - `$badfilter` removes the matching normalized rule before destination engines run. `$important` uses explicit semantic conflict classes before translation to DNR priorities; Matrix user policy remains authoritative above automatic filters.

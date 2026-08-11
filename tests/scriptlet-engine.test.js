@@ -12,6 +12,7 @@ test("registry exposes only bundled scriptlet identifiers", () => {
   assert.equal(registry.resolveName("aopw"), "abort-on-property-write");
   assert.equal(registry.resolveName("ra"), "remove-attr");
   assert.equal(registry.has("json-prune.js"), true);
+  assert.equal(registry.createInvocation("json-prune", ["entries.[-].command.adClientParams.isAd"]).name, "json-prune");
   assert.equal(registry.getPhase("set-constant"), SCRIPTLET_PHASE.EARLY);
   assert.equal(registry.getPhase("abort-on-property-read"), SCRIPTLET_PHASE.EARLY);
   assert.equal(registry.getPhase("remove-node-text"), SCRIPTLET_PHASE.NORMAL);

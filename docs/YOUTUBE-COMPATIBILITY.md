@@ -1,8 +1,14 @@
 # YouTube compatibility baseline
 
-Version baseline: OriginMatrix `1.25.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
+Version baseline: OriginMatrix `1.26.0`, EasyList snapshot `202608081115`, EasyPrivacy snapshot `202608091151`.
 
 This document is deliberately conservative. Filter coverage is testable offline; actual YouTube behavior changes remotely and must be verified in Chromium. OriginMatrix does not claim guaranteed YouTube ad blocking.
+
+## Phase 8 differential hardening
+
+The all-list analyzer ranks current YouTube gaps from pinned data before implementation. OriginMatrix now accepts bounded uBO JSON array paths: `[]` traverses array elements and `[-]` removes only elements whose remaining path exists. This makes two additional YouTube-relevant `json-prune` rules executable and raises explicit coverage from 67/118 (56.8%) to 69/118 (58.5%); relevant scriptlet coverage rises from 8/37 (21.6%) to 10/37 (27.0%).
+
+The dominant remaining candidates use trusted response replacement, request-body editing, DOM-bypass interception, or fetch/XHR response mutation. They are reported rather than approximated because these primitives can alter playback contracts and require narrower generic implementations plus live evidence. No YouTube-specific hard-coded workaround was added. The repository suite verifies parsing, validation, array traversal, selective removal, unsafe-path rejection, deduplication, and lifecycle behavior. Live outcomes remain governed by the evidence states below.
 
 ## Automated browser acceptance suite
 

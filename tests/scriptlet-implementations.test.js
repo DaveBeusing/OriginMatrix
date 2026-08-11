@@ -35,6 +35,17 @@ test("jsonPrune installs a scoped JSON.parse hook for validated paths", () => {
   } finally { JSON.parse = original; }
 });
 
+test("jsonPrune traverses arrays and removes matching array entries", () => {
+  const original = JSON.parse;
+  try {
+    assert.equal(jsonPrune("items.[].ad entries.[-].command.adClientParams.isAd"), true);
+    assert.deepEqual(JSON.parse('{"items":[{"ad":true,"title":"keep"},{"title":"plain"}],"entries":[{"command":{"adClientParams":{"isAd":true}}},{"command":{"videoId":"ok"}}]}'), {
+      items: [{ title: "keep" }, { title: "plain" }], entries: [{ command: { videoId: "ok" } }],
+    });
+    assert.equal(jsonPrune("entries.[-].__proto__.polluted"), false);
+  } finally { JSON.parse = original; }
+});
+
 test("removeAttribute alters only matching elements", () => {
   const calls = [];
   const element = { removeAttribute(value) { calls.push(["attribute", value]); } };
