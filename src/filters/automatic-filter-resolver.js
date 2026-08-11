@@ -1,4 +1,5 @@
 import { FILTER_TYPE, validateFilter } from "./filter-model.js";
+import { filterSemanticPrecedence, resolveFilterSemantics } from "./filter-semantics-resolver.js";
 
 const HOST_PATTERN = /^\|\|([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*)\^$/i;
 const INHERIT = Object.freeze({ action: "inherit", source: null, matchedFilters: 0 });
@@ -14,7 +15,7 @@ export class AutomaticFilterResolver {
     if (!Array.isArray(filters)) throw new TypeError("Automatic filter input must be an array.");
     if (typeof source !== "string" || source.trim().length === 0) throw new TypeError("Automatic filter source is required.");
     const indexed = [];
-    for (const input of filters) {
+    for (const input of resolveFilterSemantics(filters).filters) {
       if (![FILTER_TYPE.NETWORK, FILTER_TYPE.EXCEPTION].includes(input?.type)) continue;
       const filter = validateFilter(input);
       const match = filter.pattern.match(HOST_PATTERN);
@@ -56,8 +57,8 @@ export class AutomaticFilterResolver {
       && (filter.thirdParty === null || filter.thirdParty === (party === "thirdParty"))
     ));
     if (matches.length === 0) return INHERIT;
-    const exception = matches.some(({ filter }) => filter.type === FILTER_TYPE.EXCEPTION);
-    return Object.freeze({ action: exception ? "allow" : "block", source: this.source, matchedFilters: matches.length });
+    const winner = matches.reduce((best, entry) => filterSemanticPrecedence(entry.filter) > filterSemanticPrecedence(best.filter) ? entry : best);
+    return Object.freeze({ action: winner.filter.type === FILTER_TYPE.EXCEPTION ? "allow" : "block", source: this.source, matchedFilters: matches.length });
   }
 }
 

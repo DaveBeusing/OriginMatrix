@@ -37,6 +37,10 @@ Static rules use priority `10`. Matrix priorities are specificity-derived and st
 
 ## Filter rule model
 
+Before parsing, `FilterPreprocessor` evaluates bounded uBO conditionals against an explicit immutable capability map. OriginMatrix advertises Chromium, MV3, DNR, and its own extension identity; HTML filtering, IP-address filtering, Firefox, Safari, mobile, and uBO Lite identities remain false. Includes accept only relative `.txt` names, reject traversal and remote URLs, cap nesting, and are resolved as filter data through the existing loader.
+
+Network parsing is followed by `FilterSemanticsResolver`. A `$badfilter` directive removes itself and its normalized target before any destination engine sees the generation. Conflict classes are resolved as `normal block < normal exception < important block < important exception`; only afterward does the network compiler translate those classes into documented DNR priorities. Explicit Matrix policy priorities remain above every automatic class and therefore stay authoritative.
+
 `src/filters/filter-model.js` defines immutable normalized models for network blocks, network exceptions, cosmetic selectors, and scriptlet references. These abstract models—not generated DNR rules—are the source of truth for the future filter pipeline. Network models retain pattern, domain restrictions, excluded domains, resource types, party constraint, and semantic action without Chrome-specific conditions or rule IDs.
 
 The network parser recognizes host-anchored and URL patterns, `@@` exceptions, supported resource-type options, `third-party`/`~third-party`, `domain=` inclusions and exclusions, and simple site-scoped cosmetic selectors. Comments and list headers are ignored. Unsupported patterns, options, cosmetic forms, and scriptlets are returned with a reason and line number instead of being guessed.
@@ -55,7 +59,7 @@ Phase 13 defines the product semantics independently of incidental DNR ordering:
 
 ## Unified filter-list integration
 
-OriginMatrix ships unmodified, version- and hash-pinned EasyList, EasyPrivacy, and four uBlock Origin uAssets snapshots. Bundled snapshots make protection available offline and keep releases reproducible. Every list is filter data only and is parsed locally; it never becomes executable code. EasyList and EasyPrivacy remain enabled by default. uBlock Ads, Privacy, Quick fixes, and Unbreak are fully catalogued and updateable but default to disabled because their 215 conditional directives require the Phase 3 preprocessor before safe default activation.
+OriginMatrix ships unmodified, version- and hash-pinned EasyList, EasyPrivacy, and four uBlock Origin uAssets snapshots. Bundled snapshots make protection available offline and keep releases reproducible. Every list is filter data only and is parsed locally; it never becomes executable code. EasyList and EasyPrivacy remain enabled by default. uBlock Ads, Privacy, Quick fixes, and Unbreak are fully catalogued and updateable but remain opt-in while broader syntax coverage is hardened. Their conditional directives now pass through the capability-aware preprocessor before activation.
 
 At service-worker reconciliation, `UnifiedFilterListManager` loads every enabled source and passes their combined data through one `FilterListService`. Network filters are deduplicated and budgeted before one incremental atomic DNR update, while cosmetic filters, scriptlets, and automatic Matrix attribution use the same combined generation. The dashboard retains independent enable, update, version, checksum, and rule-count state for each source.
 

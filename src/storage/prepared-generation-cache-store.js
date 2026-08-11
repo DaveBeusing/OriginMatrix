@@ -1,6 +1,6 @@
 const KEY = "preparedFilterGenerationCache";
 export const PREPARED_CACHE_SCHEMA_VERSION = 1;
-export const FILTER_COMPILER_SCHEMA_VERSION = 1;
+export const FILTER_COMPILER_SCHEMA_VERSION = 2;
 export const PREPARED_CACHE_MAX_BYTES = 4_000_000;
 
 export class PreparedGenerationCacheStore {

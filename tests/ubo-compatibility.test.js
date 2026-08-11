@@ -17,7 +17,7 @@ youtube.com##^script
 
 test("measures uBO compatibility by filter area and requested site", () => {
   const result = analyzeUboCompatibility(fixture, { hostname: "youtube.com" });
-  assert.deepEqual(result.overall, { total: 9, supported: 5, unsupported: 4, percent: 55.6 });
+  assert.deepEqual(result.overall, { total: 9, supported: 6, unsupported: 3, percent: 66.7 });
   assert.deepEqual(result.categories.network, { total: 2, supported: 1, unsupported: 1, percent: 50 });
   assert.deepEqual(result.categories.modifiers, { total: 4, supported: 2, unsupported: 2, percent: 50 });
   assert.deepEqual(result.categories.exceptions, { total: 1, supported: 1, unsupported: 0, percent: 100 });
@@ -25,7 +25,7 @@ test("measures uBO compatibility by filter area and requested site", () => {
   assert.deepEqual(result.categories.procedural, { total: 1, supported: 1, unsupported: 0, percent: 100 });
   assert.deepEqual(result.categories.scriptlets, { total: 1, supported: 1, unsupported: 0, percent: 100 });
   assert.deepEqual(result.categories.redirects, { total: 1, supported: 0, unsupported: 1, percent: 0 });
-  assert.deepEqual(result.categories.preprocessors, { total: 1, supported: 0, unsupported: 1, percent: 0 });
+  assert.deepEqual(result.categories.preprocessors, { total: 1, supported: 1, unsupported: 0, percent: 100 });
   assert.deepEqual(result.siteRelevant.overall, { total: 6, supported: 3, unsupported: 3, percent: 50 });
 });
 
@@ -35,7 +35,6 @@ test("ranks actual unsupported primitives with sources, domains, and site releva
     { primitive: "html-filtering", occurrences: 1, youtubeRelevant: 1, sourceLists: ["Fixture"] },
     { primitive: "redirect", occurrences: 1, youtubeRelevant: 1, sourceLists: ["Fixture"] },
     { primitive: "removeparam", occurrences: 1, youtubeRelevant: 1, sourceLists: ["Fixture"] },
-    { primitive: "!#if", occurrences: 1, youtubeRelevant: 0, sourceLists: ["Fixture"] },
   ]);
   assert.ok(result.unsupportedRanking.find(({ primitive }) => primitive === "redirect").affectedDomains.includes("youtube.com"));
 });
@@ -52,5 +51,5 @@ test("is deterministic, deduplicates within a source, and retains cross-list dem
 
 test("counts repeated preprocessor directives because each controls a distinct branch", () => {
   const result = analyzeUboCompatibility([{ name: "Directives", source: "!#if env_mv3\n!#endif\n!#if env_mv3\n!#endif" }]);
-  assert.deepEqual(result.categories.preprocessors, { total: 4, supported: 0, unsupported: 4, percent: 0 });
+  assert.deepEqual(result.categories.preprocessors, { total: 4, supported: 4, unsupported: 0, percent: 100 });
 });

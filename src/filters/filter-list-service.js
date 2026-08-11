@@ -3,9 +3,10 @@ import { parseFilterText } from "./filter-parser.js";
 import { NetworkFilterCompiler } from "./network-filter-compiler.js";
 import { AutomaticFilterResolver } from "./automatic-filter-resolver.js";
 import { createPreparedCacheIdentity } from "../storage/prepared-generation-cache-store.js";
+import { preprocessFilterText } from "./filter-preprocessor.js";
 
 export class FilterListService {
-  constructor({ list, networkEngine, compiler = new NetworkFilterCompiler(), cosmeticEngine = null, scriptletEngine = null, automaticResolver = new AutomaticFilterResolver(), preparedGenerationStore = null, loadText, now = () => performance.now() }) {
+  constructor({ list, networkEngine, compiler = new NetworkFilterCompiler(), cosmeticEngine = null, scriptletEngine = null, automaticResolver = new AutomaticFilterResolver(), preparedGenerationStore = null, loadText, include = null, now = () => performance.now() }) {
     if (!list?.id || !list?.path) throw new TypeError("Filter list metadata is required.");
     if (!networkEngine || typeof networkEngine.replaceFilterRules !== "function") throw new TypeError("Network Engine is required.");
     if (typeof loadText !== "function") throw new TypeError("Filter list text loader is required.");
@@ -17,6 +18,7 @@ export class FilterListService {
     this.automaticResolver = automaticResolver;
     this.preparedGenerationStore = preparedGenerationStore;
     this.loadText = loadText;
+    this.include = include;
     this.now = now;
     this.features = Object.freeze({ network: true, cosmetic: true, scriptlets: true });
     this.enabled = list.enabled;
@@ -63,7 +65,8 @@ export class FilterListService {
     }
     const preparationStarted = this.now();
     const parsingStarted = this.now();
-    const parsed = parseFilterText(source);
+    const preprocessed = await preprocessFilterText(source, { include: this.include, sourceName: this.list.path });
+    const parsed = parseFilterText(preprocessed.source);
     this.performance.parsingTimeMs = elapsed(this.now(), parsingStarted);
     const networkFilters = this.features.network ? parsed.filters : [];
     const cosmeticGeneration = this.features.cosmetic && this.cosmeticEngine ? this.cosmeticEngine.prepare(parsed.filters) : { filters: [], unsupported: [] };
@@ -109,6 +112,12 @@ export class FilterListService {
         rulesUnsupported: parsed.diagnostics.rulesUnsupported,
         rulesCompiled: compiled.diagnostics.rulesCompiled,
         rulesOptimized: compiled.diagnostics.rulesOptimized,
+        preprocessorDirectives: preprocessed.diagnostics.directives,
+        preprocessorBranchesExcluded: preprocessed.diagnostics.branchesExcluded,
+        includesResolved: preprocessed.diagnostics.includesResolved,
+        includesSkipped: preprocessed.diagnostics.includesSkipped,
+        badfilterDirectives: compiled.diagnostics.badfilterDirectives,
+        filtersDisabled: compiled.diagnostics.filtersDisabled,
       }),
     });
     this.preparedCache = { source, featureKey, reservedDynamicRules, generation };

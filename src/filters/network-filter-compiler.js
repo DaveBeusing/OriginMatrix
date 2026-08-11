@@ -2,11 +2,14 @@ import { stableHash } from "../engine/rule-id-manager.js";
 import { RuleBudget } from "../network/rule-budget.js";
 import { DYNAMIC_RULE_RANGES } from "../network/rule-ranges.js";
 import { FILTER_TYPE, validateFilter } from "./filter-model.js";
+import { filterSemanticPrecedence, resolveFilterSemantics } from "./filter-semantics-resolver.js";
 
 const FILTER_RULE_MIN = DYNAMIC_RULE_RANGES.filters.minimum;
 const FILTER_RULE_SIZE = DYNAMIC_RULE_RANGES.filters.maximum - FILTER_RULE_MIN + 1;
 const BLOCK_PRIORITY = 10_000;
 const EXCEPTION_PRIORITY = 20_000;
+const IMPORTANT_BLOCK_PRIORITY = 30_000;
+const IMPORTANT_EXCEPTION_PRIORITY = 40_000;
 const MAX_AGGREGATED_DOMAINS = 1_000;
 const HOST_PATTERN = /^\|\|([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*)\^$/i;
 
@@ -21,7 +24,8 @@ export class NetworkFilterCompiler {
       throw new TypeError("Reserved dynamic rule count must be a non-negative integer.");
     }
 
-    const normalized = filters.map(validateFilter);
+    const semantics = resolveFilterSemantics(filters);
+    const normalized = semantics.filters.map(validateFilter);
     const networkFilters = normalized.filter(({ type }) => type === FILTER_TYPE.NETWORK || type === FILTER_TYPE.EXCEPTION);
     const uniqueFilters = deduplicate(networkFilters);
     const unoptimizedRules = uniqueFilters.map(compileCondition);
@@ -44,6 +48,7 @@ export class NetworkFilterCompiler {
         reservedDynamicRules,
         dynamicRulesRequired: reservedDynamicRules + rules.length,
         signatureCacheHits: assigned.length,
+        ...semantics.diagnostics,
       }),
     });
   }
@@ -59,10 +64,15 @@ function compileCondition({ filter, attributions }) {
   if (filter.resourceTypes.length > 0) condition.resourceTypes = filter.resourceTypes;
   if (filter.thirdParty !== null) condition.domainType = filter.thirdParty ? "thirdParty" : "firstParty";
   return { rule: {
-    priority: filter.type === FILTER_TYPE.EXCEPTION ? EXCEPTION_PRIORITY : BLOCK_PRIORITY,
+    priority: priorityFor(filter),
     action: { type: filter.type === FILTER_TYPE.EXCEPTION ? "allow" : "block" },
     condition,
   }, attributions };
+}
+
+function priorityFor(filter) {
+  const precedence = filterSemanticPrecedence(filter);
+  return [0, BLOCK_PRIORITY, EXCEPTION_PRIORITY, IMPORTANT_BLOCK_PRIORITY, IMPORTANT_EXCEPTION_PRIORITY][precedence];
 }
 
 function deduplicate(filters) {
@@ -129,5 +139,5 @@ function stableStringify(value) {
   return JSON.stringify(value);
 }
 
-export const NETWORK_FILTER_PRIORITY = Object.freeze({ block: BLOCK_PRIORITY, exception: EXCEPTION_PRIORITY });
+export const NETWORK_FILTER_PRIORITY = Object.freeze({ block: BLOCK_PRIORITY, exception: EXCEPTION_PRIORITY, importantBlock: IMPORTANT_BLOCK_PRIORITY, importantException: IMPORTANT_EXCEPTION_PRIORITY });
 export const NETWORK_FILTER_RULE_RANGE = Object.freeze({ minimum: FILTER_RULE_MIN, maximum: FILTER_RULE_MIN + FILTER_RULE_SIZE - 1 });

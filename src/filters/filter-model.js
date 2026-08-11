@@ -73,6 +73,8 @@ export function validateFilter(filter) {
 
 function createNetworkLikeFilter(input, type, action) {
   const pattern = requiredText(input?.pattern, "Network pattern");
+  if (input?.important !== undefined && typeof input.important !== "boolean") throw new TypeError("important must be a boolean.");
+  if (input?.badfilter !== undefined && typeof input.badfilter !== "boolean") throw new TypeError("badfilter must be a boolean.");
   const thirdParty = input.thirdParty ?? null;
   if (![true, false, null].includes(thirdParty)) throw new TypeError("thirdParty must be true, false, or null.");
   const resourceTypes = normalizeStrings(input.resourceTypes, "resourceTypes");
@@ -87,6 +89,8 @@ function createNetworkLikeFilter(input, type, action) {
     resourceTypes,
     thirdParty,
     action,
+    ...(input.important === true ? { important: true } : {}),
+    ...(input.badfilter === true ? { badfilter: true } : {}),
     ...attribution(input),
   });
 }

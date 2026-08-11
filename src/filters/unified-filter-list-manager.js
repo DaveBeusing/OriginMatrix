@@ -2,6 +2,7 @@ import { parseFilterText } from "./filter-parser.js";
 import { FilterListService } from "./filter-list-service.js";
 import { FILTER_TYPE } from "./filter-model.js";
 import { analyzeRelevantScriptletCoverage } from "../diagnostics/scriptlet-usage.js";
+import { preprocessFilterText } from "./filter-preprocessor.js";
 
 const UNIFIED_LIST = Object.freeze({
   id: "originmatrix-default-lists",
@@ -23,7 +24,10 @@ export class UnifiedFilterListManager {
     this.entries = new Map(lists.map((list) => [list.id, {
       list, enabled: list.enabled, source: null, metadata: null, status: statusFrom(list, list.enabled, "loading"),
     }]));
-    this.service = new FilterListService({ list: UNIFIED_LIST, networkEngine, compiler, cosmeticEngine, scriptletEngine, preparedGenerationStore, loadText });
+    this.service = new FilterListService({ list: UNIFIED_LIST, networkEngine, compiler, cosmeticEngine, scriptletEngine, preparedGenerationStore, loadText, include: async (name) => {
+      if (name.includes("..") || name.includes(":")) return null;
+      try { return await loadText(`filters/${name}`); } catch { return null; }
+    } });
     this.customSource = "";
     this.scriptletCoverageCache = new Map();
   }
@@ -144,7 +148,8 @@ export class UnifiedFilterListManager {
     for (const entry of this.entries.values()) {
       if (!entry.enabled) { entry.status = statusFrom(entry.list, false, "disabled"); continue; }
       const source = entry.source ?? await this.loadText(entry.list.path);
-      const parsed = parseFilterText(source);
+      const preprocessed = await preprocessFilterText(source, { sourceName: entry.list.path, include: (name) => this.#loadInclude(name) });
+      const parsed = parseFilterText(preprocessed.source);
       entry.status = statusFrom(entry.list, true, "active", entry.metadata, parsed);
     }
   }
@@ -152,6 +157,11 @@ export class UnifiedFilterListManager {
   #adapter(id) {
     const entry = this.#entry(id);
     return { list: entry.list, prepareSource: (source, metadata) => this.#prepareCandidate(id, source, metadata) };
+  }
+
+  async #loadInclude(name) {
+    if (name.includes("..") || name.includes(":")) return null;
+    try { return await this.loadText(`filters/${name}`); } catch { return null; }
   }
 
   #entry(id) {

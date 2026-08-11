@@ -26,6 +26,11 @@ test("parses network exceptions, resource types, and party constraints", () => {
   assert.equal(parseFilterRule("||static.example^$~third-party").filter.thirdParty, false);
 });
 
+test("normalizes important and badfilter as semantic flags", () => {
+  assert.equal(parseFilterRule("||ads.example^$important").filter.important, true);
+  assert.equal(parseFilterRule("||ads.example^$badfilter").filter.badfilter, true);
+});
+
 test("parses inclusive and excluded domain restrictions", () => {
   const filter = parseFilterRule("||ads.example^$image,domain=news.example|shop.example|~private.example").filter;
   assert.deepEqual(filter.domains, ["news.example", "shop.example"]);
