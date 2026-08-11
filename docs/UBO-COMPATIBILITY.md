@@ -1,6 +1,6 @@
 # uBO filter compatibility
 
-Version baseline: OriginMatrix `1.24.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
+Version baseline: OriginMatrix `1.25.0`, EasyList `202608081115`, EasyPrivacy `202608091151`.
 
 OriginMatrix is an independent Manifest V3 implementation. It treats public uBlock-compatible filter syntax as data and does not embed or copy the uBlock Origin runtime. Run the deterministic analyzer with:
 

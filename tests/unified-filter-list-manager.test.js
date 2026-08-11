@@ -40,6 +40,30 @@ test("activates EasyList and EasyPrivacy through one deduplicated generation", a
   assert.ok(installed.length < 10_000);
 });
 
+test("activates bundled core network snapshots statically without runtime network compilation", async () => {
+  let installed = [];
+  let enabledRulesets = ["base-network"];
+  const networkEngine = {
+    static: { async getEnabledRulesets() { return [...enabledRulesets]; } },
+    async getDynamicRules() { return installed; },
+    async replaceFilterRules(rules) { installed = rules; },
+    async replaceStaticFilterRulesets(ids) { enabledRulesets = ["base-network", ...ids]; },
+  };
+  const manager = new UnifiedFilterListManager({
+    lists: [DEFAULT_FILTER_LISTS[0], DEFAULT_FILTER_LISTS[1]], networkEngine,
+    compiler: new NetworkFilterCompiler(), cosmeticEngine: new CosmeticEngine(),
+    scriptletEngine: new ScriptletEngine({ api: { executeScript: async () => [] } }),
+    loadText: (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8"),
+    settingsStore: { async getAll() { return {}; }, async setEnabled() {} },
+  });
+  await manager.initialize();
+  assert.deepEqual(enabledRulesets, ["base-network", "core_easylist", "core_easyprivacy"]);
+  assert.equal(installed.length, 0);
+  assert.ok(manager.resolveAutomatic({ topDomain: "example.com", targetDomain: "doubleclick.net", resourceType: "script", party: "thirdParty" }));
+  await manager.setEnabled("easyprivacy", false);
+  assert.deepEqual(enabledRulesets, ["base-network", "core_easylist"]);
+});
+
 test("bundled uAssets snapshots match pinned metadata and remain opt-in", async () => {
   for (const list of UBLOCK_FILTER_LISTS) {
     const bytes = await readFile(new URL(`../${list.path}`, import.meta.url));

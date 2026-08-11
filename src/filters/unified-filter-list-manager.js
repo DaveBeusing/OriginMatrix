@@ -29,6 +29,7 @@ export class UnifiedFilterListManager {
       try { return await loadText(`filters/${name}`); } catch { return null; }
     } });
     this.customSource = "";
+    this.features = Object.freeze({ network: true, cosmetic: true, scriptlets: true });
     this.scriptletCoverageCache = new Map();
   }
 
@@ -46,7 +47,7 @@ export class UnifiedFilterListManager {
 
   async activateAll() { await this.#rebuild(); return this.getStatuses(); }
   getStatuses() { return [...this.entries.values()].map(({ status }) => status); }
-  configure(features) { return this.service.configure(features); }
+  configure(features) { this.features = this.service.configure(features); return this.features; }
   resolveAutomatic(context) { return this.service.resolveAutomatic(context); }
   getPerformanceDiagnostics() { return this.service.getPerformanceDiagnostics(); }
   configureCustomSource(source) { this.customSource = String(source ?? ""); this.scriptletCoverageCache.clear(); }
@@ -94,8 +95,7 @@ export class UnifiedFilterListManager {
     entry.source = staged.source;
     entry.metadata = staged.metadata;
     try {
-      await this.service.activatePrepared(staged.prepared);
-      await this.#refreshStatuses();
+      await this.#rebuild();
       await this.updater.persist(id, staged);
       this.scriptletCoverageCache.clear();
       return entry.status;
@@ -110,14 +110,35 @@ export class UnifiedFilterListManager {
   async #rebuild() {
     this.scriptletCoverageCache.clear();
     const sources = await this.#sources();
+    const supportsStaticRulesets = typeof this.service.networkEngine.replaceStaticFilterRulesets === "function";
+    const staticEntries = [...this.entries.values()].filter(({ list, enabled, source }) => (
+      supportsStaticRulesets && this.features.network && enabled && source === null && list.staticRulesetId
+    ));
+    const staticRulesetIds = staticEntries.map(({ list }) => list.staticRulesetId);
+    const previousRulesetIds = supportsStaticRulesets
+      ? (await this.service.networkEngine.static?.getEnabledRulesets?.() ?? []).filter((id) => id.startsWith("core_"))
+      : [];
+    this.service.configureStaticNetworkSources(staticEntries.map(({ list }) => list.title));
     if (sources.length === 0 && !this.customSource.trim()) {
       this.service.setEnabled(false);
-      await this.service.activate();
+      try {
+        if (supportsStaticRulesets) await this.service.networkEngine.replaceStaticFilterRulesets(staticRulesetIds);
+        await this.service.activate();
+      } catch (error) {
+        if (supportsStaticRulesets) await this.service.networkEngine.replaceStaticFilterRulesets(previousRulesetIds);
+        throw error;
+      }
     } else {
       this.service.setEnabled(true);
       const source = this.#combinedSource(sources);
       this.service.setSource(source, { version: sources.map(({ entry }) => entry.metadata?.version ?? entry.list.snapshotVersion).join("+") });
-      await this.service.activate();
+      try {
+        if (supportsStaticRulesets) await this.service.networkEngine.replaceStaticFilterRulesets(staticRulesetIds);
+        await this.service.activate();
+      } catch (error) {
+        if (supportsStaticRulesets) await this.service.networkEngine.replaceStaticFilterRulesets(previousRulesetIds);
+        throw error;
+      }
     }
     await this.#refreshStatuses();
   }
@@ -125,6 +146,10 @@ export class UnifiedFilterListManager {
   async #prepareCandidate(id, source, metadata) {
     const sources = await this.#sources({ id, source });
     const combined = this.#combinedSource(sources);
+    const supportsStaticRulesets = typeof this.service.networkEngine.replaceStaticFilterRulesets === "function";
+    this.service.configureStaticNetworkSources([...this.entries.values()].filter(({ list, enabled, source: override }) => (
+      supportsStaticRulesets && this.features.network && enabled && list.id !== id && override === null && list.staticRulesetId
+    )).map(({ list }) => list.title));
     return this.service.prepareSource(combined, metadata);
   }
 

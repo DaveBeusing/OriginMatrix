@@ -31,9 +31,9 @@ Future filters ──────┘      ├── StaticRuleManager
 
 ## Bundled static network filtering
 
-`rules/base-network.json` is a small, versioned proof-of-architecture ruleset. It blocks selected advertising endpoints and reserved `.example` test targets for subresources while leaving main-frame navigation untouched. It does not download data, parse external filter syntax, or act as a hand-maintained production filter database.
+`rules/base-network.json` is a small, versioned proof-of-architecture ruleset. It blocks selected advertising endpoints and reserved `.example` test targets for subresources while leaving main-frame navigation untouched. The deterministic `tools/build-static-rulesets.mjs` pipeline additionally compiles the pinned EasyList, EasyPrivacy, uBlock Ads, uBlock Privacy, and uBlock Unbreak snapshots into separate files under `rules/generated/`. Its metadata binds every artifact to the source checksum and version, compiler version, rule count, unsupported count, and output checksum; generation fails rather than truncating the 300,000-rule static budget.
 
-Static rules use priority `10`. Matrix priorities are specificity-derived and start at `100,000,000`; therefore an explicit Matrix `allow` has higher priority than a matching automatic block. Dynamic and tab-scoped session generations remain independent from the static ruleset and keep their reserved ID ranges.
+Generated rules preserve the compiler's semantic priorities. Matrix priorities are specificity-derived and start at `100,000,000`; therefore an explicit Matrix decision remains authoritative over automatic rules. Bundled core snapshots are enabled through existing per-list settings without runtime network compilation. A downloaded list generation disables its bundled static ruleset and moves that list into the dynamic layer. Quick Fixes, My Filters, Matrix rules, user overrides, and session rules remain dynamic; core cosmetic and scriptlet data is still prepared at runtime.
 
 ## Filter rule model
 

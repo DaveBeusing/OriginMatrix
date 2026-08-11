@@ -1,0 +1,61 @@
+{
+  "compilerVersion": 3,
+  "totalRuleCount": 15497,
+  "rulesets": [
+    {
+      "id": "core_easylist",
+      "listId": "easylist",
+      "sourceVersion": "202608081115",
+      "sourceChecksum": "f16690725f8fd3bfd292fc05e93ee51dd4f6c37d743ef95a5ba98239d8025696",
+      "compilerVersion": 3,
+      "generatedRuleCount": 3621,
+      "unsupportedCount": 3533,
+      "outputChecksum": "7e882b964942150428115a040448811b69f12a8482b8d8a9210e1c91d7fd6233",
+      "path": "rules/generated/easylist.json"
+    },
+    {
+      "id": "core_easyprivacy",
+      "listId": "easyprivacy",
+      "sourceVersion": "202608091151",
+      "sourceChecksum": "6efd5de59b38243f2196075824c78d4ab2f26175ca2a2b73f8557c1110501b08",
+      "compilerVersion": 3,
+      "generatedRuleCount": 8879,
+      "unsupportedCount": 135,
+      "outputChecksum": "bfa22e198beecf3705fb6553d5fc54350973877b9f939844f5d9a66bcd712af9",
+      "path": "rules/generated/easyprivacy.json"
+    },
+    {
+      "id": "core_ublock_ads",
+      "listId": "ublock-ads",
+      "sourceVersion": "20260810164418",
+      "sourceChecksum": "2f0618722b2a033fd2dd0d42d9b227f5491d4f4f90ab7a1122427fbf7e0315b6",
+      "compilerVersion": 3,
+      "generatedRuleCount": 766,
+      "unsupportedCount": 1881,
+      "outputChecksum": "a01eb0c3ded02588bb8f2b1d3ec9911a8709563129ac94384f7ed664e4222da2",
+      "path": "rules/generated/ublock-ads.json"
+    },
+    {
+      "id": "core_ublock_privacy",
+      "listId": "ublock-privacy",
+      "sourceVersion": "20260811151633",
+      "sourceChecksum": "3a48ac48a6b0ed7d95d9a556db765c7543e62da46eb36344aec798da7fb2135f",
+      "compilerVersion": 3,
+      "generatedRuleCount": 959,
+      "unsupportedCount": 421,
+      "outputChecksum": "c77f4453cfb40efac5fb98de836e2bcb25b198074e695e10b3fcd1b1fec1c717",
+      "path": "rules/generated/ublock-privacy.json"
+    },
+    {
+      "id": "core_ublock_unbreak",
+      "listId": "ublock-unbreak",
+      "sourceVersion": "20260810155226",
+      "sourceChecksum": "75be24d41ee6d18c509088c98b7464231e0faeb2a802ef85aedf7a7bf2fac7c8",
+      "compilerVersion": 3,
+      "generatedRuleCount": 1272,
+      "unsupportedCount": 417,
+      "outputChecksum": "3247a42e5940f32850af6b86c4acb8761ae7f3ac9c49a7febd70ab7299ec0f9a",
+      "path": "rules/generated/ublock-unbreak.json"
+    }
+  ]
+}

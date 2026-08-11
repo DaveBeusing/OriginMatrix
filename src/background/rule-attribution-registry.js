@@ -1,5 +1,11 @@
 import { DYNAMIC_RULE_RANGES, SESSION_RULE_RANGE } from "../network/rule-ranges.js";
 
+const STATIC_SOURCES = Object.freeze({
+  core_easylist: "EasyList", core_easyprivacy: "EasyPrivacy",
+  core_ublock_ads: "uBlock filters – Ads", core_ublock_privacy: "uBlock filters – Privacy",
+  core_ublock_unbreak: "uBlock filters – Unbreak",
+});
+
 export class RuleAttributionRegistry {
   constructor() { this.rules = new Map(); }
 
@@ -14,6 +20,7 @@ export class RuleAttributionRegistry {
     const known = this.rules.get(key(rulesetId, ruleId));
     if (known) return selectAttribution(known, url);
     if (rulesetId === "base-network") return Object.freeze({ decision: "blocked", engine: "network", source: "Base network rules", rule: `base-network:${ruleId}`, category: ruleId === 1 ? "ads" : null });
+    if (STATIC_SOURCES[rulesetId]) return Object.freeze({ decision: "unknown", engine: "network", source: STATIC_SOURCES[rulesetId], rule: `${rulesetId}:${ruleId}`, category: /privacy/i.test(STATIC_SOURCES[rulesetId]) ? "trackers" : "ads" });
     if (rulesetId === "_dynamic" && inRange(ruleId, DYNAMIC_RULE_RANGES.filters)) return unknown("network", "Filter list");
     if (rulesetId === "_dynamic" && inRange(ruleId, DYNAMIC_RULE_RANGES.matrix)) return unknown("matrix", "Persistent Matrix");
     if (rulesetId === "_session" && inRange(ruleId, SESSION_RULE_RANGE)) return unknown("matrix", "Temporary Matrix");

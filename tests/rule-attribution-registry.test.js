@@ -12,6 +12,7 @@ test("attributes static, filter, persistent Matrix, and temporary Matrix rules",
     sessionRules: [{ id: 900_001, action: { type: "modifyHeaders" } }],
   });
   assert.deepEqual(registry.resolve({ rulesetId: "base-network", ruleId: 1 }), { decision: "blocked", engine: "network", source: "Base network rules", rule: "base-network:1", category: "ads" });
+  assert.deepEqual(registry.resolve({ rulesetId: "core_easyprivacy", ruleId: 42 }), { decision: "unknown", engine: "network", source: "EasyPrivacy", rule: "core_easyprivacy:42", category: "trackers" });
   assert.deepEqual(registry.resolve({ rulesetId: "_dynamic", ruleId: 500_001 }), { decision: "blocked", engine: "network", source: "Filter list", rule: null, category: null });
   assert.deepEqual(registry.resolve({ rulesetId: "_dynamic", ruleId: 100_001 }), { decision: "allowed", engine: "matrix", source: "User Matrix Policy", rule: "allow * → * (any, all)", category: null });
   assert.deepEqual(registry.resolve({ rulesetId: "_session", ruleId: 900_001 }), { decision: "modified", engine: "matrix", source: "Session Override", rule: "modifyHeaders * → * (any, all)", category: null });

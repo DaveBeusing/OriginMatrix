@@ -21,6 +21,7 @@ export class FilterListService {
     this.include = include;
     this.now = now;
     this.features = Object.freeze({ network: true, cosmetic: true, scriptlets: true });
+    this.staticNetworkSources = new Set();
     this.enabled = list.enabled;
     this.sourceOverride = null;
     this.sourceMetadata = null;
@@ -56,7 +57,7 @@ export class FilterListService {
     const reservedDynamicRules = dynamicRules.filter(({ id }) => (
       id < DYNAMIC_RULE_RANGES.filters.minimum || id > DYNAMIC_RULE_RANGES.filters.maximum
     )).length;
-    const featureKey = JSON.stringify(this.features);
+    const featureKey = JSON.stringify({ ...this.features, staticNetworkSources: [...this.staticNetworkSources].sort() });
     if (this.preparedCache?.source === source
       && this.preparedCache.featureKey === featureKey
       && this.preparedCache.reservedDynamicRules === reservedDynamicRules) {
@@ -68,10 +69,11 @@ export class FilterListService {
     const preprocessed = await preprocessFilterText(source, { include: this.include, sourceName: this.list.path });
     const parsed = parseFilterText(preprocessed.source);
     this.performance.parsingTimeMs = elapsed(this.now(), parsingStarted);
-    const networkFilters = this.features.network ? parsed.filters : [];
+    const allNetworkFilters = this.features.network ? parsed.filters : [];
+    const networkFilters = allNetworkFilters.filter(({ sourceList }) => !this.staticNetworkSources.has(sourceList));
     const cosmeticGeneration = this.features.cosmetic && this.cosmeticEngine ? this.cosmeticEngine.prepare(parsed.filters) : { filters: [], unsupported: [] };
     const scriptletGeneration = this.features.scriptlets && this.scriptletEngine ? this.scriptletEngine.prepareGeneration(parsed.filters) : { filters: [], unsupported: [] };
-    const automaticGeneration = this.automaticResolver.prepare(networkFilters, { source: this.list.title });
+    const automaticGeneration = this.automaticResolver.prepare(allNetworkFilters, { source: this.list.title });
     const identity = this.preparedGenerationStore
       ? createPreparedCacheIdentity({ sourceChecksum: await sha256(source), featureKey, reservedDynamicRules })
       : null;
@@ -172,6 +174,12 @@ export class FilterListService {
     }
     this.features = Object.freeze(Object.fromEntries(names.map((name) => [name, features[name]])));
     return this.features;
+  }
+
+  configureStaticNetworkSources(sourceNames) {
+    if (!Array.isArray(sourceNames) || sourceNames.some((name) => typeof name !== "string" || !name)) throw new TypeError("Static network source names must be non-empty strings.");
+    this.staticNetworkSources = new Set(sourceNames);
+    return Object.freeze([...this.staticNetworkSources].sort());
   }
 }
 

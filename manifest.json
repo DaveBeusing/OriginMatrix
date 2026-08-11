@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OriginMatrix",
-  "version": "1.24.0",
+  "version": "1.25.0",
   "minimum_chrome_version": "121",
   "description": "A granular request firewall for the modern web.",
   "icons": {
@@ -32,6 +32,31 @@
         "id": "base-network",
         "enabled": true,
         "path": "rules/base-network.json"
+      },
+      {
+        "id": "core_easylist",
+        "enabled": true,
+        "path": "rules/generated/easylist.json"
+      },
+      {
+        "id": "core_easyprivacy",
+        "enabled": true,
+        "path": "rules/generated/easyprivacy.json"
+      },
+      {
+        "id": "core_ublock_ads",
+        "enabled": false,
+        "path": "rules/generated/ublock-ads.json"
+      },
+      {
+        "id": "core_ublock_privacy",
+        "enabled": false,
+        "path": "rules/generated/ublock-privacy.json"
+      },
+      {
+        "id": "core_ublock_unbreak",
+        "enabled": false,
+        "path": "rules/generated/ublock-unbreak.json"
       }
     ]
   },

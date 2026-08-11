@@ -1,8 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { DnrCompiler } from "../src/engine/dnr-compiler.js";
 import { createPolicy } from "../src/shared/models.js";
+import { DEFAULT_FILTER_LISTS } from "../src/filters/filter-list-catalog.js";
+import { FILTER_COMPILER_SCHEMA_VERSION } from "../src/storage/prepared-generation-cache-store.js";
 
 const root = new URL("../", import.meta.url);
 
@@ -45,4 +48,27 @@ test("Matrix allows override bundled blocks while session rules stay isolated", 
   assert.deepEqual(sessionRule.condition.tabIds, [42]);
   assert.ok(sessionRule.id >= 900000);
   assert.ok(sessionRule.priority > 10);
+});
+
+test("generated core rulesets match deterministic metadata and manifest references", async () => {
+  const manifest = await readJson("manifest.json");
+  const metadata = await readJson("rules/generated/metadata.json");
+  assert.equal(metadata.compilerVersion, FILTER_COMPILER_SCHEMA_VERSION);
+  assert.ok(metadata.totalRuleCount > 10_000 && metadata.totalRuleCount <= 300_000);
+  assert.equal(metadata.rulesets.length, 5);
+  let total = 0;
+  for (const entry of metadata.rulesets) {
+    const list = DEFAULT_FILTER_LISTS.find(({ id }) => id === entry.listId);
+    const resource = manifest.declarative_net_request.rule_resources.find(({ id }) => id === entry.id);
+    assert.equal(entry.sourceChecksum, list.sha256);
+    assert.equal(resource.path, entry.path);
+    assert.equal(resource.enabled, list.enabled);
+    const serialized = await readFile(new URL(`../${entry.path}`, import.meta.url), "utf8");
+    assert.equal(createHash("sha256").update(serialized).digest("hex"), entry.outputChecksum);
+    const rules = JSON.parse(serialized);
+    assert.equal(rules.length, entry.generatedRuleCount);
+    assert.equal(new Set(rules.map(({ id }) => id)).size, rules.length);
+    total += rules.length;
+  }
+  assert.equal(total, metadata.totalRuleCount);
 });

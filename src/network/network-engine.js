@@ -21,6 +21,12 @@ export class NetworkEngine {
     return this.dynamic.replaceInRange(rules, DYNAMIC_RULE_RANGES.filters);
   }
 
+  async replaceStaticFilterRulesets(rulesetIds) {
+    const current = await this.static.getEnabledRulesets();
+    const preserved = current.filter((id) => !id.startsWith("core_"));
+    return this.static.setEnabledRulesets([...preserved, ...rulesetIds]);
+  }
+
   getDynamicRules() { return this.dynamic.getRules(); }
   getSessionRules() { return this.session.getRules(); }
 
