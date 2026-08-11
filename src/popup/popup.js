@@ -18,6 +18,9 @@ const requestCountElement = document.querySelector("#request-count");
 const domainCountElement = document.querySelector("#domain-count");
 const failedCountElement = document.querySelector("#failed-count");
 const matrixBody = document.querySelector("#matrix-body");
+const versionElement = document.querySelector("#version");
+
+versionElement.textContent = `v${chrome.runtime.getManifest().version}`;
 
 let currentTab;
 

@@ -25,6 +25,8 @@ const customFilterSource = document.querySelector("#custom-filter-source");
 const customFilterSummary = document.querySelector("#custom-filter-summary");
 const customFilterErrors = document.querySelector("#custom-filter-errors");
 
+document.querySelector("#version").textContent = `v${chrome.runtime.getManifest().version}`;
+
 initialize().catch(showError);
 
 document.querySelector("#recompile").addEventListener("click", () => runAction("RECOMPILE_RULES", {}, "Rules recompiled."));
@@ -67,7 +69,6 @@ async function refreshBreakage() {
 
 async function refreshDashboard() {
   const state = await send({ type: "GET_DASHBOARD_STATE" });
-  document.querySelector("#version").textContent = `v${state.manifestVersion}`;
   diagnosticsElement.replaceChildren(...Object.entries(state.diagnostics).map(([name, value]) => metric(name, value)));
   statisticsElement.replaceChildren(...Object.entries(state.statistics).map(([name, value]) => metric(name, value)));
   performanceElement.replaceChildren(...Object.entries(state.performance).map(([name, value]) => metric(name, value)));
