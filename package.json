@@ -1,13 +1,14 @@
 {
   "name": "originmatrix",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test",
     "release:check": "node --test && node tools/validate-release.mjs",
     "test:browser:youtube": "playwright test",
-    "analyze:scriptlets": "node tools/analyze-scriptlet-usage.mjs"
+    "analyze:scriptlets": "node tools/analyze-scriptlet-usage.mjs",
+    "analyze:ubo": "node tools/ubo-compat/analyze.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2"

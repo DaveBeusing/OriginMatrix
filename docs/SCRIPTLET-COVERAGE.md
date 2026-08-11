@@ -2,7 +2,7 @@
 
 ## Enabled-list demand analysis
 
-OriginMatrix 1.18.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. Run the reproducible inventory for any hostname with:
+OriginMatrix 1.19.0 analyzes every enabled filter list plus My Filters before expanding executable scriptlets. Run the reproducible inventory for any hostname with:
 
 ```sh
 node tools/analyze-scriptlet-usage.mjs youtube.com

@@ -277,6 +277,10 @@ Each scenario attaches a normalized telemetry document. Advertising evidence dis
 
 `SiteFilterCoverage` reuses the common filter parser plus the existing cosmetic and scriptlet validators to calculate relevant support for an arbitrary hostname. Relevance requires an explicit matching hostname, parent, or subdomain in the normalized model or raw unsupported line; unrelated suffix lookalikes are excluded. The result separates Network, Cosmetic, and Scriptlet totals and retains line number, unsupported reason, source list, and a bounded source sample. The service worker evaluates the active EasyList source and caches results only while that exact source remains active. This diagnostic is an implementation-coverage metric, not evidence that a request or visible advertisement was blocked.
 
+## uBO compatibility analysis
+
+`UboCompatibility` runs the common parser plus Cosmetic and Scriptlet destination validation over named source documents. It separates primary Network, Exception, Cosmetic, Procedural, Scriptlet, Redirect, and Preprocessor rules while counting network modifiers independently. Exact duplicates are removed only within their source, preserving cross-list demand and attribution. Unsupported primitives aggregate occurrence count, source lists, affected-domain samples/counts, and explicit requested-host relevance with deterministic ordering. The analyzer is a development-time tool and is not added to service-worker startup.
+
 ## Policy transfer and profiles
 
 Exports use `{ format: "originmatrix", version: 1, policies: [] }`. Imports validate every canonical policy and precompile the complete candidate generation before replacing browser state. Replace and coordinate-aware merge modes use compensating rollback on failure.
