@@ -17,10 +17,9 @@ www.youtube.com##+js(json-prune, playerResponse)
 youtube.com##+js(abort-on-property-read, player.ads)` },
   ], { hostname: "www.youtube.com" });
 
-  assert.deepEqual(result.relevant, { total: 6, supported: 2, unsupported: 4, percent: 33.3 });
-  assert.deepEqual(result.overall, { total: 7, supported: 2, unsupported: 5, percent: 28.6 });
+  assert.deepEqual(result.relevant, { total: 6, supported: 4, unsupported: 2, percent: 66.7 });
+  assert.deepEqual(result.overall, { total: 7, supported: 4, unsupported: 3, percent: 57.1 });
   assert.deepEqual(result.unsupportedRanking.map(({ name, relevantUnsupported, score }) => ({ name, relevantUnsupported, score })), [
-    { name: "json-prune", relevantUnsupported: 2, score: 2022 },
     { name: "prevent-fetch", relevantUnsupported: 1, score: 1011 },
     { name: "remove-attr", relevantUnsupported: 1, score: 1011 },
     { name: "prevent-xhr", relevantUnsupported: 0, score: 11 },
@@ -37,7 +36,7 @@ youtube.com,~m.youtube.com##+js(json-prune, ads)
 ##+js(remove-attr, data-ad)
 notyoutube.com##+js(prevent-fetch, ads)` }];
   assert.deepEqual(analyzeRelevantScriptletCoverage(sources, { hostname: "m.youtube.com" }).relevant, { total: 1, supported: 0, unsupported: 1, percent: 0 });
-  assert.deepEqual(analyzeRelevantScriptletCoverage(sources, { hostname: "www.youtube.com" }).relevant, { total: 2, supported: 0, unsupported: 2, percent: 0 });
+  assert.deepEqual(analyzeRelevantScriptletCoverage(sources, { hostname: "www.youtube.com" }).relevant, { total: 2, supported: 1, unsupported: 1, percent: 50 });
   assert.deepEqual(analyzeRelevantScriptletCoverage([], { hostname: "youtube.com" }).relevant, { total: 0, supported: 0, unsupported: 0, percent: 0 });
 });
 
@@ -51,7 +50,7 @@ youtube.com#%#//scriptlet('prevent-xhr', 'ads')
   assert.equal(result.totalReferences, 4);
   assert.equal(result.relevantReferences, 3);
   assert.deepEqual(result.names.map(({ name, total, relevant, supported, unsupported }) => ({ name, total, relevant, supported, unsupported })), [
-    { name: "json-prune", total: 1, relevant: 1, supported: 0, unsupported: 1 },
+    { name: "json-prune", total: 1, relevant: 1, supported: 1, unsupported: 0 },
     { name: "prevent-xhr", total: 1, relevant: 1, supported: 0, unsupported: 1 },
     { name: "set-constant", total: 1, relevant: 1, supported: 1, unsupported: 0 },
     { name: "prevent-fetch", total: 1, relevant: 0, supported: 0, unsupported: 1 },

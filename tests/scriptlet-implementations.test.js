@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { setConstant, setLocalStorageItem } from "../src/scriptlets/scriptlet-implementations.js";
+import { abortOnPropertyWrite, jsonPrune, removeAttribute, setConstant, setLocalStorageItem } from "../src/scriptlets/scriptlet-implementations.js";
 
 test("setConstant exposes only bounded inert values", () => {
   globalThis.originMatrixScriptletFixture = {};
@@ -14,6 +14,40 @@ test("setConstant exposes only bounded inert values", () => {
     assert.equal(setConstant("originMatrixScriptletFixture.value", "alert(1)"), false);
     assert.equal(setConstant("originMatrixScriptletFixture.__proto__.value", "true"), false);
   } finally { delete globalThis.originMatrixScriptletFixture; }
+});
+
+test("abortOnPropertyWrite rejects unsafe paths and blocks assignment", () => {
+  globalThis.originMatrixWriteFixture = { value: 1 };
+  try {
+    assert.equal(abortOnPropertyWrite("originMatrixWriteFixture.value"), true);
+    assert.equal(globalThis.originMatrixWriteFixture.value, 1);
+    assert.throws(() => { globalThis.originMatrixWriteFixture.value = 2; }, /aborted write/);
+    assert.equal(abortOnPropertyWrite("originMatrixWriteFixture.__proto__.x"), false);
+  } finally { delete globalThis.originMatrixWriteFixture; }
+});
+
+test("jsonPrune installs a scoped JSON.parse hook for validated paths", () => {
+  const original = JSON.parse;
+  try {
+    assert.equal(jsonPrune("player.ads player.slots", "player"), true);
+    assert.deepEqual(JSON.parse('{"player":{"ads":[1],"slots":[2],"title":"ok"}}'), { player: { title: "ok" } });
+    assert.equal(jsonPrune("__proto__.polluted"), false);
+  } finally { JSON.parse = original; }
+});
+
+test("removeAttribute alters only matching elements", () => {
+  const calls = [];
+  const element = { removeAttribute(value) { calls.push(["attribute", value]); } };
+  const previousDocument = globalThis.document;
+  globalThis.document = { querySelectorAll: () => [element], documentElement: null };
+  try {
+    assert.equal(removeAttribute("data-ad", "[data-ad]"), true);
+    assert.deepEqual(calls, [["attribute", "data-ad"]]);
+    assert.equal(removeAttribute("onclick]", "*"), false);
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  }
 });
 
 test("setLocalStorageItem permits bounded constants and removal only", () => {

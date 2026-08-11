@@ -95,9 +95,9 @@ test("analyzes scriptlets from enabled lists and My Filters only", async () => {
   manager.configureCustomSource("youtube.com##+js(remove-attr, data-ad)");
   await manager.initialize();
   const initial = await manager.getRelevantScriptletCoverage("www.youtube.com");
-  assert.deepEqual(initial.relevant, { total: 3, supported: 1, unsupported: 2, percent: 33.3 });
+  assert.deepEqual(initial.relevant, { total: 3, supported: 3, unsupported: 0, percent: 100 });
   assert.deepEqual(initial.primitives.flatMap(({ sourceLists }) => sourceLists).sort(), ["First", "My Filters", "Second"]);
   await manager.setEnabled("second", false);
   const changed = await manager.getRelevantScriptletCoverage("www.youtube.com");
-  assert.deepEqual(changed.relevant, { total: 2, supported: 1, unsupported: 1, percent: 50 });
+  assert.deepEqual(changed.relevant, { total: 2, supported: 2, unsupported: 0, percent: 100 });
 });

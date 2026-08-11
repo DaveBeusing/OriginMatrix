@@ -8,7 +8,7 @@ test("parses selected domain-scoped scriptlet syntax", () => {
   assert.equal(result.status, "supported");
   assert.deepEqual(result.filter, {
     type: "scriptlet",
-    name: "set-constant",
+    name: "set-constant.js",
     args: ["player.ads", "undefined"],
     domains: ["example.com", "video.example.com"],
     excludedDomains: ["account.example.com"],
@@ -20,9 +20,9 @@ test("parses quoted and escaped arguments without evaluating them", () => {
   assert.deepEqual(quoted.filter.args, [".advert", "sponsored, offer"]);
   const escaped = parseScriptletRule("example.com##+js(remove-node-text, .advert, sponsored\\, offer)");
   assert.deepEqual(escaped.filter.args, [".advert", "sponsored, offer"]);
-  assert.equal(parseScriptletRule("example.com##+js(aopr, ads.value)").filter.name, "abort-on-property-read");
-  assert.equal(parseScriptletRule("example.com##+js(set, ads.value, noopFunc)").filter.name, "set-constant");
-  assert.equal(parseScriptletRule("example.com##+js(rmnt, script, admiral)").filter.name, "remove-node-text");
+  assert.equal(parseScriptletRule("example.com##+js(aopr, ads.value)").filter.name, "aopr");
+  assert.equal(parseScriptletRule("example.com##+js(set, ads.value, noopFunc)").filter.name, "set");
+  assert.equal(parseScriptletRule("example.com##+js(rmnt, script, admiral)").filter.name, "rmnt");
 });
 
 test("reports malformed, global, exception, and oversized calls", () => {

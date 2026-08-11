@@ -2,7 +2,7 @@
 
 ## Architecture review baseline
 
-OriginMatrix 1.21.0 was reviewed against remote-code execution, injection and XSS, unsafe HTML, parser and selector denial of service, scriptlet argument abuse, corrupted storage, malformed lists, custom-filter input, bounded selector generation, DNR rule exhaustion, and extension permissions.
+OriginMatrix 1.22.0 was reviewed against remote-code execution, injection and XSS, unsafe HTML, parser and selector denial of service, scriptlet argument abuse, corrupted storage, malformed lists, custom-filter input, bounded selector generation, DNR rule exhaustion, and extension permissions.
 
 - All executable JavaScript is bundled. Filter downloads are data only, require catalogued HTTPS URLs, reject redirects, and never become executable code.
 - UI values are assigned with DOM text properties. The extension does not use `innerHTML`, `eval`, dynamic functions, or remote assets.

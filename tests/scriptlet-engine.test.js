@@ -7,7 +7,11 @@ import { readFile } from "node:fs/promises";
 
 test("registry exposes only bundled scriptlet identifiers", () => {
   const registry = new ScriptletRegistry();
-  assert.deepEqual(registry.list(), ["abort-on-property-read", "remove-node-text", "set-constant", "set-local-storage-item"]);
+  assert.deepEqual(registry.list(), ["abort-on-property-read", "abort-on-property-write", "json-prune", "remove-attr", "remove-node-text", "set-constant", "set-local-storage-item"]);
+  assert.equal(registry.resolveName("aopr"), "abort-on-property-read");
+  assert.equal(registry.resolveName("aopw"), "abort-on-property-write");
+  assert.equal(registry.resolveName("ra"), "remove-attr");
+  assert.equal(registry.has("json-prune.js"), true);
   assert.equal(registry.getPhase("set-constant"), SCRIPTLET_PHASE.EARLY);
   assert.equal(registry.getPhase("abort-on-property-read"), SCRIPTLET_PHASE.EARLY);
   assert.equal(registry.getPhase("remove-node-text"), SCRIPTLET_PHASE.NORMAL);
@@ -61,7 +65,7 @@ test("activates only registry-supported filter-list scriptlets", () => {
   assert.equal(generation.unsupported.length, 1);
   assert.deepEqual(engine.activate(generation), { scriptletRules: 1, scriptletUnsupported: 1 });
   assert.equal(engine.prepareForHostname("video.example.com").invocations.length, 1);
-  assert.deepEqual(engine.getDiagnostics(), { bundledScriptlets: 4, scriptletRules: 1, scriptletUnsupported: 1 });
+  assert.deepEqual(engine.getDiagnostics(), { bundledScriptlets: 7, scriptletRules: 1, scriptletUnsupported: 1 });
   engine.clear();
   assert.equal(engine.prepareForHostname("example.com").invocations.length, 0);
 });

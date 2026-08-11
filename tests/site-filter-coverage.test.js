@@ -19,13 +19,12 @@ youtube.com##+js(json-prune, adPlacements)
   assert.deepEqual(result.coverage, {
     network: { supported: 2, unsupported: 1, total: 3, percent: 66.7 },
     cosmetic: { supported: 2, unsupported: 0, total: 2, percent: 100 },
-    scriptlet: { supported: 1, unsupported: 1, total: 2, percent: 50 },
-    total: { supported: 5, unsupported: 2, total: 7, percent: 71.4 },
+    scriptlet: { supported: 2, unsupported: 0, total: 2, percent: 100 },
+    total: { supported: 6, unsupported: 1, total: 7, percent: 85.7 },
   });
   assert.equal(result.relevantRules.length, 7);
   assert.deepEqual(result.unsupportedRelevantRules.map(({ line, type, reason, sourceFilterList }) => ({ line, type, reason, sourceFilterList })), [
     { line: 6, type: "network", reason: "unsupported-option", sourceFilterList: "EasyList" },
-    { line: 8, type: "scriptlet", reason: "Unknown scriptlet: json-prune", sourceFilterList: "EasyList" },
   ]);
 });
 

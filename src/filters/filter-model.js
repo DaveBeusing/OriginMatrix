@@ -45,7 +45,7 @@ export function createCosmeticControlFilter(input) {
 
 export function createScriptletFilter(input) {
   const name = requiredText(input?.name, "Scriptlet name");
-  if (!/^[a-z][a-z0-9-]*$/i.test(name)) throw new TypeError("Scriptlet name is invalid.");
+  if (!/^[a-z][a-z0-9-]*(?:\.js)?$/i.test(name)) throw new TypeError("Scriptlet name is invalid.");
   const args = input.args ?? [];
   if (!Array.isArray(args) || args.some((arg) => typeof arg !== "string")) {
     throw new TypeError("Scriptlet arguments must be strings.");

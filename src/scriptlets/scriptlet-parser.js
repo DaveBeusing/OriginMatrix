@@ -2,14 +2,6 @@ import { createScriptletFilter } from "../filters/filter-model.js";
 
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN = new RegExp(`^${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*$`, "i");
-const ALIASES = new Map([
-  ["rmnt", "remove-node-text"],
-  ["remove-node-text.js", "remove-node-text"],
-  ["set", "set-constant"],
-  ["set-constant.js", "set-constant"],
-  ["abort-on-property-read.js", "abort-on-property-read"],
-  ["aopr", "abort-on-property-read"],
-]);
 const MAX_ARGUMENT_LENGTH = 512;
 const MAX_ARGUMENT_BYTES = 1_024;
 
@@ -30,7 +22,7 @@ export function parseScriptletRule(source) {
   if (!argumentResult.ok) return unsupported(text, argumentResult.reason, argumentResult.details);
   const [rawName, ...args] = argumentResult.values;
   if (!rawName || !/^[a-z][a-z0-9.-]*$/i.test(rawName)) return unsupported(text, "invalid-scriptlet-name");
-  const name = ALIASES.get(rawName.toLowerCase()) ?? rawName.toLowerCase();
+  const name = rawName.toLowerCase();
   try {
     return Object.freeze({
       status: "supported",

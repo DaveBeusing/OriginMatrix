@@ -56,7 +56,7 @@ export class ScriptletEngine {
       if (!appliesTo(filter, site)) { skipped += 1; continue; }
       try {
         if (phase !== null && this.registry.getPhase(filter.name) !== phase) { skipped += 1; continue; }
-        const key = `${filter.name}\u0000${filter.args.join("\u0000")}`;
+        const key = `${this.registry.resolveName(filter.name)}\u0000${filter.args.join("\u0000")}`;
         if (seen.has(key)) continue;
         seen.add(key);
         invocations.push(this.registry.createInvocation(filter.name, filter.args, filter));
