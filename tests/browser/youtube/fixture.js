@@ -7,6 +7,10 @@ import { summarizeYouTubeTelemetry } from "../../../src/diagnostics/youtube-tele
 const extensionPath = resolve(import.meta.dirname, "../../..");
 
 export const test = base.extend({
+  liveGate: [async ({}, use, testInfo) => {
+    testInfo.skip(process.env.ORIGINMATRIX_YOUTUBE_LIVE !== "1", "Set ORIGINMATRIX_YOUTUBE_LIVE=1 to run live YouTube acceptance tests.");
+    await use();
+  }, { auto: true }],
   context: async ({}, use) => {
     const userDataDir = process.env.ORIGINMATRIX_YOUTUBE_USER_DATA_DIR
       ? resolve(process.env.ORIGINMATRIX_YOUTUBE_USER_DATA_DIR)
@@ -21,8 +25,6 @@ export const test = base.extend({
   },
 });
 
-test.skip(process.env.ORIGINMATRIX_YOUTUBE_LIVE !== "1", "Set ORIGINMATRIX_YOUTUBE_LIVE=1 to run live YouTube acceptance tests.");
-
 export const WATCH_URL = process.env.ORIGINMATRIX_YOUTUBE_WATCH_URL ?? "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
 export const SIGNED_IN_PROFILE = Boolean(process.env.ORIGINMATRIX_YOUTUBE_USER_DATA_DIR);
 
@@ -33,7 +35,43 @@ export async function openYouTube(context, path = "/") {
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.goto(new URL(path, "https://www.youtube.com").href, { waitUntil: "domcontentloaded" });
+  await dismissConsent(page);
   return { page, consoleErrors, pageErrors };
+}
+
+export async function sendExtensionMessage(context, message, { tabUrl = null } = {}) {
+  let worker = context.serviceWorkers()[0];
+  if (!worker) worker = await context.waitForEvent("serviceworker");
+  const extensionId = new URL(worker.url()).host;
+  const extensionPage = await context.newPage();
+  try {
+    await extensionPage.goto(`chrome-extension://${extensionId}/src/popup/popup.html`);
+    return await extensionPage.evaluate(async ({ payload, requestedTabUrl }) => {
+      if (requestedTabUrl) {
+        const tab = (await chrome.tabs.query({})).find(({ url }) => url === requestedTabUrl);
+        if (!tab?.id) throw new Error(`Could not find browser tab for ${requestedTabUrl}`);
+        payload = { ...payload, tabId: tab.id };
+      }
+      return chrome.runtime.sendMessage(payload);
+    }, { payload: message, requestedTabUrl: tabUrl });
+  } finally { await extensionPage.close(); }
+}
+
+async function dismissConsent(page) {
+  const lightbox = page.locator("ytd-consent-bump-v2-lightbox");
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await lightbox.waitFor({ state: "attached", timeout: attempt === 0 ? 15_000 : 4_000 });
+    } catch { return; /* Consent is regional and may be absent. */ }
+    const reject = lightbox.getByText(/^(Reject all|Alle ablehnen)$/i, { exact: true }).last();
+    await reject.scrollIntoViewIfNeeded();
+    await reject.click();
+    await lightbox.waitFor({ state: "hidden", timeout: 10_000 });
+    await page.waitForFunction(() => getComputedStyle(document.body).visibility !== "hidden", null, { timeout: 10_000 });
+    await page.waitForTimeout(2_000);
+    if (!await lightbox.isVisible()) return;
+  }
+  throw new Error("YouTube consent dialog repeatedly reopened after rejection.");
 }
 
 export function majorErrors(consoleErrors, pageErrors) {
@@ -42,9 +80,7 @@ export function majorErrors(consoleErrors, pageErrors) {
 }
 
 export async function attachYouTubeTelemetry(context, testInfo, { scenario, observations = [], playback = {} }) {
-  let worker = context.serviceWorkers()[0];
-  if (!worker) worker = await context.waitForEvent("serviceworker");
-  const response = await worker.evaluate(() => chrome.runtime.sendMessage({ type: "GET_DASHBOARD_STATE" }));
+  const response = await sendExtensionMessage(context, { type: "GET_DASHBOARD_STATE" });
   if (!response?.ok) throw new Error(response?.error ?? "OriginMatrix telemetry is unavailable.");
   const telemetry = summarizeYouTubeTelemetry({
     scenario,

@@ -46,7 +46,13 @@ Ad observations use five explicit outcomes:
 
 The JSON reporter writes machine-readable results below `test-results/youtube/`; traces, screenshots, video, structured `ad-observations`, and per-scenario `youtube-telemetry` attachments are retained for failures or analysis. Telemetry covers homepage, watch, playback, search, channel, playlist, Shorts, SPA navigation, signed-out, and optional dedicated signed-in scenarios. It records playback/page-health assertions alongside content-script setup, cosmetic/procedural work, executed scriptlets, and DNR generation metrics. Missing measurements remain `null`.
 
-Repository automation verifies the classification and aggregation model, but no live observations were produced for this release in the current environment. Advertising effectiveness, playback health, and runtime cost therefore remain `unknown` until an opt-in browser run records evidence. A run with no delivered advertising is `not_reproduced`, never a successful block claim.
+Repository automation verifies the classification and aggregation model. Live evidence for this release is recorded below. A run with no delivered advertising is `not_reproduced`, never a successful block claim.
+
+### Live validation record — 2026-08-11
+
+An isolated signed-out profile was exercised with Playwright and Chrome for Testing `151.0.7922.34` in the German region. The first run exposed a harness defect: extension messages were sent from the service worker to itself. Telemetry now uses an extension page, and the harness explicitly rejects the regional YouTube consent dialog when it appears. YouTube's current watch-page recommendations also required replacing the obsolete `ytd-compact-video-renderer` selector with visible generic watch links.
+
+The final full run passed Cosmetic observations, Diagnostics, Homepage, Playback, Channel, Playlist, Shorts, and Watch. Targeted reruns additionally passed the clean signed-out baseline and SPA navigation after the harness fixes. Search remained blocked by a consent dialog that YouTube reopened after rejection; it is an environmental failure, not a verified OriginMatrix regression. Signed-in testing was skipped because no dedicated profile was supplied. No deterministic advertisement delivery occurred, so ad-blocking effectiveness remains `not_reproduced`; the run does verify playback, pause/play, seeking, watch-page structure, extension messaging, and SPA state updates for the passing scenarios.
 
 ## Relevant filter coverage
 
