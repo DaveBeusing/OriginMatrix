@@ -1,5 +1,6 @@
 import { createCosmeticControlFilter, createCosmeticFilter, createExceptionFilter, createNetworkFilter } from "./filter-model.js";
 import { parseScriptletRule } from "../scriptlets/scriptlet-parser.js";
+import { resolveRedirectResource } from "./redirect-resource-registry.js";
 
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 const DOMAIN_PATTERN = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*`;
@@ -42,8 +43,8 @@ export function parseFilterRule(source) {
     }
     return supported(text, createCosmeticControlFilter({ mode: "generichide", domains: [host] }));
   }
-  const { genericHide, ...networkOptions } = options.value;
-  const input = { pattern, ...networkOptions };
+  const { genericHide, redirectResource, ...networkOptions } = options.value;
+  const input = { pattern, ...networkOptions, ...(redirectResource ? { redirectResource } : {}) };
   try {
     return supported(text, exception ? createExceptionFilter(input) : createNetworkFilter(input));
   } catch (error) {
@@ -114,7 +115,7 @@ function validateWithAttribution(filter, sourceRule, sourceList) {
 }
 
 function parseOptions(source) {
-  const value = { domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null, genericHide: false, important: false, badfilter: false };
+  const value = { domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null, genericHide: false, important: false, badfilter: false, redirectResource: null };
   if (source.length === 0) return { ok: true, value };
   const options = source.split(",");
   if (options.some((option) => option.length === 0)) return { ok: false, reason: "invalid-options" };
@@ -140,8 +141,18 @@ function parseOptions(source) {
       value.important = true;
     } else if (normalized === "badfilter") {
       value.badfilter = true;
+    } else if (normalized.startsWith("redirect=")) {
+      const redirect = resolveRedirectResource(option.slice("redirect=".length));
+      if (!redirect) return { ok: false, reason: "unknown-redirect-resource", details: option.slice("redirect=".length) };
+      value.redirectResource = redirect.name;
     } else {
       return { ok: false, reason: "unsupported-option", details: option };
+    }
+  }
+  if (value.redirectResource && value.resourceTypes.length > 0) {
+    const redirect = resolveRedirectResource(value.redirectResource);
+    if (value.resourceTypes.some((type) => !redirect.resourceTypes.includes(type))) {
+      return { ok: false, reason: "redirect-resource-type-mismatch", details: value.redirectResource };
     }
   }
   return { ok: true, value };

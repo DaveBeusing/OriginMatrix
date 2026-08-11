@@ -31,6 +31,14 @@ test("provides distinct exception, cosmetic, and scriptlet models", () => {
   });
 });
 
+test("models redirects independently from their DNR representation", () => {
+  const filter = createNetworkFilter({ pattern: "||tracker.example^", redirectResource: "noop.js", resourceTypes: ["script"] });
+  assert.equal(filter.action, "redirect");
+  assert.equal(filter.redirectResource, "noop.js");
+  assert.equal("extensionPath" in filter, false);
+  assert.throws(() => createExceptionFilter({ pattern: "||tracker.example^", redirectResource: "noop.js" }), /Redirect resource/);
+});
+
 test("rejects invalid normalized filter data", () => {
   assert.throws(() => createNetworkFilter({ pattern: "x", thirdParty: "yes" }), /thirdParty/);
   assert.throws(() => createNetworkFilter({ pattern: "x", resourceTypes: ["document"] }), /resource type/);

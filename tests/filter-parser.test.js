@@ -64,11 +64,13 @@ test("parses simple cosmetic and selected scriptlet rules", () => {
 test("reports unsupported and conflicting syntax without guessing", () => {
   assert.deepEqual(
     { ...parseFilterRule("||ads.example^$redirect=noopjs") },
-    { status: "unsupported", source: "||ads.example^$redirect=noopjs", reason: "unsupported-option", details: "redirect=noopjs" },
+    { status: "supported", source: "||ads.example^$redirect=noopjs", filter: { type: "network", pattern: "||ads.example^", domains: [], excludedDomains: [], resourceTypes: [], thirdParty: null, action: "redirect", redirectResource: "noop.js" } },
   );
   assert.equal(parseFilterRule("||ads.example^$third-party,~third-party").reason, "conflicting-options");
   assert.equal(parseFilterRule("/ads-[0-9]+/").reason, "pattern-not-supported");
   assert.equal(parseFilterRule("||bad..example^").status, "unsupported");
+  assert.equal(parseFilterRule("||ads.example^$redirect=google-ima.js").reason, "unknown-redirect-resource");
+  assert.equal(parseFilterRule("||ads.example^$redirect-rule=noopjs").reason, "unsupported-option");
 });
 
 test("returns line-aware parser diagnostics", () => {

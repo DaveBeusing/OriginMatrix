@@ -23,6 +23,7 @@ const referencedFiles = [
   ...Object.values(manifest.action?.default_icon ?? {}),
   ...(manifest.content_scripts ?? []).flatMap(({ js = [], css = [] }) => [...js, ...css]),
   ...(manifest.declarative_net_request?.rule_resources ?? []).map(({ path }) => path),
+  ...(manifest.web_accessible_resources ?? []).flatMap(({ resources = [] }) => resources),
 ].filter(Boolean);
 for (const path of new Set(referencedFiles)) {
   try { await access(resolve(root, path), constants.R_OK); }

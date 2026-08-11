@@ -4,7 +4,7 @@ import { CosmeticParser } from "../cosmetic/cosmetic-parser.js";
 import { ScriptletRegistry } from "../scriptlets/scriptlet-registry.js";
 
 const CATEGORY_KEYS = Object.freeze(["network", "modifiers", "exceptions", "cosmetic", "procedural", "scriptlets", "redirects", "preprocessors", "unsupportedSyntax"]);
-const SUPPORTED_MODIFIERS = new Set(["stylesheet", "image", "font", "media", "script", "xmlhttprequest", "xhr", "subdocument", "document", "ping", "websocket", "other", "third-party", "domain", "generichide", "important", "badfilter"]);
+const SUPPORTED_MODIFIERS = new Set(["stylesheet", "image", "font", "media", "script", "xmlhttprequest", "xhr", "subdocument", "document", "ping", "websocket", "other", "third-party", "domain", "generichide", "important", "badfilter", "redirect"]);
 const PROCEDURAL = /:(contains|has-text|matches-css|matches-path|remove|style|upward|watch-attr|xpath)\s*\(/ig;
 const SCRIPTLET = /(?:##|#@#)\+js\(\s*([^,\s)]+)|#%#\/\/scriptlet\(\s*["']([^"']+)/i;
 const PREPROCESSOR = /^!#(if|else|endif|include)\b/i;

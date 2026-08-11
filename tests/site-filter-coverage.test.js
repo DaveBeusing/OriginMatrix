@@ -17,15 +17,13 @@ youtube.com##+js(json-prune, adPlacements)
   assert.equal(result.hostname, "www.youtube.com");
   assert.equal(result.filterList, "EasyList");
   assert.deepEqual(result.coverage, {
-    network: { supported: 2, unsupported: 1, total: 3, percent: 66.7 },
+    network: { supported: 3, unsupported: 0, total: 3, percent: 100 },
     cosmetic: { supported: 2, unsupported: 0, total: 2, percent: 100 },
     scriptlet: { supported: 2, unsupported: 0, total: 2, percent: 100 },
-    total: { supported: 6, unsupported: 1, total: 7, percent: 85.7 },
+    total: { supported: 7, unsupported: 0, total: 7, percent: 100 },
   });
   assert.equal(result.relevantRules.length, 7);
-  assert.deepEqual(result.unsupportedRelevantRules.map(({ line, type, reason, sourceFilterList }) => ({ line, type, reason, sourceFilterList })), [
-    { line: 6, type: "network", reason: "unsupported-option", sourceFilterList: "EasyList" },
-  ]);
+  assert.deepEqual(result.unsupportedRelevantRules, []);
 });
 
 test("rejects invalid hostnames and does not include suffix lookalikes", () => {

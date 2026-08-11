@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OriginMatrix",
-  "version": "1.22.0",
+  "version": "1.23.0",
   "minimum_chrome_version": "121",
   "description": "A granular request firewall for the modern web.",
   "icons": {
@@ -49,6 +49,19 @@
       ],
       "run_at": "document_start",
       "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "resources/noop.js",
+        "resources/empty.json",
+        "resources/empty.txt"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
     }
   ],
   "action": {

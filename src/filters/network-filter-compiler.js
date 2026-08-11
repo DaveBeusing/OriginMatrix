@@ -3,6 +3,7 @@ import { RuleBudget } from "../network/rule-budget.js";
 import { DYNAMIC_RULE_RANGES } from "../network/rule-ranges.js";
 import { FILTER_TYPE, validateFilter } from "./filter-model.js";
 import { filterSemanticPrecedence, resolveFilterSemantics } from "./filter-semantics-resolver.js";
+import { resolveRedirectResource } from "./redirect-resource-registry.js";
 
 const FILTER_RULE_MIN = DYNAMIC_RULE_RANGES.filters.minimum;
 const FILTER_RULE_SIZE = DYNAMIC_RULE_RANGES.filters.maximum - FILTER_RULE_MIN + 1;
@@ -62,12 +63,26 @@ function compileCondition({ filter, attributions }) {
   if (filter.domains.length > 0) condition.initiatorDomains = filter.domains;
   if (filter.excludedDomains.length > 0) condition.excludedInitiatorDomains = filter.excludedDomains;
   if (filter.resourceTypes.length > 0) condition.resourceTypes = filter.resourceTypes;
+  else if (filter.redirectResource) condition.resourceTypes = [...resolveRedirectResource(filter.redirectResource).resourceTypes];
   if (filter.thirdParty !== null) condition.domainType = filter.thirdParty ? "thirdParty" : "firstParty";
   return { rule: {
     priority: priorityFor(filter),
-    action: { type: filter.type === FILTER_TYPE.EXCEPTION ? "allow" : "block" },
+    action: compileAction(filter),
     condition,
   }, attributions };
+}
+
+function compileAction(filter) {
+  if (filter.type === FILTER_TYPE.EXCEPTION) return { type: "allow" };
+  if (filter.redirectResource) {
+    const resource = resolveRedirectResource(filter.redirectResource);
+    if (!resource) throw new TypeError(`Unknown redirect resource: ${filter.redirectResource}`);
+    if (filter.resourceTypes.length > 0 && filter.resourceTypes.some((type) => !resource.resourceTypes.includes(type))) {
+      throw new TypeError(`Redirect resource ${resource.name} is incompatible with the requested resource type.`);
+    }
+    return { type: "redirect", redirect: { extensionPath: resource.extensionPath } };
+  }
+  return { type: "block" };
 }
 
 function priorityFor(filter) {

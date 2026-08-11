@@ -6,7 +6,7 @@ export const FILTER_TYPE = Object.freeze({
   COSMETIC_CONTROL: "cosmetic-control",
 });
 
-export const FILTER_ACTION = Object.freeze({ BLOCK: "block", ALLOW: "allow" });
+export const FILTER_ACTION = Object.freeze({ BLOCK: "block", ALLOW: "allow", REDIRECT: "redirect" });
 
 const NETWORK_RESOURCE_TYPES = new Set([
   "stylesheet", "image", "font", "media", "script", "xmlhttprequest",
@@ -81,6 +81,10 @@ function createNetworkLikeFilter(input, type, action) {
   for (const resourceType of resourceTypes) {
     if (!NETWORK_RESOURCE_TYPES.has(resourceType)) throw new TypeError(`Unsupported filter resource type: ${resourceType}`);
   }
+  const redirectResource = input.redirectResource;
+  if (redirectResource !== undefined && (type !== FILTER_TYPE.NETWORK || typeof redirectResource !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(redirectResource))) {
+    throw new TypeError("Redirect resource is invalid.");
+  }
   return freezeFilter({
     type,
     pattern,
@@ -88,7 +92,8 @@ function createNetworkLikeFilter(input, type, action) {
     excludedDomains: normalizeDomains(input.excludedDomains),
     resourceTypes,
     thirdParty,
-    action,
+    action: redirectResource ? FILTER_ACTION.REDIRECT : action,
+    ...(redirectResource ? { redirectResource } : {}),
     ...(input.important === true ? { important: true } : {}),
     ...(input.badfilter === true ? { badfilter: true } : {}),
     ...attribution(input),

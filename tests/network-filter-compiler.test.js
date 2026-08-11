@@ -86,6 +86,16 @@ test("does not aggregate rules with different actions or conditions", () => {
   assert.equal(result.rules.length, 3);
 });
 
+test("compiles reviewed redirect resources with aliases and inferred types", () => {
+  const parsed = createNetworkFilter({ pattern: "||tracker.example^", redirectResource: "noop.js" });
+  const { rules } = new NetworkFilterCompiler().compile([parsed]);
+  assert.deepEqual(rules[0].action, { type: "redirect", redirect: { extensionPath: "/resources/noop.js" } });
+  assert.deepEqual(rules[0].condition.resourceTypes, ["script", "xmlhttprequest"]);
+  assert.throws(() => new NetworkFilterCompiler().compile([
+    createNetworkFilter({ pattern: "||tracker.example^", redirectResource: "noop.js", resourceTypes: ["image"] }),
+  ]), /incompatible/);
+});
+
 test("assigns stable IDs in a range isolated from Matrix and session rules", () => {
   const filters = [createNetworkFilter({ pattern: "||a.example^" }), createNetworkFilter({ pattern: "*/ads/*" })];
   const compiler = new NetworkFilterCompiler();

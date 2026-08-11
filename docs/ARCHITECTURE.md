@@ -37,6 +37,10 @@ Static rules use priority `10`. Matrix priorities are specificity-derived and st
 
 ## Filter rule model
 
+Redirect filters remain abstract normalized network actions until compilation. `RedirectResourceRegistry` maps a closed set of reviewed uBO names and aliases to three bundled inert resources: `noop.js`, `empty.json`, and `empty.txt`. Unknown resources and incompatible explicit resource types remain unsupported; missing types are narrowed to the registry's safe types rather than redirected globally.
+
+The network compiler translates validated resources to DNR `extensionPath` redirects. The manifest exposes exactly those three paths to HTTP(S) origins because Chromium rejects public-request redirects to extension resources that are not web accessible. No remote resource, executable filter data, or emulation of third-party library APIs is permitted.
+
 Before parsing, `FilterPreprocessor` evaluates bounded uBO conditionals against an explicit immutable capability map. OriginMatrix advertises Chromium, MV3, DNR, and its own extension identity; HTML filtering, IP-address filtering, Firefox, Safari, mobile, and uBO Lite identities remain false. Includes accept only relative `.txt` names, reject traversal and remote URLs, cap nesting, and are resolved as filter data through the existing loader.
 
 Network parsing is followed by `FilterSemanticsResolver`. A `$badfilter` directive removes itself and its normalized target before any destination engine sees the generation. Conflict classes are resolved as `normal block < normal exception < important block < important exception`; only afterward does the network compiler translate those classes into documented DNR priorities. Explicit Matrix policy priorities remain above every automatic class and therefore stay authoritative.

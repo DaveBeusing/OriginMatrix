@@ -16,20 +16,20 @@ youtube.com#@#.allowed
 `, { listVersion: "fixture" });
   assert.equal(result.listVersion, "fixture");
   assert.equal(result.relevantRules, 7);
-  assert.equal(result.supportedNetwork, 1);
+  assert.equal(result.supportedNetwork, 2);
   assert.equal(result.supportedExceptions, 1);
   assert.equal(result.supportedCosmetic, 3);
   assert.equal(result.supportedScriptlet, 1);
-  assert.equal(result.unsupportedNetwork, 1);
+  assert.equal(result.unsupportedNetwork, 0);
   assert.equal(result.unsupportedCosmetic, 0);
   assert.equal(result.unsupportedScriptlet, 0);
-  assert.equal(result.supportedRules, 6);
-  assert.equal(result.unsupportedRules, 1);
-  assert.equal(result.supportPercent, 85.7);
+  assert.equal(result.supportedRules, 7);
+  assert.equal(result.unsupportedRules, 0);
+  assert.equal(result.supportPercent, 100);
   assert.equal(result.capabilities.scriptlets, true);
   assert.equal(result.capabilities.runtimePlaybackVerification, true);
   assert.equal(result.capabilities.advertisingTelemetry, true);
-  assert.equal(result.samples.length, 1);
+  assert.equal(result.samples.length, 0);
 });
 
 test("does not infer compatibility when no targeted rules exist", () => {
